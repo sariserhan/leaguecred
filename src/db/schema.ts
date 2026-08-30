@@ -138,12 +138,49 @@ export const teams = pgTable("teams", {
   name: text("name").notNull(),
   shortName: text("short_name").notNull(),
   logoUrl: text("logo_url"),
+  logoProvider: text("logo_provider"),
+  sportsDbExternalId: text("sports_db_external_id"),
   countryId: uuid("country_id").references(() => countries.id),
   createdAt,
   updatedAt,
 }, (table) => [
   uniqueIndex("teams_provider_external_unique").on(table.provider, table.providerExternalId),
+  uniqueIndex("teams_sports_db_external_unique").on(table.sportsDbExternalId)
+    .where(sql`${table.sportsDbExternalId} is not null`),
   index("teams_country_id_idx").on(table.countryId),
+]);
+
+export const leagueTeamMemberships = pgTable("league_team_memberships", {
+  id: uuid("id").defaultRandom().primaryKey(),
+  leagueId: uuid("league_id").notNull().references(() => leagues.id, { onDelete: "cascade" }),
+  seasonId: uuid("season_id").notNull().references(() => seasons.id, { onDelete: "cascade" }),
+  teamId: uuid("team_id").notNull().references(() => teams.id, { onDelete: "cascade" }),
+  sourceProvider: text("source_provider").notNull(),
+  sourceScope: text("source_scope").notNull(),
+  createdAt,
+  updatedAt,
+}, (table) => [
+  uniqueIndex("league_team_memberships_unique").on(table.leagueId, table.seasonId, table.teamId),
+  index("league_team_memberships_league_season_idx").on(table.leagueId, table.seasonId),
+  index("league_team_memberships_team_id_idx").on(table.teamId),
+  index("league_team_memberships_season_id_idx").on(table.seasonId),
+]);
+
+export const leagueTeamImports = pgTable("league_team_imports", {
+  id: uuid("id").defaultRandom().primaryKey(),
+  leagueId: uuid("league_id").notNull().references(() => leagues.id, { onDelete: "cascade" }),
+  seasonId: uuid("season_id").notNull().references(() => seasons.id, { onDelete: "cascade" }),
+  provider: text("provider").notNull(),
+  isComplete: boolean("is_complete").default(false).notNull(),
+  teamCount: integer("team_count").default(0).notNull(),
+  note: text("note"),
+  fetchedAt: timestamp("fetched_at", { withTimezone: true }).defaultNow().notNull(),
+  createdAt,
+  updatedAt,
+}, (table) => [
+  uniqueIndex("league_team_imports_unique").on(table.leagueId, table.seasonId, table.provider),
+  index("league_team_imports_league_season_idx").on(table.leagueId, table.seasonId),
+  index("league_team_imports_season_id_idx").on(table.seasonId),
 ]);
 
 export const matchweeks = pgTable("matchweeks", {

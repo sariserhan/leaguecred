@@ -12,6 +12,7 @@ The repository contains a working, responsive Prove-or-Follow application with:
 - PostgreSQL and Drizzle-backed leagues, matchweeks, picks, follows, and records
 - one immutable independent Weekly Lock per league and matchweek
 - specialist reveal and attributed follow mode kept outside independent accuracy
+- a focused 25-competition catalog with league and team badges
 - API-Football behind a provider abstraction with frozen matchweek eligibility
 - idempotent settlement and an append-only correction ledger
 - database constraints, disposable PostgreSQL integration tests, and browser QA
@@ -50,7 +51,9 @@ pnpm fixtures:sync
 pnpm settle
 ~~~
 
-The catalog seed idempotently loads one current senior men's top-flight league for each of 168 API-Football countries, including country flags, league logos, and provider season metadata. It excludes cups, second divisions, reserve/youth competitions, and women's leagues. Fixture synchronization requires `API_FOOTBALL_KEY`; it also upserts team names and logos from each returned fixture. API-Football's free plan does not expose current-season bulk team membership, so do not treat an older season's `/teams` response as the current roster.
+The catalog seed idempotently loads the 25 competitions currently supported by the product, including the major European domestic leagues and UEFA competitions, selected leagues in the Americas and Middle East, and Copa Libertadores. It seeds league metadata from API-Football and 290 team records with badges from TheSportsDB. The 298 league/team memberships are deliberately marked partial because TheSportsDB's free league endpoint is capped and cup membership is inferred from a limited event sample; the UI communicates that status rather than presenting the lists as complete rosters.
+
+Fixture synchronization requires `API_FOOTBALL_KEY` and upserts team names and logos from returned fixtures. `FOOTBALL_DATA_API_KEY` is reserved for the football-data.org integration: its registered free tier can provide complete teams, crests, schedules, and delayed results for 10 of our selected competitions, at 10 requests per minute. It cannot cover all 25 competitions on the free plan.
 
 HTTP schedulers can call `POST /api/jobs/fixtures` and `POST /api/jobs/settlement` with `Authorization: Bearer $CRON_SECRET`.
 

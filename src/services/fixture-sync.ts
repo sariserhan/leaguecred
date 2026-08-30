@@ -75,9 +75,9 @@ async function synchronizeRound(config: LeagueConfig, round: string, incoming: P
 
 async function upsertTeam(sql: postgres.TransactionSql, team: ProviderFixture["home"], countryId: string) {
   const [row] = await sql<Array<{ id: string }>>`
-    insert into teams (provider, provider_external_id, name, short_name, logo_url, country_id)
-    values ('api-football', ${team.externalId}, ${team.name}, ${team.shortName}, ${team.logoUrl}, ${countryId})
-    on conflict (provider, provider_external_id) do update set name = excluded.name, short_name = excluded.short_name, logo_url = excluded.logo_url, updated_at = now()
+    insert into teams (provider, provider_external_id, name, short_name, logo_url, logo_provider, country_id)
+    values ('api-football', ${team.externalId}, ${team.name}, ${team.shortName}, ${team.logoUrl}, 'api-football', ${countryId})
+    on conflict (provider, provider_external_id) do update set name = excluded.name, short_name = excluded.short_name, logo_url = excluded.logo_url, logo_provider = excluded.logo_provider, updated_at = now()
     returning id`;
   if (!row) throw new Error("Could not upsert team.");
   return row.id;

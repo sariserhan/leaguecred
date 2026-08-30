@@ -3,7 +3,7 @@ import { notFound } from "next/navigation";
 
 import { LeagueComingSoon } from "@/components/leagues/league-coming-soon";
 import { LeagueExperience } from "@/components/leagues/league-experience";
-import { getLeagueDirectory, getLeagueExperience } from "@/data/leagues";
+import { getLeagueDirectory, getLeagueExperience, getLeagueTeamCatalog } from "@/data/leagues";
 import { getSession } from "@/lib/auth-session";
 
 export const dynamic = "force-dynamic";
@@ -39,7 +39,8 @@ export default async function LeaguePage(props: LeaguePageProps) {
   if (!league) notFound();
 
   if (league.slug !== "super-lig") {
-    return <LeagueComingSoon league={league} />;
+    const teamCatalog = await getLeagueTeamCatalog(slug);
+    return <LeagueComingSoon league={league} teamCatalog={teamCatalog} />;
   }
 
   const experience = await getLeagueExperience(slug, session?.user.id);

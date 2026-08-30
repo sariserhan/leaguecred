@@ -3,11 +3,12 @@ import type postgres from "postgres";
 import { catalogEntries } from "@/db/catalog-data";
 
 export async function seedExpandedLeagueCatalog(sql: postgres.TransactionSql) {
-  const countryValues = sql(catalogEntries.map((entry) => ({
+  const distinctCountries = [...new Map(catalogEntries.map((entry) => [entry.countryCode, {
     name: entry.country,
     code: entry.countryCode,
     flag_url: entry.flagUrl,
-  })), "name", "code", "flag_url") as postgres.Helper<unknown>;
+  }])).values()];
+  const countryValues = sql(distinctCountries, "name", "code", "flag_url") as postgres.Helper<unknown>;
   const countries = await sql<Array<{ id: string; code: string }>>`
     insert into countries ${countryValues}
     on conflict (code) do update set
@@ -38,11 +39,12 @@ export async function seedExpandedLeagueCatalog(sql: postgres.TransactionSql) {
     "short_name", "region", "logo_url", "enabled", "priority") as postgres.Helper<unknown>;
   const leagues = await sql<Array<{ id: string; provider_external_id: string }>>`
     insert into leagues ${leagueValues}
-    on conflict (slug) do update set
+    on conflict (provider, provider_external_id) do update set
       provider = excluded.provider,
       provider_external_id = excluded.provider_external_id,
       country_id = excluded.country_id,
       name = excluded.name,
+      slug = excluded.slug,
       short_name = excluded.short_name,
       region = excluded.region,
       logo_url = excluded.logo_url,
@@ -52,6 +54,14 @@ export async function seedExpandedLeagueCatalog(sql: postgres.TransactionSql) {
     returning id, provider_external_id
   `;
   const leagueIds = new Map(leagues.map((league) => [league.provider_external_id, league.id]));
+
+  const focusedLeagueIds = sql(catalogEntries.map((entry) => entry.externalId)) as postgres.Helper<unknown>;
+  await sql`
+    update leagues set enabled = false, updated_at = now()
+    where provider = 'api-football'
+      and provider_external_id not in ${focusedLeagueIds}
+      and enabled = true
+  `;
 
   const catalogLeagueIds = sql(leagues.map((league) => league.id)) as postgres.Helper<unknown>;
   await sql`

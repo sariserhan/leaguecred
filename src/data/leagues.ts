@@ -23,6 +23,7 @@ type DirectoryRow = {
   losses: number | null;
   followed_count: number;
   has_experience: boolean;
+  has_team_catalog: boolean;
 };
 
 export async function getLeagueDirectory(userId?: string): Promise<League[]> {
@@ -32,6 +33,11 @@ export async function getLeagueDirectory(userId?: string): Promise<League[]> {
       (select count(*)::int from user_league_records r where r.league_id = l.id and r.settled_picks >= 10) as specialist_count,
       own.wins, own.losses,
       exists(select 1 from matchweeks mw where mw.league_id = l.id) as has_experience,
+      exists(
+        select 1 from league_team_memberships ltm
+        join seasons cs on cs.id = ltm.season_id and cs.is_current = true
+        where ltm.league_id = l.id
+      ) as has_team_catalog,
       (select count(*)::int from league_follows f where f.follower_user_id = ${currentUserId} and f.league_id = l.id) as followed_count
     from leagues l
     join countries c on c.id = l.country_id
@@ -59,10 +65,46 @@ export async function getLeagueDirectory(userId?: string): Promise<League[]> {
       region: row.region,
       specialistCount: row.specialist_count,
       status,
-      action: row.slug === "super-lig" ? "Open league" : "Explore league",
-      available: row.has_experience,
+      action: row.has_experience ? "Open league" : "View teams",
+      available: row.has_experience || row.has_team_catalog,
     };
   });
+}
+
+export type LeagueTeamCatalog = {
+  teams: Array<{ id: string; name: string; shortName: string; logoUrl: string | null }>;
+  isComplete: boolean;
+  sources: string[];
+};
+
+export async function getLeagueTeamCatalog(slug: string): Promise<LeagueTeamCatalog> {
+  const [teams, imports] = await Promise.all([
+    sqlClient<Array<{ id: string; name: string; short_name: string; logo_url: string | null }>>`
+      select distinct t.id, t.name, t.short_name, t.logo_url
+      from teams t
+      join league_team_memberships ltm on ltm.team_id = t.id
+      join leagues l on l.id = ltm.league_id
+      join seasons s on s.id = ltm.season_id and s.is_current = true
+      where l.slug = ${slug} and l.enabled = true
+      order by t.name`,
+    sqlClient<Array<{ provider: string; is_complete: boolean }>>`
+      select distinct lti.provider, lti.is_complete
+      from league_team_imports lti
+      join leagues l on l.id = lti.league_id
+      join seasons s on s.id = lti.season_id and s.is_current = true
+      where l.slug = ${slug} and l.enabled = true`,
+  ]);
+
+  return {
+    teams: teams.map((team) => ({
+      id: team.id,
+      name: team.name,
+      shortName: team.short_name,
+      logoUrl: team.logo_url,
+    })),
+    isComplete: imports.some((entry) => entry.is_complete),
+    sources: imports.map((entry) => entry.provider),
+  };
 }
 
 type LeagueRow = {
