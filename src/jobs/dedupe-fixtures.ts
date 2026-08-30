@@ -49,11 +49,14 @@ async function main() {
   console.info(apply ? "Applying." : "Dry run. Pass --apply to write.");
 
   try {
-    const { merges, withPicks } = planFixtureMerges(await loadFixtures());
+    const { merges, withPicks, ambiguous } = planFixtureMerges(await loadFixtures());
 
     for (const merge of merges) {
       console.info(`${apply ? "DROP" : "WOULD DROP"} ${merge.duplicates.length} copy of ${merge.canonical.label}` +
         ` — keeping ${merge.canonical.provider}, dropping ${merge.duplicates.map((f) => f.provider).join(", ")}`);
+    }
+    for (const group of ambiguous) {
+      console.warn(`NOT A DUPLICATE ${group[0].label}: ${group.length} rows from one provider, so these are different matches.`);
     }
     for (const group of withPicks) {
       console.warn(`HELD BACK ${group[0].label}: a copy carries picks, so a person should move them first.`);
@@ -76,7 +79,7 @@ async function main() {
     }
 
     const dropped = merges.reduce((total, merge) => total + merge.duplicates.length, 0);
-    console.info(`\n${dropped} duplicate fixture(s)${apply ? " removed" : " to remove"}, ${withPicks.length} held back.`);
+    console.info(`\n${dropped} duplicate fixture(s)${apply ? " removed" : " to remove"}, ${withPicks.length} held back, ${ambiguous.length} not duplicates.`);
   } finally {
     await sqlClient.end();
   }

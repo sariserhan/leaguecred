@@ -21,7 +21,7 @@ type LeagueConfig = {
 
 function isoDate(date: Date) { return date.toISOString().slice(0, 10); }
 
-export async function synchronizeFixtures(provider: FixtureProvider, now = new Date()) {
+export async function synchronizeFixtures(provider: FixtureProvider, now = new Date(), leagueSlug?: string) {
   const [run] = await sqlClient<Array<{ id: string }>>`
     insert into api_sync_runs (provider, kind) values (${provider.name}, 'fixtures') returning id`;
   if (!run) throw new Error("Could not start fixture sync run.");
@@ -40,7 +40,7 @@ export async function synchronizeFixtures(provider: FixtureProvider, now = new D
       ? new Map(provider.competitions.map((competition) => [competition.leagueSlug, competition.externalId]))
       : null;
     const configs: LeagueConfig[] = availableConfigs
-      .filter((config) => sourceIds ? sourceIds.has(config.slug) : config.provider === provider.name)
+      .filter((config) => (sourceIds ? sourceIds.has(config.slug) : config.provider === provider.name) && (!leagueSlug || config.slug === leagueSlug))
       .map((config) => ({
         ...config,
         source_external_id: sourceIds?.get(config.slug) ?? config.provider_external_id,

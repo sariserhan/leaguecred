@@ -88,3 +88,28 @@ describe("pickCanonicalFixture", () => {
     expect(chosen.id).toBe("older");
   });
 });
+
+describe("planFixtureMerges guards", () => {
+  it("never merges two rows from the same provider", () => {
+    // Unresolved playoff ties share placeholder teams on one date; they are
+    // different matches, and merging them would delete a real fixture.
+    const { merges, ambiguous } = planFixtureMerges([
+      fixture({ id: "tbd-a", provider: "espn-web", status: "scheduled", homeScore: null, awayScore: null }),
+      fixture({ id: "tbd-b", provider: "espn-web", status: "scheduled", homeScore: null, awayScore: null }),
+    ]);
+
+    expect(merges).toHaveLength(0);
+    expect(ambiguous).toHaveLength(1);
+  });
+
+  it("still merges across providers when one of three shares a provider", () => {
+    const { merges, ambiguous } = planFixtureMerges([
+      fixture({ id: "a", provider: "espn-web" }),
+      fixture({ id: "b", provider: "espn-web" }),
+      fixture({ id: "c", provider: "football-data-uk" }),
+    ]);
+
+    expect(merges).toHaveLength(0);
+    expect(ambiguous).toHaveLength(1);
+  });
+});

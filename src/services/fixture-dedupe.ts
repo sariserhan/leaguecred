@@ -61,9 +61,22 @@ export function planFixtureMerges<F extends DedupeFixture>(fixtures: F[]) {
 
   const merges: FixtureMerge<F>[] = [];
   const withPicks: F[][] = [];
+  const ambiguous: F[][] = [];
 
   for (const group of byMatch.values()) {
     if (group.length < 2) continue;
+
+    // The duplication comes from separate providers each recording the same
+    // match, so two rows from one provider are two different matches that only
+    // look alike — a provider cannot duplicate its own external id. Unresolved
+    // ties do exactly this: several playoff fixtures share placeholder teams on
+    // one date, and merging them would delete real matches.
+    const providers = new Set(group.map((fixture) => fixture.provider));
+    if (providers.size !== group.length) {
+      ambiguous.push(group);
+      continue;
+    }
+
     const canonical = pickCanonicalFixture(group);
     const duplicates = group.filter((fixture) => fixture.id !== canonical.id);
 
@@ -74,5 +87,5 @@ export function planFixtureMerges<F extends DedupeFixture>(fixtures: F[]) {
     merges.push({ canonical, duplicates });
   }
 
-  return { merges, withPicks };
+  return { merges, withPicks, ambiguous };
 }

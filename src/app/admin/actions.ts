@@ -11,6 +11,8 @@ import {
   normalizeAdminMessage,
 } from "@/lib/site-settings";
 import { setFeatureFlag, updateSiteSettings } from "@/services/site-settings";
+import { synchronizeFixtures } from "@/services/fixture-sync";
+import { EspnFixtureProvider } from "@/providers/espn-fixtures";
 
 export type AdminActionResult = { ok: true } | { ok: false; message: string };
 
@@ -54,6 +56,23 @@ export async function saveSiteSettings(
     return { ok: false, message: "The site settings could not be saved. Please try again." };
   }
 
+  revalidatePath("/", "layout");
+  return { ok: true };
+}
+
+export async function refreshLeagueFixtures(leagueSlug: string): Promise<AdminActionResult> {
+  await requireAdmin();
+  const parsed = z.string().min(1).max(120).regex(/^[a-z0-9-]+
+).safeParse(leagueSlug);
+  if (!parsed.success) return { ok: false, message: "That league is invalid." };
+  try {
+    await synchronizeFixtures(new EspnFixtureProvider(), new Date(), parsed.data);
+  } catch (error) {
+    console.error("Failed to refresh league fixtures.", error);
+    return { ok: false, message: "The league could not be refreshed." };
+  }
+  revalidatePath(`/leagues/${parsed.data}`, "page");
+  revalidatePath(`/leagues/${parsed.data}/standings`, "page");
   revalidatePath("/", "layout");
   return { ok: true };
 }

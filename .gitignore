@@ -40,3 +40,7 @@ yarn-error.log*
 # typescript
 *.tsbuildinfo
 next-env.d.ts
+
+# Scratch helpers for running jobs against a remote database
+.prod-*.mjs
+.migrate-check.ts
