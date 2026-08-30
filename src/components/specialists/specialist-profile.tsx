@@ -3,13 +3,14 @@
 import Link from "next/link";
 import { useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
-import { CheckIcon, FlameIcon, TrophyIcon, UserPlusIcon, UsersRoundIcon } from "lucide-react";
+import { CheckIcon, FlameIcon, Share2Icon, TrophyIcon, UserPlusIcon, UsersRoundIcon } from "lucide-react";
 
 import { followSpecialist } from "@/app/leagues/actions";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import type { SpecialistProfileData } from "@/data/specialists";
+import { PredictionHistory } from "@/components/specialists/prediction-history";
 
 function ResultBadge({ result }: { result: "win" | "loss" | "void" | "pending" }) {
   const variants = { win: "default", loss: "destructive", void: "outline", pending: "outline" } as const;
@@ -31,6 +32,7 @@ export function SpecialistProfile({ data }: { data: SpecialistProfileData }) {
   const [pendingLeagueId, setPendingLeagueId] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [successLeague, setSuccessLeague] = useState<string | null>(null);
+  const [shareStatus, setShareStatus] = useState("");
   const [pending, startTransition] = useTransition();
   const accuracy = data.totals.settledPicks === 0 ? 0 : (data.totals.wins / data.totals.settledPicks) * 100;
 
@@ -52,14 +54,17 @@ export function SpecialistProfile({ data }: { data: SpecialistProfileData }) {
       setPendingLeagueId(null);
     });
   }
+  async function shareProfile() { const url = window.location.href; if (navigator.share) await navigator.share({ title: `${data.specialist.name} on LeagueCred`, url }); else await navigator.clipboard.writeText(url); setShareStatus("Link copied"); }
 
   return (
     <div className="page-shell py-8 sm:py-12">
       {data.viewer.isSelf ? <div className="mb-7"><h1 className="font-heading text-[clamp(3.5rem,7vw,6.5rem)] leading-[0.88] font-extrabold uppercase">Your football dashboard.</h1><p className="mt-4 max-w-2xl text-lg text-muted-foreground">Your independent records, followed leagues, and recent calls in one place.</p><div className="mt-6 flex flex-col gap-3 sm:flex-row"><Link href="/leagues?intent=prove" className="inline-flex h-11 items-center justify-center bg-primary px-5 font-semibold">Make a Weekly Lock</Link><Link href="/specialists" className="inline-flex h-11 items-center justify-center bg-foreground px-5 font-semibold text-background">Find specialists</Link></div></div> : null}
+      {data.viewer.isSelf ? <section className="mb-7 grid border-y md:grid-cols-3" aria-label="Dashboard priorities"><div className="border-b p-5 md:border-r md:border-b-0"><span className="text-xs font-bold uppercase text-muted-foreground">Needs attention</span><strong className="mt-2 block font-heading text-3xl text-primary">{data.viewer.locksDue} locks due</strong><Link href="/leagues?intent=prove" className="mt-2 inline-block text-sm font-semibold underline">Review leagues</Link></div><div className="border-b p-5 md:border-r md:border-b-0"><span className="text-xs font-bold uppercase text-muted-foreground">Active this week</span><strong className="mt-2 block font-heading text-3xl">Weekly Slip</strong><Link href="/slip" className="mt-2 inline-block text-sm font-semibold underline">Open active calls</Link></div><div className="p-5"><span className="text-xs font-bold uppercase text-muted-foreground">Results</span><strong className="mt-2 block font-heading text-3xl">{data.totals.wins}–{data.totals.losses}</strong><a href="#prediction-history-heading" className="mt-2 inline-block text-sm font-semibold underline">View history</a></div></section> : null}
       <header className="border-b border-foreground bg-foreground px-5 py-8 text-background sm:px-8 sm:py-10">
         <p className="font-semibold text-primary">{data.viewer.isSelf ? "Your LeagueCred identity" : data.leagues.some((league) => league.followable) ? "Public specialist profile" : "Public profile"}</p>
-        <div className="mt-4 flex flex-wrap items-center gap-5"><span className="flex size-20 items-center justify-center rounded-full bg-background font-heading text-3xl font-bold text-foreground">{data.specialist.initials}</span><div><h1 className="font-heading text-5xl leading-none font-extrabold uppercase sm:text-7xl">{data.specialist.name}</h1><p className="mt-2 flex items-center gap-2 text-background/75"><UsersRoundIcon aria-hidden="true" className="size-4 text-primary" />{data.specialist.followers} follower{data.specialist.followers === 1 ? "" : "s"} · Member since {new Intl.DateTimeFormat("en", { month: "long", year: "numeric", timeZone: "UTC" }).format(new Date(data.specialist.memberSince))}</p></div></div>
+        <div className="mt-4 flex flex-wrap items-center gap-5"><span className="flex size-20 items-center justify-center rounded-full bg-background font-heading text-3xl font-bold text-foreground">{data.specialist.initials}</span><div className="min-w-0 flex-1"><h1 className="font-heading text-5xl leading-none font-extrabold uppercase sm:text-7xl">{data.specialist.name}</h1><p className="mt-2 flex items-center gap-2 text-background/75"><UsersRoundIcon aria-hidden="true" className="size-4 text-primary" />{data.specialist.followers} follower{data.specialist.followers === 1 ? "" : "s"} · Member since {new Intl.DateTimeFormat("en", { month: "long", year: "numeric", timeZone: "UTC" }).format(new Date(data.specialist.memberSince))}</p></div><Button onClick={shareProfile}><Share2Icon data-icon="inline-start" />Share profile</Button></div>
       </header>
+      <span className="sr-only" aria-live="polite">{shareStatus}</span>
 
       <section className="grid border-x border-b sm:grid-cols-2 xl:grid-cols-4" aria-label="Specialist summary">
         {(data.viewer.isSelf ? [["Leagues proven", String(data.leagues.length)], ["Leagues followed", String(data.followedLeagues.length)], ["Locks due", String(data.viewer.locksDue)], ["Career accuracy", `${accuracy.toFixed(1)}%`]] : [["Career accuracy", `${accuracy.toFixed(1)}%`], ["Career record", `${data.totals.wins}–${data.totals.losses}`], ["Evidence", `${data.totals.settledPicks} locks`], ["Best active streak", `${data.totals.bestWinStreak}W`]]).map(([label, value]) => <div key={label} className="border-b p-5 last:border-b-0 sm:border-r sm:last:border-r-0 xl:border-b-0"><strong className="block font-heading text-4xl leading-none">{value}</strong><span className="mt-1 block text-sm text-muted-foreground">{label}</span></div>)}
@@ -145,6 +150,7 @@ export function SpecialistProfile({ data }: { data: SpecialistProfileData }) {
           )}
         </section>
       </div>
+      <PredictionHistory data={data} />
     </div>
   );
 }

@@ -41,6 +41,7 @@ import { Spinner } from "@/components/ui/spinner";
 import { ToggleGroup, ToggleGroupItem } from "@/components/ui/toggle-group";
 import { LeagueLeaderboard } from "@/components/leagues/league-leaderboard";
 import { LockCountdown } from "@/components/lock-countdown";
+import { LocalTime } from "@/components/local-time";
 import type { LeagueExperienceData, PastMatchweek } from "@/data/leagues";
 import { cn } from "@/lib/utils";
 
@@ -242,6 +243,8 @@ export function LeagueExperience({
         </div>
       </section>
 
+      <nav className="sticky top-0 z-20 border-b bg-background/95 backdrop-blur" aria-label="League sections"><div className="page-shell flex overflow-x-auto"><a href="#fixtures" className="shrink-0 border-b-2 border-primary px-4 py-3 text-sm font-bold">Fixtures</a><a href="#specialists" className="shrink-0 px-4 py-3 text-sm font-bold">Specialists</a><a href="#leaderboard" className="shrink-0 px-4 py-3 text-sm font-bold">Leaderboard</a><a href="#history" className="shrink-0 px-4 py-3 text-sm font-bold">History</a><span className="ml-auto hidden items-center text-xs text-muted-foreground lg:flex">Deadline:&nbsp;<LocalTime value={data.matchweek.lockAt} relative /></span></div></nav>
+
       <div className="page-shell py-6 sm:py-8">
         {error ? <Alert variant="destructive" className="mb-5"><AlertDescription>{error}</AlertDescription></Alert> : null}
         {success ? <Alert className="mb-5 rounded-none border-primary bg-primary"><CheckIcon /><AlertTitle>Done — your next step is clear</AlertTitle><AlertDescription>{success} <Link href="/slip" className="font-semibold underline">Open your Weekly Slip</Link></AlertDescription></Alert> : null}
@@ -259,7 +262,7 @@ export function LeagueExperience({
 
         <div className="mt-6 grid gap-7 xl:grid-cols-[1fr_390px]">
           <div className="space-y-7">
-            <section className="border" aria-labelledby="fixtures-heading">
+            <section id="fixtures" className="scroll-mt-16 border" aria-labelledby="fixtures-heading">
             <div className="border-b px-4 py-4 sm:px-5"><h2 id="fixtures-heading" className="font-heading text-2xl leading-none font-bold uppercase">Select the team you believe will win</h2></div>
             <div>
               {[...fixturesByDate].map(([date, fixtures]) => (
@@ -300,7 +303,7 @@ export function LeagueExperience({
             </div>
             </section>
 
-            <PastMatchweekHistory leagueSlug={data.league.slug} matchweeks={data.pastMatchweeks} />
+            <div id="history" className="scroll-mt-16"><PastMatchweekHistory leagueSlug={data.league.slug} matchweeks={data.pastMatchweeks} /></div>
           </div>
 
           <Card id="specialists" className="rounded-sm">
@@ -328,7 +331,7 @@ export function LeagueExperience({
           </Card>
         </div>
 
-        <section className={leaderboardEnabled ? "mt-7 grid gap-7 lg:grid-cols-2" : "mt-7 grid gap-7"}>
+        <section id="leaderboard" className={leaderboardEnabled ? "mt-7 grid scroll-mt-16 gap-7 lg:grid-cols-2" : "mt-7 grid scroll-mt-16 gap-7"}>
           <Card><CardHeader><CardTitle className="font-heading text-2xl font-bold uppercase">Your {data.league.name} record</CardTitle><CardDescription>Only settled independent Weekly Locks count here.</CardDescription></CardHeader><CardContent className="grid grid-cols-3 gap-3"><div><strong className="block text-2xl">{data.viewer.wins}</strong><span className="text-sm text-muted-foreground">Wins</span></div><div><strong className="block text-2xl">{data.viewer.losses}</strong><span className="text-sm text-muted-foreground">Losses</span></div><div><strong className="block text-2xl">{decisions}</strong><span className="text-sm text-muted-foreground">Decisions</span></div></CardContent></Card>
           {leaderboardEnabled ? <LeagueLeaderboard leagueName={data.league.name} entries={data.leaderboard} /> : null}
         </section>

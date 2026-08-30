@@ -68,6 +68,7 @@ export function SiteHeader({ isAdmin = false }: { isAdmin?: boolean }) {
                 <DropdownMenuLabel className="px-2 py-2">{session.user.name}</DropdownMenuLabel>
                 <DropdownMenuItem render={<Link href={`/specialists/${session.user.id}`} />} className="rounded-none px-2 py-2.5"><CircleUserRoundIcon />My dashboard</DropdownMenuItem>
                 <DropdownMenuItem render={<Link href="/slip" />} className="rounded-none px-2 py-2.5"><TrophyIcon />Weekly Slip</DropdownMenuItem>
+                <DropdownMenuItem render={<Link href="/onboarding" />} className="rounded-none px-2 py-2.5"><UsersRoundIcon />Set up leagues</DropdownMenuItem>
                 {isAdmin ? <DropdownMenuItem render={<Link href="/admin" />} className="rounded-none px-2 py-2.5"><ShieldCheckIcon />Admin</DropdownMenuItem> : null}
               </DropdownMenuGroup>
               <DropdownMenuSeparator />
