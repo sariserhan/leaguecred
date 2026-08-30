@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useCallback, useState, useTransition } from "react";
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 import { Menu } from "@base-ui/react/menu";
@@ -10,7 +10,8 @@ import { ChevronDownIcon, ShieldCheckIcon } from "lucide-react";
 import { Button, buttonVariants } from "@/components/ui/button";
 import { authClient } from "@/lib/auth-client";
 import { cn } from "@/lib/utils";
-import type { TeamNavLeague } from "@/data/teams";
+import { loadLeagueTeams } from "@/app/actions";
+import type { LeagueNavOption, TeamNavTeam } from "@/data/teams";
 
 const navItems = [
   { href: "/leagues", label: "Leagues" },
@@ -20,14 +21,26 @@ const navItems = [
 
 export function SiteHeader({
   isAdmin = false,
-  teams,
+  leagues,
 }: {
   isAdmin?: boolean;
-  teams: TeamNavLeague[];
+  leagues: LeagueNavOption[];
 }) {
   const pathname = usePathname();
   const router = useRouter();
-  const [selectedLeague, setSelectedLeague] = useState<TeamNavLeague | null>(null);
+  const [selectedLeague, setSelectedLeague] = useState<LeagueNavOption | null>(null);
+  // Clubs arrive from the server the first time a league is opened, then stay.
+  const [teamsByLeague, setTeamsByLeague] = useState<Record<string, TeamNavTeam[]>>({});
+  const [isLoadingTeams, startLoadingTeams] = useTransition();
+
+  const openLeague = useCallback((league: LeagueNavOption) => {
+    setSelectedLeague(league);
+    if (teamsByLeague[league.slug]) return;
+    startLoadingTeams(async () => {
+      const loaded = await loadLeagueTeams(league.slug);
+      setTeamsByLeague((current) => ({ ...current, [league.slug]: loaded }));
+    });
+  }, [teamsByLeague]);
   const { data: session, isPending } = authClient.useSession();
 
   async function signOut() {
@@ -99,7 +112,7 @@ export function SiteHeader({
                         <span className="truncate text-sm font-bold">{selectedLeague.name}</span>
                       </div>
                       <div className="max-h-80 overflow-y-auto py-1">
-                        {selectedLeague.teams.map((team) => (
+                        {(teamsByLeague[selectedLeague.slug] ?? []).map((team) => (
                           <Menu.LinkItem
                             key={team.slug}
                             href={`/teams/${team.slug}`}
@@ -109,15 +122,22 @@ export function SiteHeader({
                             <span className="truncate">{team.name}</span>
                           </Menu.LinkItem>
                         ))}
+                        {!teamsByLeague[selectedLeague.slug] ? (
+                          <p className="px-3 py-2 text-sm text-muted-foreground" role="status">
+                            {isLoadingTeams ? "Loading clubs\u2026" : "No clubs are cataloged yet."}
+                          </p>
+                        ) : teamsByLeague[selectedLeague.slug].length === 0 ? (
+                          <p className="px-3 py-2 text-sm text-muted-foreground">No clubs are cataloged yet.</p>
+                        ) : null}
                       </div>
                     </>
                   ) : (
                     <div className="max-h-96 overflow-y-auto py-1">
-                      {teams.map((league) => (
+                      {leagues.map((league) => (
                         <Menu.Item
                           key={league.slug}
                           closeOnClick={false}
-                          onClick={() => setSelectedLeague(league)}
+                          onClick={() => openLeague(league)}
                           className="cursor-pointer flex items-center gap-3 px-3 py-2 text-sm font-medium outline-none transition-colors data-highlighted:bg-muted data-highlighted:text-foreground"
                         >
                           {league.logoUrl ? <Image src={league.logoUrl} alt="" width={32} height={32} className="size-8 object-contain" /> : <span className="flex size-8 items-center justify-center bg-muted text-xs font-bold">{league.name.slice(0, 2).toUpperCase()}</span>}

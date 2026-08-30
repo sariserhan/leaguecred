@@ -27,7 +27,7 @@ export type TeamFixture = {
 };
 
 export type TeamNavTeam = { slug: string; name: string; logoUrl: string | null };
-export type TeamNavLeague = { slug: string; name: string; country: string | null; logoUrl: string | null; teams: TeamNavTeam[] };
+export type LeagueNavOption = { slug: string; name: string; country: string | null; logoUrl: string | null };
 
 type FixtureRow = {
   id: string;
@@ -122,23 +122,34 @@ export const getTeamProfile = cache(async function getTeamProfile(teamSlug: stri
   };
 });
 
-export const getTeamNavOptions = cache(async function getTeamNavOptions(): Promise<TeamNavLeague[]> {
-  const rows = await sqlClient<Array<{ league_slug: string; league_name: string; league_country: string | null; league_logo_url: string | null; team_slug: string; team_name: string; team_logo_url: string | null }>>`
-    select l.slug as league_slug, l.name as league_name, c.name as league_country, l.logo_url as league_logo_url,
-      t.slug as team_slug, t.name as team_name, t.logo_url as team_logo_url
+/**
+ * The header menu is built in the root layout, so this runs on every route.
+ * It deliberately returns leagues only — there are hundreds of teams, and
+ * inlining them all into every page is what {@link getLeagueNavTeams} avoids.
+ */
+export const getLeagueNavOptions = cache(async function getLeagueNavOptions(): Promise<LeagueNavOption[]> {
+  return sqlClient<LeagueNavOption[]>`
+    select l.slug, l.name, c.name as country, l.logo_url as "logoUrl"
     from leagues l
     join countries c on c.id = l.country_id
-    join league_team_memberships membership on membership.league_id = l.id
-    join seasons s on s.id = membership.season_id and s.is_current = true
-    join teams t on t.id = membership.team_id
     where l.enabled = true
-    order by l.priority, l.name, t.name`;
+      and exists (
+        select 1 from league_team_memberships membership
+        join seasons s on s.id = membership.season_id and s.is_current = true
+        where membership.league_id = l.id)
+    order by l.priority, l.name`;
+});
 
-  const leagues = new Map<string, TeamNavLeague>();
-  for (const row of rows) {
-    const league = leagues.get(row.league_slug) ?? { slug: row.league_slug, name: row.league_name, country: row.league_country, logoUrl: row.league_logo_url, teams: [] };
-    league.teams.push({ slug: row.team_slug, name: row.team_name, logoUrl: row.team_logo_url });
-    leagues.set(row.league_slug, league);
-  }
-  return [...leagues.values()];
+/** The clubs in one league's current season, fetched when the menu opens it. */
+export const getLeagueNavTeams = cache(async function getLeagueNavTeams(
+  leagueSlug: string,
+): Promise<TeamNavTeam[]> {
+  return sqlClient<TeamNavTeam[]>`
+    select t.slug, t.name, t.logo_url as "logoUrl"
+    from teams t
+    join league_team_memberships membership on membership.team_id = t.id
+    join seasons s on s.id = membership.season_id and s.is_current = true
+    join leagues l on l.id = membership.league_id
+    where l.slug = ${leagueSlug} and l.enabled = true
+    order by t.name`;
 });
