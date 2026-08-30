@@ -43,6 +43,13 @@
       "when": 1788083760225,
       "tag": "0005_nebulous_virginia_dare",
       "breakpoints": true
+    },
+    {
+      "idx": 6,
+      "version": "7",
+      "when": 1788115873971,
+      "tag": "0006_light_sugar_man",
+      "breakpoints": true
     }
   ]
 }

@@ -33,6 +33,8 @@ export const settlementEventTypeEnum = pgEnum("settlement_event_type", [
   "initial_settlement", "reversal", "correction",
 ]);
 export const syncStatusEnum = pgEnum("sync_status", ["running", "succeeded", "failed"]);
+export const userRoleEnum = pgEnum("user_role", ["member", "admin"]);
+export const bannerToneEnum = pgEnum("banner_tone", ["info", "warning", "critical"]);
 
 // Better Auth core tables. Property names intentionally match its Drizzle adapter.
 export const user = pgTable("user", {
@@ -42,6 +44,7 @@ export const user = pgTable("user", {
   emailVerified: boolean("email_verified").default(false).notNull(),
   image: text("image"),
   username: text("username"),
+  role: userRoleEnum("role").default("member").notNull(),
   createdAt,
   updatedAt,
 }, (table) => [
@@ -383,6 +386,33 @@ export const apiSyncRuns = pgTable("api_sync_runs", {
   error: text("error"),
 }, (table) => [index("api_sync_runs_provider_started_idx").on(table.provider, table.startedAt)]);
 
+// Singleton row holding the operator-controlled presentation state of the site.
+export const appSettings = pgTable("app_settings", {
+  id: text("id").primaryKey().default("global"),
+  maintenanceEnabled: boolean("maintenance_enabled").default(false).notNull(),
+  maintenanceMessage: text("maintenance_message"),
+  bannerEnabled: boolean("banner_enabled").default(false).notNull(),
+  bannerMessage: text("banner_message"),
+  bannerTone: bannerToneEnum("banner_tone").default("info").notNull(),
+  updatedByUserId: text("updated_by_user_id").references(() => user.id, { onDelete: "set null" }),
+  createdAt,
+  updatedAt,
+}, (table) => [
+  check("app_settings_singleton_check", sql`${table.id} = 'global'`),
+]);
+
+export const featureFlags = pgTable("feature_flags", {
+  key: text("key").primaryKey(),
+  label: text("label").notNull(),
+  description: text("description"),
+  enabled: boolean("enabled").default(false).notNull(),
+  updatedByUserId: text("updated_by_user_id").references(() => user.id, { onDelete: "set null" }),
+  createdAt,
+  updatedAt,
+});
+
 export type PickResult = (typeof pickResultEnum.enumValues)[number];
 export type ParticipationMode = (typeof participationModeEnum.enumValues)[number];
 export type FixtureStatus = (typeof fixtureStatusEnum.enumValues)[number];
+export type UserRole = (typeof userRoleEnum.enumValues)[number];
+export type BannerTone = (typeof bannerToneEnum.enumValues)[number];

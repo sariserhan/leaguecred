@@ -17,12 +17,16 @@ The project-specific product source of truth is spec.md. AI_WEB_APP_DEVELOPMENT_
 - protected fixture-sync and settlement route handlers for schedulers
 - immutable settlement events with a separate active-effect projection
 - static marketing UI and dynamic database-backed league routes
+- an admin role with a 404-guarded dashboard for site controls and diagnostics
+- database-backed maintenance mode, site banner, and feature flags
 
 ## Repository structure
 
 ~~~text
 src/app/                    Pages, server actions, auth, and protected job routes
+src/app/admin/              Admin dashboard page and its server actions
 src/components/             Product UI and shadcn source components
+src/components/admin/       Site controls, feature flags, and diagnostics panels
 src/data/                   Database-backed page queries
 src/db/                     Schema, migration runner, seed, and integration tests
 src/providers/              Normalized football provider interface and API-Football
@@ -53,6 +57,7 @@ The supported versions should remain aligned with package.json and the lockfile.
 | pnpm db:generate | Generates a migration after a schema change. |
 | pnpm fixtures:sync | Synchronizes recent results and the next 14 days from the free fixture sources. |
 | pnpm settle | Settles every eligible pending independent pick. |
+| pnpm admin:grant EMAIL | Grants the admin role; add --revoke to remove it. |
 | pnpm test | Runs deterministic unit tests. |
 | pnpm test:integration | Migrates, seeds, and tests isolated PostgreSQL on port 54330. |
 | pnpm check | Runs lint, typecheck, unit tests, and production build. |
@@ -100,6 +105,7 @@ The active visual system is:
 - thin dark rules and minimal radius
 - open tables and lists instead of default card grids
 - no odds, payout language, casino styling, or guaranteed-win claims
+- one optional admin banner strip above the header, in info, warning, or critical tone
 
 New screens should extend this system and be checked against the existing concepts at desktop and mobile sizes.
 
@@ -118,6 +124,10 @@ Browser QA should cover two accounts: one creates and reloads an independent loc
 - Corrections require the provider fixture to be synchronized first, followed by `PATCH /api/jobs/settlement/:pickId` with a non-empty JSON `reason`.
 - Correction events are append-only. Never edit or delete settlement history directly.
 - Use a managed PostgreSQL service in production and run `pnpm db:migrate` during deployment.
+- Bootstrap the first administrator with `pnpm admin:grant you@example.com` after the account exists. There is deliberately no in-product way to promote an account.
+- `/admin` controls maintenance mode, the site banner, and feature flags. Every change applies to all visitors on their next request.
+- Maintenance mode redirects members and signed-out visitors to `/maintenance`. Admins keep browsing the real site, otherwise maintenance could only be switched off from the database.
+- Feature flags are defined in `src/lib/site-settings.ts` and stored in `feature_flags`. A flag with no stored row falls back to the default in its definition, so a fresh database needs no seeding.
 
 ## Operational constraints
 
@@ -127,3 +137,7 @@ Browser QA should cover two accounts: one creates and reloads an independent loc
 - Lock, follow, settlement, and correction state changes run in database transactions.
 - Provider data is synchronized server-side rather than fetched during page requests.
 - No interface or ranking should imply certainty, guaranteed wins, betting odds, or profit optimization.
+- `/admin` answers with a 404 rather than a 403 so it never confirms its own existence to a member.
+- The admin role is read from the database on every request, so revoking it takes effect immediately rather than at the next sign-in.
+- Only flags defined in the application can be toggled; a stored row without a definition is shown as undefined and is read-only.
+- Reading site settings fails open. A database problem leaves the banner hidden and maintenance off rather than taking the site down.

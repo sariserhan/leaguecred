@@ -15,6 +15,8 @@ The repository contains a working, responsive Prove-or-Follow application with:
 - a focused 25-competition catalog with league and team badges
 - API-Football behind a provider abstraction with frozen matchweek eligibility
 - idempotent settlement and an append-only correction ledger
+- an admin dashboard for maintenance mode, a site banner, and feature flags
+- admin diagnostics for fixture sync runs and the settlement correction ledger
 - database constraints, disposable PostgreSQL integration tests, and browser QA
 
 The product intentionally ranks league-specific accuracy and confidence-adjusted accuracy. It does not optimize odds, stake size, or expected profit.
@@ -49,7 +51,10 @@ The integration command uses the isolated `postgres-test` Docker service on port
 pnpm db:seed:catalog
 pnpm fixtures:sync
 pnpm settle
+pnpm admin:grant you@example.com
 ~~~
+
+`pnpm admin:grant` is the only way to create the first administrator; add `--revoke` to remove the role. Administrators reach `/admin` to switch maintenance mode on, publish a site banner, toggle feature flags, and review recent sync runs and settlement corrections. The route answers with a 404 for everyone else, so it never confirms its own existence.
 
 The catalog seed idempotently loads the 25 competitions currently supported by the product, including the major European domestic leagues and UEFA competitions, selected leagues in the Americas and Middle East, and Copa Libertadores. It seeds league metadata from API-Football and 290 team records with badges from TheSportsDB. The 298 league/team memberships are deliberately marked partial because TheSportsDB's free league endpoint is capped and cup membership is inferred from a limited event sample; the UI communicates that status rather than presenting the lists as complete rosters.
 

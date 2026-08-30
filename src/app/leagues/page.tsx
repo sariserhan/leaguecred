@@ -3,6 +3,7 @@ import type { Metadata } from "next";
 import { LeagueExplorer } from "@/components/leagues/league-explorer";
 import { getLeagueDirectory } from "@/data/leagues";
 import { getSession } from "@/lib/auth-session";
+import { enforceMaintenanceGate } from "@/lib/maintenance";
 
 export const dynamic = "force-dynamic";
 
@@ -13,6 +14,8 @@ export const metadata: Metadata = {
 };
 
 export default async function LeaguesPage() {
+  await enforceMaintenanceGate();
+
   const session = await getSession();
   const leagues = await getLeagueDirectory(session?.user.id);
 

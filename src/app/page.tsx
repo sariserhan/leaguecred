@@ -12,6 +12,7 @@ import {
 
 import { ProductPreview } from "@/components/home/product-preview";
 import { buttonVariants } from "@/components/ui/button";
+import { enforceMaintenanceGate } from "@/lib/maintenance";
 
 const steps = [
   {
@@ -98,7 +99,9 @@ const returnedCalls = [
   },
 ] as const;
 
-export default function HomePage() {
+export default async function HomePage() {
+  await enforceMaintenanceGate();
+
   return (
     <>
       <section className="page-shell grid min-h-[650px] items-center gap-12 py-16 lg:grid-cols-[0.82fr_1.18fr] lg:py-8">

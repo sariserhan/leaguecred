@@ -2,6 +2,7 @@
 
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
+import { ShieldCheckIcon } from "lucide-react";
 
 import { Button, buttonVariants } from "@/components/ui/button";
 import { authClient } from "@/lib/auth-client";
@@ -13,7 +14,7 @@ const navItems = [
   { href: "/#how-it-works", label: "How it works" },
 ] as const;
 
-export function SiteHeader() {
+export function SiteHeader({ isAdmin = false }: { isAdmin?: boolean }) {
   const pathname = usePathname();
   const router = useRouter();
   const { data: session, isPending } = authClient.useSession();
@@ -61,19 +62,27 @@ export function SiteHeader() {
           })}
         </nav>
 
-        {session ? (
-          <Button variant="outline" size="lg" onClick={signOut}>
-            Sign out · {session.user.name.split(" ")[0]}
-          </Button>
-        ) : (
-          <Link
-            href="/auth"
-            aria-disabled={isPending}
-            className={buttonVariants({ variant: "outline", size: "lg" })}
-          >
-            Sign in
-          </Link>
-        )}
+        <div className="flex items-center gap-2">
+          {isAdmin ? (
+            <Link href="/admin" className={buttonVariants({ variant: "ghost", size: "lg" })}>
+              <ShieldCheckIcon data-icon="inline-start" />
+              Admin
+            </Link>
+          ) : null}
+          {session ? (
+            <Button variant="outline" size="lg" onClick={signOut}>
+              Sign out · {session.user.name.split(" ")[0]}
+            </Button>
+          ) : (
+            <Link
+              href="/auth"
+              aria-disabled={isPending}
+              className={buttonVariants({ variant: "outline", size: "lg" })}
+            >
+              Sign in
+            </Link>
+          )}
+        </div>
       </div>
     </header>
   );

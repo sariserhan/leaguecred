@@ -7,8 +7,8 @@ None.
 ## Next
 
 - [ ] Add production hosting, managed PostgreSQL, and scheduled jobs
-- [ ] Add admin diagnostics for fixture sync runs and settlement corrections
-- [x] Add current-season and career leaderboard views
+- [ ] Let an admin promote another admin from the dashboard
+- [ ] Add an audit trail for admin setting and flag changes
 
 ## Blocked
 
@@ -37,3 +37,8 @@ None.
 - [x] Add idempotent settlement and an append-only correction ledger
 - [x] Add isolated Dockerized PostgreSQL integration tests
 - [x] Verify the two-user Prove-or-Follow flow in a real browser
+- [x] Add current-season and career leaderboard views
+- [x] Add an admin role, dashboard, and 404-guarded admin route
+- [x] Add admin-controlled maintenance mode and site banner
+- [x] Add database-backed feature flags for the leaderboard and team catalog
+- [x] Add admin diagnostics for fixture sync runs and settlement corrections

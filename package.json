@@ -23,6 +23,7 @@
     "fixtures:sync": "tsx src/jobs/sync-fixtures.ts",
     "teams:logos": "tsx src/jobs/sync-team-logos.ts",
     "settle": "tsx src/jobs/settle-picks.ts",
+    "admin:grant": "tsx src/jobs/grant-admin.ts",
     "check": "pnpm lint && pnpm typecheck && pnpm test && pnpm build",
     "check:full": "pnpm check && pnpm test:integration"
   },
