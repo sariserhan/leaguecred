@@ -100,12 +100,12 @@ export default async function HomePage() {
       <section className="page-shell grid min-h-[650px] items-center gap-12 py-16 lg:grid-cols-[0.82fr_1.18fr] lg:py-8">
         <div className="flex flex-col items-start gap-8">
           <h1 className="display-title max-w-[760px] normal-case">
-            Not 10 guesses. One near-certain winner.
+            You know one league. Someone else knows the rest.
           </h1>
           <p className="max-w-xl text-lg leading-8 text-muted-foreground sm:text-xl">
-            We are not asking which teams might win across a list of games. Give us
-            one team you believe will win with near-total confidence from the league
-            you know best—then receive someone else&apos;s strongest call from theirs.
+            Give one call from the league you actually watch—the Süper Lig, say. Get one
+            back from someone who watches La Liga every week. One call each, every week,
+            permanently on the record.
           </p>
           <div className="flex flex-col gap-3 sm:flex-row">
             <Link
@@ -171,7 +171,7 @@ export default async function HomePage() {
         <div className="grid overflow-hidden border lg:grid-cols-2">
           <div className="bg-foreground p-7 text-background sm:p-10 lg:p-12">
             <h2 className="font-heading text-5xl leading-none font-extrabold uppercase sm:text-6xl">
-              You know your league better than anyone.
+              The table does not know what you know.
             </h2>
             <p className="mt-6 max-w-xl text-lg leading-8 text-background/75">
               The table cannot tell the whole story. Fans who live with a league know

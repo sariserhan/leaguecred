@@ -53,3 +53,4 @@ None.
 - [x] Merge the duplicate profile routes into /specialists
 - [x] Apply database migrations during deployment
 - [x] Trust the apex and www hosts as authentication origins
+- [x] Lead the homepage with the exchange instead of the one-pick rule
