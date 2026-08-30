@@ -45,11 +45,14 @@ The integration command uses the isolated `postgres-test` Docker service on port
 ## Operations
 
 ~~~bash
+pnpm db:seed:catalog
 pnpm fixtures:sync
 pnpm settle
 ~~~
 
-Fixture synchronization requires `API_FOOTBALL_KEY`. HTTP schedulers can call `POST /api/jobs/fixtures` and `POST /api/jobs/settlement` with `Authorization: Bearer $CRON_SECRET`.
+The catalog seed idempotently loads the prioritized 2026 domestic league directory and API-Football league logos. Fixture synchronization requires `API_FOOTBALL_KEY`; it also upserts team names and logos from each returned fixture. API-Football's free plan does not expose current-season bulk team membership, so do not treat an older season's `/teams` response as the current roster.
+
+HTTP schedulers can call `POST /api/jobs/fixtures` and `POST /api/jobs/settlement` with `Authorization: Bearer $CRON_SECRET`.
 
 To apply a provider score correction after settlement, first synchronize the corrected fixture and then call:
 

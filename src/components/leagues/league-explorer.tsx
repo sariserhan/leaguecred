@@ -1,6 +1,7 @@
 "use client";
 
 import { useMemo, useState } from "react";
+import Image from "next/image";
 import Link from "next/link";
 import {
   ArrowRightIcon,
@@ -100,7 +101,20 @@ export function LeagueExplorer({ leagues }: { leagues: League[] }) {
                     </span>
                     <span>{league.country}</span>
                   </span>
-                  <strong>{league.name}</strong>
+                  <strong className="flex items-center gap-3">
+                    {league.logoUrl ? (
+                      <span className="flex size-10 shrink-0 items-center justify-center rounded-sm bg-white p-1">
+                        <Image
+                          src={league.logoUrl}
+                          alt=""
+                          width={32}
+                          height={32}
+                          className="size-8 object-contain"
+                        />
+                      </span>
+                    ) : null}
+                    <span>{league.name}</span>
+                  </strong>
                   <span className="flex items-center gap-2 text-sm text-muted-foreground">
                     <UsersRoundIcon aria-hidden="true" className="size-4" />
                     {league.specialistCount} ranked specialists

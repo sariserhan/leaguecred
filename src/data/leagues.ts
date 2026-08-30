@@ -4,7 +4,9 @@ import { sqlClient } from "@/db";
 import type { League, Region } from "@/lib/league-data";
 
 const flags: Record<string, string> = {
-  TR: "🇹🇷", GB: "🏴", CA: "🇨🇦", IT: "🇮🇹", MX: "🇲🇽", JP: "🇯🇵",
+  AR: "🇦🇷", BR: "🇧🇷", CA: "🇨🇦", DE: "🇩🇪", ES: "🇪🇸", GB: "🏴",
+  GR: "🇬🇷", IT: "🇮🇹", JP: "🇯🇵", MX: "🇲🇽", NL: "🇳🇱", PT: "🇵🇹",
+  TR: "🇹🇷", US: "🇺🇸",
 };
 
 type DirectoryRow = {
@@ -13,6 +15,7 @@ type DirectoryRow = {
   country_code: string;
   name: string;
   short_name: string;
+  logo_url: string | null;
   region: Region;
   specialist_count: number;
   wins: number | null;
@@ -23,7 +26,7 @@ type DirectoryRow = {
 export async function getLeagueDirectory(userId?: string): Promise<League[]> {
   const currentUserId = userId ?? "";
   const rows = await sqlClient<DirectoryRow[]>`
-    select l.slug, c.name as country, c.code as country_code, l.name, l.short_name, l.region,
+    select l.slug, c.name as country, c.code as country_code, l.name, l.short_name, l.logo_url, l.region,
       (select count(*)::int from user_league_records r where r.league_id = l.id and r.settled_picks >= 10) as specialist_count,
       own.wins, own.losses,
       (select count(*)::int from league_follows f where f.follower_user_id = ${currentUserId} and f.league_id = l.id) as followed_count
@@ -46,6 +49,7 @@ export async function getLeagueDirectory(userId?: string): Promise<League[]> {
       country: row.country,
       countryCode: row.country_code,
       flag: flags[row.country_code] ?? "⚽",
+      logoUrl: row.logo_url,
       name: row.name,
       shortName: row.short_name,
       region: row.region,

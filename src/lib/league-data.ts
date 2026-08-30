@@ -5,6 +5,7 @@ export type League = {
   country: string;
   countryCode: string;
   flag: string;
+  logoUrl?: string | null;
   name: string;
   shortName: string;
   region: Region;
