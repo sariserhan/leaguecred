@@ -38,6 +38,7 @@ import {
 } from "@/components/ui/dialog";
 import { Spinner } from "@/components/ui/spinner";
 import { ToggleGroup, ToggleGroupItem } from "@/components/ui/toggle-group";
+import { LeagueLeaderboard } from "@/components/leagues/league-leaderboard";
 import type { LeagueExperienceData } from "@/data/leagues";
 import { cn } from "@/lib/utils";
 
@@ -254,7 +255,7 @@ export function LeagueExperience({ data }: { data: LeagueExperienceData }) {
 
         <section className="mt-7 grid gap-7 lg:grid-cols-2">
           <Card><CardHeader><CardTitle className="font-heading text-2xl font-bold uppercase">Your {data.league.name} record</CardTitle><CardDescription>Only settled independent Weekly Locks count here.</CardDescription></CardHeader><CardContent className="grid grid-cols-3 gap-3"><div><strong className="block text-2xl">{data.viewer.wins}</strong><span className="text-sm text-muted-foreground">Wins</span></div><div><strong className="block text-2xl">{data.viewer.losses}</strong><span className="text-sm text-muted-foreground">Losses</span></div><div><strong className="block text-2xl">{decisions}</strong><span className="text-sm text-muted-foreground">Decisions</span></div></CardContent></Card>
-          <Card><CardHeader><CardTitle className="font-heading text-2xl font-bold uppercase">{data.league.name} leaderboard</CardTitle><CardDescription>Eligible specialists ordered by confidence-adjusted evidence.</CardDescription></CardHeader><CardContent><ol className="divide-y border-y">{data.specialists.map((specialist, index) => <li key={specialist.id} className="grid grid-cols-[40px_1fr_auto] py-3"><span>{index + 1}</span><span className="font-semibold">{specialist.name}</span><span>{specialist.accuracy}%</span></li>)}</ol></CardContent></Card>
+          <LeagueLeaderboard leagueName={data.league.name} entries={data.leaderboard} />
         </section>
       </div>
 

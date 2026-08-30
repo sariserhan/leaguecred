@@ -140,11 +140,25 @@ export type DatabaseSpecialist = {
   sourcePickId: string;
 };
 
+export type LeagueLeaderboardEntry = {
+  id: string;
+  name: string;
+  wins: number;
+  losses: number;
+  settledPicks: number;
+  currentWinStreak: number;
+  confidenceAdjustedAccuracy: number;
+};
+
 export type LeagueExperienceData = {
   league: { id: string; slug: string; name: string; shortName: string; country: string; countryCode: string };
   matchweek: { id: string; seasonId: string; displayName: string; lockAt: string; status: MatchweekRow["status"] };
   fixtures: DatabaseFixture[];
   specialists: DatabaseSpecialist[];
+  leaderboard: {
+    currentSeason: LeagueLeaderboardEntry[];
+    career: LeagueLeaderboardEntry[];
+  };
   viewer: {
     authenticated: boolean;
     mode: "independent" | "follow" | null;
@@ -184,7 +198,7 @@ export async function getLeagueExperience(slug: string, userId?: string): Promis
   if (!matchweek) return null;
 
   const viewerId = userId ?? "";
-  const [fixtureRows, specialistRows, participationRows, pickRows, recordRows, followedRows] = await Promise.all([
+  const [fixtureRows, specialistRows, participationRows, pickRows, recordRows, followedRows, currentSeasonLeaderboardRows, careerLeaderboardRows] = await Promise.all([
     sqlClient<Array<{ id: string; kickoff_at: Date; home_id: string; home: string; home_code: string; home_logo_url: string | null; away_id: string; away: string; away_code: string; away_logo_url: string | null }>>`
       select f.id, f.kickoff_at, h.id as home_id, h.name as home, h.short_name as home_code, h.logo_url as home_logo_url,
         a.id as away_id, a.name as away, a.short_name as away_code, a.logo_url as away_logo_url
@@ -213,6 +227,20 @@ export async function getLeagueExperience(slug: string, userId?: string): Promis
       select wins, losses, tier from user_league_records where user_id = ${viewerId} and league_id = ${league.id} limit 1`,
     sqlClient<Array<{ source_pick_id: string }>>`
       select source_pick_id from followed_picks where follower_user_id = ${viewerId} and league_id = ${league.id} and matchweek_id = ${matchweek.id} limit 1`,
+    sqlClient<Array<{ id: string; name: string; wins: number; losses: number; settled_picks: number; current_win_streak: number; confidence_adjusted_accuracy: string }>>`
+      select u.id, u.name, record.wins, record.losses, record.settled_picks, record.current_win_streak, record.confidence_adjusted_accuracy
+      from user_league_season_records record
+      join "user" u on u.id = record.user_id
+      where record.league_id = ${league.id} and record.season_id = ${matchweek.season_id} and record.settled_picks >= 10
+      order by record.confidence_adjusted_accuracy desc nulls last, record.settled_picks desc, u.name asc
+      limit 50`,
+    sqlClient<Array<{ id: string; name: string; wins: number; losses: number; settled_picks: number; current_win_streak: number; confidence_adjusted_accuracy: string }>>`
+      select u.id, u.name, record.wins, record.losses, record.settled_picks, record.current_win_streak, record.confidence_adjusted_accuracy
+      from user_league_records record
+      join "user" u on u.id = record.user_id
+      where record.league_id = ${league.id} and record.settled_picks >= 10
+      order by record.confidence_adjusted_accuracy desc nulls last, record.settled_picks desc, u.name asc
+      limit 50`,
   ]);
 
   const participation = participationRows[0];
@@ -239,6 +267,18 @@ export async function getLeagueExperience(slug: string, userId?: string): Promis
       lock: specialist.lock,
       sourcePickId: specialist.source_pick_id,
     })),
+    leaderboard: {
+      currentSeason: currentSeasonLeaderboardRows.map((entry) => ({
+        id: entry.id, name: entry.name, wins: entry.wins, losses: entry.losses,
+        settledPicks: entry.settled_picks, currentWinStreak: entry.current_win_streak,
+        confidenceAdjustedAccuracy: Number(entry.confidence_adjusted_accuracy),
+      })),
+      career: careerLeaderboardRows.map((entry) => ({
+        id: entry.id, name: entry.name, wins: entry.wins, losses: entry.losses,
+        settledPicks: entry.settled_picks, currentWinStreak: entry.current_win_streak,
+        confidenceAdjustedAccuracy: Number(entry.confidence_adjusted_accuracy),
+      })),
+    },
     viewer: {
       authenticated: Boolean(userId),
       mode: participation?.mode ?? null,
