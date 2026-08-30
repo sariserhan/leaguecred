@@ -3,8 +3,10 @@
 import { useMemo, useState } from "react";
 import Image from "next/image";
 import Link from "next/link";
-import { ArrowRightIcon, CircleDotIcon, LockKeyholeIcon, RotateCcwIcon, SearchIcon, UsersRoundIcon } from "lucide-react";
+import { ArrowRightIcon, CircleDotIcon, LockKeyholeIcon, RotateCcwIcon, SearchIcon, SlidersHorizontalIcon, UsersRoundIcon } from "lucide-react";
 
+import { Button } from "@/components/ui/button";
+import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import { ToggleGroup, ToggleGroupItem } from "@/components/ui/toggle-group";
 import type { League, Region } from "@/lib/league-data";
@@ -62,6 +64,7 @@ export function LeagueExplorer({ leagues, authenticated, initialIntent }: { leag
   const [region, setRegion] = useState<RegionFilter>("All");
   const [availability, setAvailability] = useState<AvailabilityFilter>("All leagues");
   const [intent, setIntent] = useState<Intent>(initialIntent);
+  const [filtersOpen, setFiltersOpen] = useState(false);
   const filteredLeagues = useMemo(() => {
     const normalizedQuery = query.trim().toLocaleLowerCase();
     return leagues.filter((league) => {
@@ -83,16 +86,17 @@ export function LeagueExplorer({ leagues, authenticated, initialIntent }: { leag
           <ToggleGroupItem value="prove" className="h-12 min-w-0 rounded-none px-3 data-[pressed]:bg-primary data-[pressed]:text-primary-foreground sm:min-w-52 sm:px-5">Prove my knowledge</ToggleGroupItem>
           <ToggleGroupItem value="follow" className="h-12 min-w-0 rounded-none px-3 data-[pressed]:bg-primary data-[pressed]:text-primary-foreground sm:min-w-52 sm:px-5">Follow a specialist</ToggleGroupItem>
         </ToggleGroup>
-        <div className="mt-6 space-y-5 border-y py-6">
+        <div className="mt-6 border-y py-6">
           <label className="relative block"><span className="sr-only">Search leagues or countries</span><SearchIcon aria-hidden="true" className="pointer-events-none absolute top-1/2 left-4 size-5 -translate-y-1/2 text-muted-foreground" /><Input type="search" value={query} onChange={(event) => setQuery(event.target.value)} placeholder="Search leagues or countries" className="h-14 rounded-sm pl-12 text-base" /></label>
-          <FilterRow label="Region"><ToggleGroup value={[region]} onValueChange={(values) => values[0] && setRegion(values[0] as RegionFilter)} variant="outline" spacing={0} aria-label="Filter leagues by region" className="w-max">{regions.map((item) => <ToggleGroupItem key={item} value={item} className="rounded-none px-4">{item}</ToggleGroupItem>)}</ToggleGroup></FilterRow>
-          <FilterRow label="Availability"><ToggleGroup value={[availability]} onValueChange={(values) => values[0] && setAvailability(values[0] as AvailabilityFilter)} variant="outline" spacing={0} aria-label="Filter leagues by availability" className="w-max">{availabilityOptions.map((item) => <ToggleGroupItem key={item} value={item} className="rounded-none px-4">{item}</ToggleGroupItem>)}</ToggleGroup></FilterRow>
+          <Button variant="outline" className="mt-4 w-full sm:hidden" onClick={() => setFiltersOpen(true)}><SlidersHorizontalIcon data-icon="inline-start" />Filters{region !== "All" || availability !== "All leagues" ? " · Active" : ""}</Button>
+          <div className="mt-5 hidden gap-5 sm:grid"><FilterRow label="Region"><ToggleGroup value={[region]} onValueChange={(values) => values[0] && setRegion(values[0] as RegionFilter)} variant="outline" spacing={0} aria-label="Filter leagues by region" className="w-max">{regions.map((item) => <ToggleGroupItem key={item} value={item} className="rounded-none px-4">{item}</ToggleGroupItem>)}</ToggleGroup></FilterRow><FilterRow label="Availability"><ToggleGroup value={[availability]} onValueChange={(values) => values[0] && setAvailability(values[0] as AvailabilityFilter)} variant="outline" spacing={0} aria-label="Filter leagues by availability" className="w-max">{availabilityOptions.map((item) => <ToggleGroupItem key={item} value={item} className="rounded-none px-4">{item}</ToggleGroupItem>)}</ToggleGroup></FilterRow></div>
         </div>
         {filteredLeagues.length ? <div className="mt-8"><LeagueSection title="Ready for a Weekly Lock" leagues={ready} intent={intent} authenticated={authenticated} /><LeagueSection title="Explore team catalogs" leagues={catalogs} intent={intent} authenticated={authenticated} /></div> : (
           <div className="mt-8 flex min-h-72 flex-col items-center justify-center border-y px-6 text-center"><SearchIcon aria-hidden="true" className="size-10" strokeWidth={1.5} /><h2 className="mt-5 font-heading text-3xl font-bold uppercase">No leagues found</h2><p className="mt-2 text-sm text-muted-foreground">Try adjusting your filters or search terms.</p><button type="button" onClick={resetFilters} className="mt-6 inline-flex h-10 items-center gap-2 border border-foreground px-4 text-sm font-semibold hover:bg-foreground hover:text-background"><RotateCcwIcon className="size-4" />Reset filters</button></div>
         )}
       </div>
       <NetworkSummary authenticated={authenticated} stats={networkStats} />
+      <Dialog open={filtersOpen} onOpenChange={setFiltersOpen}><DialogContent className="rounded-none"><DialogHeader><DialogTitle className="font-heading text-3xl font-bold uppercase">League filters</DialogTitle><DialogDescription>Choose a region and the type of league experience you need.</DialogDescription></DialogHeader><div className="grid gap-6"><FilterRow label="Region"><ToggleGroup value={[region]} onValueChange={(values) => values[0] && setRegion(values[0] as RegionFilter)} variant="outline" className="flex flex-wrap">{regions.map((item) => <ToggleGroupItem key={item} value={item} className="rounded-none">{item}</ToggleGroupItem>)}</ToggleGroup></FilterRow><FilterRow label="Availability"><ToggleGroup value={[availability]} onValueChange={(values) => values[0] && setAvailability(values[0] as AvailabilityFilter)} variant="outline" className="flex flex-wrap">{availabilityOptions.map((item) => <ToggleGroupItem key={item} value={item} className="rounded-none">{item}</ToggleGroupItem>)}</ToggleGroup></FilterRow></div><DialogFooter><Button variant="outline" onClick={resetFilters}>Reset</Button><Button onClick={() => setFiltersOpen(false)}>Show {filteredLeagues.length} leagues</Button></DialogFooter></DialogContent></Dialog>
     </div>
   );
 }

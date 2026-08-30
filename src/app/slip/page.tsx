@@ -6,6 +6,7 @@ import { redirect } from "next/navigation";
 
 import { Badge } from "@/components/ui/badge";
 import { buttonVariants } from "@/components/ui/button";
+import { LockCountdown } from "@/components/lock-countdown";
 import type { WeeklySlipEntry } from "@/data/weekly-slip";
 import { getWeeklySlip } from "@/data/weekly-slip";
 import { getSession } from "@/lib/auth-session";
@@ -47,6 +48,21 @@ function SlipEntryCard({ entry }: { entry: WeeklySlipEntry }) {
   );
 }
 
+function groupByMatchweek(entries: WeeklySlipEntry[]) {
+  const groups = new Map<string, WeeklySlipEntry[]>();
+  for (const entry of entries) {
+    const key = `${entry.league.name} · ${entry.matchweek}`;
+    const current = groups.get(key);
+    if (current) current.push(entry);
+    else groups.set(key, [entry]);
+  }
+  return [...groups];
+}
+
+function SlipGroups({ entries, active = false }: { entries: WeeklySlipEntry[]; active?: boolean }) {
+  return <div className="grid gap-6">{groupByMatchweek(entries).map(([label, group]) => <section key={label} className="border" aria-label={label}><header className="flex flex-wrap items-center justify-between gap-3 border-b bg-muted px-4 py-3"><div><h3 className="font-heading text-2xl font-bold uppercase">{label}</h3><p className="text-xs text-muted-foreground">{group.length} call{group.length === 1 ? "" : "s"}</p></div>{active ? <LockCountdown lockAt={group[0].lockAt} compact /> : null}</header><div className="grid gap-px bg-border lg:grid-cols-2">{group.map((entry) => <div key={`${entry.path}:${entry.id}`} className="bg-background"><SlipEntryCard entry={entry} /></div>)}</div></section>)}</div>;
+}
+
 export default async function WeeklySlipPage() {
   const session = await getSession();
   if (!session) redirect("/auth");
@@ -67,12 +83,12 @@ export default async function WeeklySlipPage() {
 
       <section className="mt-7" aria-labelledby="active-heading">
         <div className="mb-4 flex items-end justify-between gap-4"><div><h2 id="active-heading" className="section-title">On your slip</h2><p className="mt-2 text-muted-foreground">These calls are still awaiting their final result.</p></div><LockKeyholeIcon aria-hidden="true" className="size-7 text-primary" /></div>
-        {data.active.length > 0 ? <div className="grid gap-3 lg:grid-cols-2">{data.active.map((entry) => <SlipEntryCard key={`${entry.path}:${entry.id}`} entry={entry} />)}</div> : <div className="border p-8 text-center"><CheckIcon aria-hidden="true" className="mx-auto size-7 text-primary" /><h3 className="mt-3 font-heading text-3xl font-bold uppercase">Your slip is clear</h3><p className="mx-auto mt-2 max-w-lg text-muted-foreground">Pick one team from the league you truly know, or follow a proven specialist from another league.</p><Link href="/leagues" className={cn(buttonVariants({ size: "lg" }), "mt-5")}><ArrowRightIcon data-icon="inline-start" />Explore leagues</Link></div>}
+        {data.active.length > 0 ? <SlipGroups entries={data.active} active /> : <div className="border p-8 text-center"><CheckIcon aria-hidden="true" className="mx-auto size-7 text-primary" /><h3 className="mt-3 font-heading text-3xl font-bold uppercase">Your slip is clear</h3><p className="mx-auto mt-2 max-w-lg text-muted-foreground">Pick one team from the league you truly know, or follow a proven specialist from another league.</p><Link href="/leagues" className={cn(buttonVariants({ size: "lg" }), "mt-5")}><ArrowRightIcon data-icon="inline-start" />Explore leagues</Link></div>}
       </section>
 
       <section className="mt-10" aria-labelledby="completed-heading">
         <div className="mb-4 flex items-end justify-between gap-4"><div><h2 id="completed-heading" className="section-title">Recent results</h2><p className="mt-2 text-muted-foreground">Your latest completed independent locks and followed calls.</p></div><UsersRoundIcon aria-hidden="true" className="size-7 text-primary" /></div>
-        {data.completed.length > 0 ? <div className="grid gap-3 lg:grid-cols-2">{data.completed.map((entry) => <SlipEntryCard key={`${entry.path}:${entry.id}`} entry={entry} />)}</div> : <p className="border p-6 text-muted-foreground">Completed calls will appear here after their fixtures are settled.</p>}
+        {data.completed.length > 0 ? <SlipGroups entries={data.completed} /> : <p className="border p-6 text-muted-foreground">Completed calls will appear here after their fixtures are settled.</p>}
       </section>
     </div>
   );

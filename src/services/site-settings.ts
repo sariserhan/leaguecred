@@ -8,6 +8,7 @@ import {
   type ResolvedFeatureFlag,
   type SiteSettings,
 } from "@/lib/site-settings";
+import { recordAdminAudit } from "@/services/admin-audit-log";
 
 type SettingsRow = {
   maintenance_enabled: boolean;
@@ -63,21 +64,43 @@ export async function updateSiteSettings(
   },
   updatedByUserId: string,
 ) {
-  await sqlClient`
-    insert into app_settings (
-      id, maintenance_enabled, maintenance_message, banner_enabled, banner_message, banner_tone, updated_by_user_id
-    ) values (
-      'global', ${input.maintenanceEnabled}, ${input.maintenanceMessage}, ${input.bannerEnabled},
-      ${input.bannerMessage}, ${input.bannerTone}, ${updatedByUserId}
-    )
-    on conflict (id) do update set
-      maintenance_enabled = excluded.maintenance_enabled,
-      maintenance_message = excluded.maintenance_message,
-      banner_enabled = excluded.banner_enabled,
-      banner_message = excluded.banner_message,
-      banner_tone = excluded.banner_tone,
-      updated_by_user_id = excluded.updated_by_user_id,
-      updated_at = now()`;
+  await sqlClient.begin(async (sql) => {
+    const [before] = await sql<SettingsRow[]>`
+      select maintenance_enabled, maintenance_message, banner_enabled, banner_message, banner_tone
+      from app_settings where id = 'global' for update`;
+
+    await sql`
+      insert into app_settings (
+        id, maintenance_enabled, maintenance_message, banner_enabled, banner_message, banner_tone, updated_by_user_id
+      ) values (
+        'global', ${input.maintenanceEnabled}, ${input.maintenanceMessage}, ${input.bannerEnabled},
+        ${input.bannerMessage}, ${input.bannerTone}, ${updatedByUserId}
+      )
+      on conflict (id) do update set
+        maintenance_enabled = excluded.maintenance_enabled,
+        maintenance_message = excluded.maintenance_message,
+        banner_enabled = excluded.banner_enabled,
+        banner_message = excluded.banner_message,
+        banner_tone = excluded.banner_tone,
+        updated_by_user_id = excluded.updated_by_user_id,
+        updated_at = now()`;
+
+    await recordAdminAudit(sql, {
+      actorUserId: updatedByUserId,
+      action: "site_settings_updated",
+      target: "global",
+      before: before
+        ? {
+            maintenanceEnabled: before.maintenance_enabled,
+            maintenanceMessage: before.maintenance_message,
+            bannerEnabled: before.banner_enabled,
+            bannerMessage: before.banner_message,
+            bannerTone: before.banner_tone,
+          }
+        : null,
+      after: input,
+    });
+  });
 }
 
 export async function setFeatureFlag(
@@ -87,13 +110,26 @@ export async function setFeatureFlag(
   description: string,
   updatedByUserId: string,
 ) {
-  await sqlClient`
-    insert into feature_flags (key, label, description, enabled, updated_by_user_id)
-    values (${key}, ${label}, ${description}, ${enabled}, ${updatedByUserId})
-    on conflict (key) do update set
-      enabled = excluded.enabled,
-      label = excluded.label,
-      description = excluded.description,
-      updated_by_user_id = excluded.updated_by_user_id,
-      updated_at = now()`;
+  await sqlClient.begin(async (sql) => {
+    const [before] = await sql<Array<{ enabled: boolean }>>`
+      select enabled from feature_flags where key = ${key} for update`;
+
+    await sql`
+      insert into feature_flags (key, label, description, enabled, updated_by_user_id)
+      values (${key}, ${label}, ${description}, ${enabled}, ${updatedByUserId})
+      on conflict (key) do update set
+        enabled = excluded.enabled,
+        label = excluded.label,
+        description = excluded.description,
+        updated_by_user_id = excluded.updated_by_user_id,
+        updated_at = now()`;
+
+    await recordAdminAudit(sql, {
+      actorUserId: updatedByUserId,
+      action: "feature_flag_toggled",
+      target: key,
+      before: before ? { enabled: before.enabled } : null,
+      after: { enabled },
+    });
+  });
 }

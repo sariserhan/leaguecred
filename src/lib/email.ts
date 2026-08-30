@@ -28,17 +28,22 @@ function resendClient(apiKey: string) {
  * rather fail loudly check `delivered` and raise their own error, which is what
  * the lock-reminder job does so a failed send is not recorded as sent.
  *
- * Without RESEND_API_KEY the behaviour depends on the environment: production
- * logs an error and sends nothing, while everywhere else the message is written
- * to the log with its link, so the whole flow works locally with no provider.
+ * A real send only ever happens when actually running on Vercel. `vercel env
+ * pull` routinely puts the real RESEND_API_KEY into .env.local for database
+ * access, and gating on the key alone would turn every local `next dev` into a
+ * live sender against production the moment that happens. So a local run
+ * always takes the console-log fallback, key or no key; a deployed run without
+ * a key logs an error instead of silently dropping the message.
  */
 export async function sendEmail(
   to: string,
   message: SendableMessage,
   options: { idempotencyKey?: string } = {},
 ): Promise<SendResult> {
-  if (!serverEnv.resendApiKey) {
-    if (process.env.NODE_ENV === "production") {
+  const isDeployed = Boolean(process.env.VERCEL);
+
+  if (!isDeployed || !serverEnv.resendApiKey) {
+    if (isDeployed) {
       console.error(
         `RESEND_API_KEY is not set, so "${message.subject}" was not delivered to ${to}.`,
       );
@@ -46,7 +51,7 @@ export async function sendEmail(
     }
 
     console.info(
-      `\n[email] ${message.subject}\n[email] to: ${to}\n[email] no RESEND_API_KEY, so nothing was sent.\n` +
+      `\n[email] ${message.subject}\n[email] to: ${to}\n[email] not running on Vercel, so nothing was sent.\n` +
         `${message.text ?? message.html}\n`,
     );
     return { delivered: false, reason: "development-log" };

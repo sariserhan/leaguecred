@@ -6,6 +6,7 @@ import {
   date,
   index,
   integer,
+  jsonb,
   numeric,
   pgEnum,
   pgTable,
@@ -35,6 +36,10 @@ export const settlementEventTypeEnum = pgEnum("settlement_event_type", [
 export const syncStatusEnum = pgEnum("sync_status", ["running", "succeeded", "failed"]);
 export const userRoleEnum = pgEnum("user_role", ["member", "admin"]);
 export const bannerToneEnum = pgEnum("banner_tone", ["info", "warning", "critical"]);
+export const adminAuditActionEnum = pgEnum("admin_audit_action", [
+  "site_settings_updated", "feature_flag_toggled",
+]);
+export const leaguePreferenceKindEnum = pgEnum("league_preference_kind", ["know", "help"]);
 
 // Better Auth core tables. Property names intentionally match its Drizzle adapter.
 export const user = pgTable("user", {
@@ -298,6 +303,19 @@ export const leagueFollows = pgTable("league_follows", {
   check("league_follows_not_self_check", sql`${table.followerUserId} <> ${table.specialistUserId}`),
 ]);
 
+export const userLeaguePreferences = pgTable("user_league_preferences", {
+  id: uuid("id").defaultRandom().primaryKey(),
+  userId: text("user_id").notNull().references(() => user.id, { onDelete: "cascade" }),
+  leagueId: uuid("league_id").notNull().references(() => leagues.id, { onDelete: "cascade" }),
+  kind: leaguePreferenceKindEnum("kind").notNull(),
+  createdAt,
+  updatedAt,
+}, (table) => [
+  uniqueIndex("user_league_preferences_unique").on(table.userId, table.leagueId, table.kind),
+  index("user_league_preferences_user_kind_idx").on(table.userId, table.kind),
+  index("user_league_preferences_league_idx").on(table.leagueId),
+]);
+
 export const followedPicks = pgTable("followed_picks", {
   id: uuid("id").defaultRandom().primaryKey(),
   followerUserId: text("follower_user_id").notNull().references(() => user.id, { onDelete: "cascade" }),
@@ -436,8 +454,22 @@ export const featureFlags = pgTable("feature_flags", {
   updatedAt,
 });
 
+export const adminAuditLog = pgTable("admin_audit_log", {
+  id: uuid("id").defaultRandom().primaryKey(),
+  actorUserId: text("actor_user_id").notNull().references(() => user.id, { onDelete: "cascade" }),
+  action: adminAuditActionEnum("action").notNull(),
+  target: text("target").notNull(),
+  before: jsonb("before"),
+  after: jsonb("after"),
+  createdAt,
+}, (table) => [
+  index("admin_audit_log_created_at_idx").on(table.createdAt),
+]);
+
 export type PickResult = (typeof pickResultEnum.enumValues)[number];
 export type ParticipationMode = (typeof participationModeEnum.enumValues)[number];
 export type FixtureStatus = (typeof fixtureStatusEnum.enumValues)[number];
 export type UserRole = (typeof userRoleEnum.enumValues)[number];
 export type BannerTone = (typeof bannerToneEnum.enumValues)[number];
+export type AdminAuditAction = (typeof adminAuditActionEnum.enumValues)[number];
+export type LeaguePreferenceKind = (typeof leaguePreferenceKindEnum.enumValues)[number];

@@ -29,6 +29,7 @@ type DirectoryRow = {
   has_experience: boolean;
   has_team_catalog: boolean;
   lock_due: boolean;
+  preference_kind: "know" | "help" | null;
 };
 
 export async function getLeagueDirectory(userId?: string): Promise<League[]> {
@@ -38,6 +39,7 @@ export async function getLeagueDirectory(userId?: string): Promise<League[]> {
       (select count(*)::int from user_league_records r where r.league_id = l.id and r.settled_picks >= ${MINIMUM_SETTLED_PICKS_FOR_RANK}) as specialist_count,
       own.wins, own.losses,
       exists(select 1 from matchweeks mw where mw.league_id = l.id) as has_experience,
+      (select p.kind from user_league_preferences p where p.user_id = ${currentUserId} and p.league_id = l.id order by case p.kind when 'know' then 0 else 1 end limit 1) as preference_kind,
       exists(
         select 1 from league_team_memberships ltm
         join seasons cs on cs.id = ltm.season_id and cs.is_current = true
@@ -56,7 +58,7 @@ export async function getLeagueDirectory(userId?: string): Promise<League[]> {
     join countries c on c.id = l.country_id
     left join user_league_records own on own.league_id = l.id and own.user_id = ${currentUserId}
     where l.enabled = true
-    order by l.priority asc, l.name asc`;
+    order by case when exists(select 1 from user_league_preferences p where p.user_id = ${currentUserId} and p.league_id = l.id and p.kind = 'know') then 0 when exists(select 1 from user_league_preferences p where p.user_id = ${currentUserId} and p.league_id = l.id and p.kind = 'help') then 1 else 2 end, l.priority asc, l.name asc`;
 
   return rows.map((row) => {
     const decisions = (row.wins ?? 0) + (row.losses ?? 0);

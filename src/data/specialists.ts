@@ -160,6 +160,8 @@ export const getSpecialistProfile = cache(async function getSpecialistProfile(
     sqlClient<Array<{ count: number }>>`
       select count(*)::int as count from matchweeks mw
       where mw.status = 'upcoming' and mw.lock_at > now()
+        and (not exists(select 1 from user_league_preferences where user_id = ${specialist.id})
+          or exists(select 1 from user_league_preferences p where p.user_id = ${specialist.id} and p.league_id = mw.league_id and p.kind = 'know'))
         and not exists(select 1 from matchweek_participation mp where mp.matchweek_id = mw.id and mp.user_id = ${specialist.id})`,
   ]);
 

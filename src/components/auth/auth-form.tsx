@@ -53,7 +53,7 @@ export function AuthForm({ nextPath = "/leagues" }: { nextPath?: string }) {
         return;
       }
 
-      router.push(nextPath);
+      router.push(mode === "sign-up" ? "/onboarding" : nextPath);
       router.refresh();
     });
   }

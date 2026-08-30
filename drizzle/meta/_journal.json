@@ -68,15 +68,29 @@
     {
       "idx": 9,
       "version": "7",
-      "when": 1788126159102,
-      "tag": "0009_lying_betty_ross",
+      "when": 1788124319347,
+      "tag": "0009_shiny_klaw",
+      "breakpoints": true
+    },
+    {
+      "idx": 10,
+      "version": "7",
+      "when": 1788128013562,
+      "tag": "0010_user-league-preferences",
       "breakpoints": true
     },
     {
       "idx": 11,
       "version": "7",
+      "when": 1788128300000,
+      "tag": "0011_team_slugs",
+      "breakpoints": true
+    },
+    {
+      "idx": 12,
+      "version": "7",
       "when": 1788128610086,
-      "tag": "0011_region_countries",
+      "tag": "0012_region_countries",
       "breakpoints": true
     }
   ]

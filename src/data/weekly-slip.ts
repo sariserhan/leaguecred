@@ -13,6 +13,7 @@ export type WeeklySlipEntry = {
   selectedTeam: { name: string; logoUrl: string | null };
   fixture: { home: string; away: string; homeScore: number | null; awayScore: number | null; status: FixtureStatus };
   kickoff: string;
+  lockAt: string;
   result: PickResult;
   specialist: { id: string; name: string } | null;
 };
@@ -43,6 +44,7 @@ type SlipRow = {
   away_score: number | null;
   fixture_status: FixtureStatus;
   kickoff_at: Date;
+  lock_at: Date;
   result: PickResult;
   specialist_id: string | null;
   specialist: string | null;
@@ -63,6 +65,7 @@ function toEntry(row: SlipRow): WeeklySlipEntry {
       status: row.fixture_status,
     },
     kickoff: new Date(row.kickoff_at).toISOString(),
+    lockAt: new Date(row.lock_at).toISOString(),
     result: row.result,
     specialist: row.specialist_id && row.specialist ? { id: row.specialist_id, name: row.specialist } : null,
   };
@@ -74,7 +77,7 @@ export const getWeeklySlip = cache(async function getWeeklySlip(userId: string):
       select p.id, 'independent'::text as path, l.name as league_name, l.slug as league_slug,
         mw.display_name as matchweek, t.name as team, t.logo_url as team_logo_url,
         h.name as home, a.name as away, f.home_score, f.away_score, f.status as fixture_status,
-        f.kickoff_at, p.result, null::text as specialist_id, null::text as specialist
+        f.kickoff_at, mw.lock_at, p.result, null::text as specialist_id, null::text as specialist
       from picks p
       join leagues l on l.id = p.league_id
       join matchweeks mw on mw.id = p.matchweek_id
@@ -89,7 +92,7 @@ export const getWeeklySlip = cache(async function getWeeklySlip(userId: string):
       select fp.id, 'followed'::text as path, l.name as league_name, l.slug as league_slug,
         mw.display_name as matchweek, t.name as team, t.logo_url as team_logo_url,
         h.name as home, a.name as away, f.home_score, f.away_score, f.status as fixture_status,
-        f.kickoff_at, fp.result, source_user.id as specialist_id, source_user.name as specialist
+        f.kickoff_at, mw.lock_at, fp.result, source_user.id as specialist_id, source_user.name as specialist
       from followed_picks fp
       join picks source_pick on source_pick.id = fp.source_pick_id
       join "user" source_user on source_user.id = source_pick.user_id
