@@ -2,9 +2,11 @@ import { serverEnv } from "@/lib/env";
 import { FootballDataOrgProvider } from "@/providers/football-data-org";
 import { FootballDataUkProvider } from "@/providers/football-data-uk";
 import { synchronizeFixtures } from "@/services/fixture-sync";
+import { synchronizeCurrentRosters } from "@/services/roster-sync";
 import { synchronizeChampionsLeagueTeams } from "@/services/team-catalog-sync";
 
 export async function synchronizeFreeFixtureSources(now = new Date()) {
+  const rosters = await synchronizeCurrentRosters();
   const footballDataUk = await synchronizeFixtures(new FootballDataUkProvider(), now);
   const footballDataOrgTeams = serverEnv.footballDataApiKey
     ? await synchronizeChampionsLeagueTeams()
@@ -14,6 +16,7 @@ export async function synchronizeFreeFixtureSources(now = new Date()) {
     : null;
 
   return {
+    rosters,
     providers: {
       "football-data-uk": { status: "succeeded", ...footballDataUk },
       "football-data-org": footballDataOrg

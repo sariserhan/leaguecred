@@ -2,6 +2,11 @@ import type postgres from "postgres";
 
 import { sqlClient } from "@/db";
 import { ApiFootballProvider, type ApiFootballTeam } from "@/providers/api-football";
+import {
+  EspnTeamProvider,
+  espnTeamCompetitions,
+  type EspnTeam,
+} from "@/providers/espn-team-logos";
 import { FootballDataOrgProvider, type FootballDataTeam } from "@/providers/football-data-org";
 import { TheSportsDbProvider, type SportsDbTeam } from "@/providers/thesportsdb";
 import { normalizeTeamName } from "@/services/team-names";
@@ -18,6 +23,7 @@ type MissingTeam = {
 type LogoTeam = MissingTeam & { logo_url: string; provider: string; provider_external_id: string };
 
 const apiCountries: Record<string, string> = { "Türkiye": "Turkey" };
+const sportsDbCountries: Record<string, string> = { "Czech Republic": "Czechia" };
 const searches: Record<string, string> = {
   "Ath Bilbao": "Athletic Bilbao", "Ath Madrid": "Atletico Madrid", "Buyuksehyr": "Istanbul Basaksehir",
   "Celta": "Celta Vigo", "Corum": "Corum", "Den Haag": "ADO Den Haag", "Ein Frankfurt": "Eintracht Frankfurt",
@@ -54,7 +60,34 @@ const footballDataCompetitions = [
 ] as const;
 
 const sportsDbSearches: Record<string, string> = {
+  "A. Lustenau": "Austria Lustenau",
+  "AGF Aarhus": "AGF",
+  "Atl. San Luis": "Atletico San Luis",
+  "Atl. Tucuman": "Atletico Tucuman",
+  "Atlanta Utd": "Atlanta United",
+  "Athletico-PR": "Athletico Paranaense",
+  "Atletico-MG": "Atletico Mineiro",
+  "Botafogo RJ": "Botafogo",
+  "Charlotte": "Charlotte FC",
+  "Club America": "America",
+  "Club Leon": "Leon",
+  "Dep. Riestra": "Deportivo Riestra",
+  "Estudiantes L.P.": "Estudiantes de La Plata",
+  "Slovan Liberec": "FC Slovan Liberec",
+  Teplice: "FK Teplice",
+  "Zbrojovka Brno": "FC Zbrojovka Brno",
+  Zlín: "FC Zlin",
+  "Flamengo RJ": "Flamengo",
+  "Gimnasia L.P.": "Gimnasia La Plata",
+  "Guadalajara Chivas": "Guadalajara",
   Guimaraes: "Vitoria Guimaraes",
+  "Ind. Rivadavia": "Independiente Rivadavia",
+  "New York City": "New York City FC",
+  "Nordsjaelland": "FC Nordsjaelland",
+  "Sao Paulo": "Sao Paulo",
+  "SK Rapid": "Rapid Vienna",
+  "Tirol": "WSG Tirol",
+  Vasco: "Vasco da Gama",
   Mechelen: "KV Mechelen",
   "RAAL La Louviere": "RAAL La Louviere",
   "St. Gilloise": "Union St Gilloise",
@@ -81,7 +114,9 @@ const verifiedLogoFallbacks: Record<string, { logoUrl: string; provider: string 
 
 function matchSportsDbTeam(name: string, country: string, results: SportsDbTeam[]) {
   const normalized = normalizeTeamName(name);
-  const candidates = results.filter((team) => team.strSport === "Soccer" && team.strCountry === country
+  const continental = country === "Europe" || country === "South America";
+  const expectedCountry = sportsDbCountries[country] ?? country;
+  const candidates = results.filter((team) => team.strSport === "Soccer" && (continental || team.strCountry === expectedCountry)
     && team.strBadge && !/(women|u\d\d|youth|reserves?)/i.test(team.strTeam));
   const exact = candidates.filter((team) => normalizeTeamName(team.strTeam) === normalized);
   if (exact.length === 1) return exact[0];
@@ -107,7 +142,7 @@ export async function synchronizeTheSportsDbLogos(provider = new TheSportsDbProv
       fetched.push({ team, ...fallback });
       continue;
     }
-    if (index > 0) await new Promise((resolve) => setTimeout(resolve, 300));
+    if (index > 0) await new Promise((resolve) => setTimeout(resolve, 1_100));
     const results = await provider.searchTeams(sportsDbSearches[team.name] ?? team.name);
     const match = matchSportsDbTeam(team.name, team.country, results);
     fetched.push(match?.strBadge ? { team, logoUrl: match.strBadge, provider: "thesportsdb" } : null);
@@ -136,6 +171,78 @@ function matchFootballDataTeam(name: string, roster: FootballDataTeam[]) {
     return normalized.length >= 4 && (candidate.includes(normalized) || normalized.includes(candidate));
   });
   return partial.length === 1 ? partial[0] : null;
+}
+
+export function matchEspnTeam(name: string, roster: EspnTeam[]) {
+  const normalized = normalizeTeamName(name);
+  const withLogos = roster.filter((team) => team.logoUrl);
+  const exact = withLogos.filter((team) => normalizeTeamName(team.displayName) === normalized
+    || normalizeTeamName(team.shortDisplayName) === normalized);
+  if (exact.length === 1) return exact[0];
+  const partial = withLogos.filter((team) => {
+    const names = [team.displayName, team.shortDisplayName].map(normalizeTeamName);
+    return normalized.length >= 5 && names.some((candidate) => candidate.includes(normalized)
+      || normalized.includes(candidate));
+  });
+  return partial.length === 1 ? partial[0] : null;
+}
+
+export async function synchronizeEspnTeamLogos(provider = new EspnTeamProvider()) {
+  const slugs = espnTeamCompetitions.map((entry) => entry.slug);
+  const leagues = await sqlClient<Array<{ id: string; slug: string; season_id: string }>>`
+    select l.id, l.slug, s.id as season_id from leagues l
+    join seasons s on s.league_id = l.id and s.is_current = true
+    where l.slug in ${sqlClient(slugs)}`;
+  const leagueBySlug = new Map(leagues.map((league) => [league.slug, league]));
+
+  // Keep all external lookups outside database transactions.
+  const batches = await Promise.all(espnTeamCompetitions.map(async (competition) => ({
+    competition,
+    teams: await provider.fetchTeams(competition.code),
+  })));
+  type EspnLogoUpdate = { id: string; logoUrl: string; externalId: string; sourceName: string };
+  const updates = new Map<string, EspnLogoUpdate>();
+  const unresolved: Array<{ id: string; label: string }> = [];
+
+  for (const batch of batches) {
+    const league = leagueBySlug.get(batch.competition.slug);
+    if (!league) continue;
+    const missing = await sqlClient<Array<{ id: string; name: string }>>`
+      select t.id, t.name from teams t
+      join league_team_memberships m on m.team_id = t.id
+      where m.league_id = ${league.id} and m.season_id = ${league.season_id}
+        and t.logo_url is null order by t.name`;
+    for (const team of missing) {
+      const match = matchEspnTeam(team.name, batch.teams);
+      if (!match?.logoUrl) {
+        unresolved.push({ id: team.id, label: `${batch.competition.slug}:${team.name}` });
+        continue;
+      }
+      if (!updates.has(team.id)) updates.set(team.id, {
+        id: team.id,
+        logoUrl: match.logoUrl,
+        externalId: match.id,
+        sourceName: match.displayName,
+      });
+    }
+  }
+
+  await sqlClient.begin(async (sql) => {
+    for (const update of updates.values()) {
+      await sql`update teams set logo_url = ${update.logoUrl}, logo_provider = 'espn-web', updated_at = now()
+        where id = ${update.id} and logo_url is null`;
+      await sql`insert into team_provider_aliases (provider, provider_external_id, team_id, source_name)
+        values ('espn-web', ${update.externalId}, ${update.id}, ${update.sourceName})
+        on conflict (provider, provider_external_id) do update set team_id = excluded.team_id,
+          source_name = excluded.source_name, updated_at = now()`;
+    }
+  });
+
+  return {
+    requestCount: batches.length,
+    updated: updates.size,
+    unresolved: [...new Set(unresolved.filter((entry) => !updates.has(entry.id)).map((entry) => entry.label))],
+  };
 }
 
 export async function synchronizeFootballDataOrgLogos(provider = new FootballDataOrgProvider()) {

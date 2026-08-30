@@ -61,11 +61,11 @@ export function parseCsv(text: string): CsvRow[] {
   return values.map((columns) => Object.fromEntries(headers.map((header, index) => [header, columns[index] ?? ""])));
 }
 
-function sourceTeamId(leagueCode: string, name: string) {
+export function footballDataUkTeamId(leagueCode: string, name: string) {
   return `${leagueCode}:${name.normalize("NFKD").replace(/[\u0300-\u036f]/g, "").toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/(^-|-$)/g, "")}`;
 }
 
-function shortName(name: string) {
+export function footballDataUkShortName(name: string) {
   const words = name.replace(/[^\p{L}\p{N} ]/gu, "").trim().split(/\s+/);
   return (words.length === 1 ? words[0]!.slice(0, 3) : words.map((word) => word[0]).join("").slice(0, 3)).toUpperCase();
 }
@@ -101,8 +101,8 @@ export function mapFootballDataUkRow(row: CsvRow, leagueCode: string, season: st
   const awayName = row.AwayTeam || row.Away;
   if (row.Div !== leagueCode || !row.Date || !homeName || !awayName) return null;
   const kickoffAt = londonDateTimeToIso(row.Date, row.Time);
-  const homeExternalId = sourceTeamId(leagueCode, homeName);
-  const awayExternalId = sourceTeamId(leagueCode, awayName);
+  const homeExternalId = footballDataUkTeamId(leagueCode, homeName);
+  const awayExternalId = footballDataUkTeamId(leagueCode, awayName);
   const homeScore = /^\d+$/.test(row.FTHG ?? row.HG) ? Number(row.FTHG ?? row.HG) : null;
   const awayScore = /^\d+$/.test(row.FTAG ?? row.AG) ? Number(row.FTAG ?? row.AG) : null;
   const result = row.FTR || row.Res;
@@ -113,8 +113,8 @@ export function mapFootballDataUkRow(row: CsvRow, leagueCode: string, season: st
     round: `football-data-uk:${leagueCode}:${weekStart(kickoffAt)}`,
     kickoffAt,
     status: finished ? "finished" : "scheduled",
-    home: { externalId: homeExternalId, name: homeName, shortName: shortName(homeName), logoUrl: null },
-    away: { externalId: awayExternalId, name: awayName, shortName: shortName(awayName), logoUrl: null },
+    home: { externalId: homeExternalId, name: homeName, shortName: footballDataUkShortName(homeName), logoUrl: null },
+    away: { externalId: awayExternalId, name: awayName, shortName: footballDataUkShortName(awayName), logoUrl: null },
     homeScore,
     awayScore,
     winnerExternalId: result === "H" ? homeExternalId : result === "A" ? awayExternalId : null,
