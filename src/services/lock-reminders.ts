@@ -21,6 +21,15 @@ function defaultSender(): EmailSender {
   };
 }
 
+function escapeHtml(value: string) {
+  return value
+    .replace(/&/g, "&amp;")
+    .replace(/</g, "&lt;")
+    .replace(/>/g, "&gt;")
+    .replace(/"/g, "&quot;")
+    .replace(/'/g, "&#39;");
+}
+
 type ReminderCandidate = {
   user_id: string;
   email: string;
@@ -72,9 +81,9 @@ export async function sendLockReminders(options: { hoursBeforeLock?: number; sen
       await send({
         to: candidate.email,
         subject: `Your ${candidate.league_name} Weekly Lock closes ${lockAt}`,
-        html: `<p>Hi ${candidate.name},</p>` +
-          `<p>You have not made your independent Weekly Lock for ${candidate.league_name} · ${candidate.display_name}. Locks close ${lockAt}.</p>` +
-          `<p><a href="${serverEnv.betterAuthUrl}/leagues/${candidate.league_slug}">Make your pick</a></p>`,
+        html: `<p>Hi ${escapeHtml(candidate.name)},</p>` +
+          `<p>You have not made your independent Weekly Lock for ${escapeHtml(candidate.league_name)} · ${escapeHtml(candidate.display_name)}. Locks close ${lockAt}.</p>` +
+          `<p><a href="${serverEnv.betterAuthUrl}/leagues/${encodeURIComponent(candidate.league_slug)}">Make your pick</a></p>`,
         idempotencyKey: `lock-reminder/${candidate.user_id}/${candidate.matchweek_id}`,
       });
       await sqlClient`
