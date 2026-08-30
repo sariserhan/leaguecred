@@ -58,17 +58,6 @@ async function applyMerge({ canonical, duplicates }: Merge) {
   const duplicateIds = duplicates.map((team) => team.id);
 
   await sqlClient.begin(async (sql) => {
-    // Keep whatever the surviving row is missing before the others are removed.
-    for (const duplicate of duplicates) {
-      await sql`update teams set
-        logo_url = coalesce(teams.logo_url, ${duplicate.logo_url}),
-        logo_provider = case when teams.logo_url is null then ${duplicate.logo_provider} else teams.logo_provider end,
-        country_id = coalesce(teams.country_id, ${duplicate.country_id}),
-        sports_db_external_id = coalesce(teams.sports_db_external_id, ${duplicate.sports_db_external_id}),
-        updated_at = now()
-        where id = ${canonical.id}`;
-    }
-
     // The duplicate's own provider key becomes an alias, so the next sync from
     // that provider resolves to the surviving row instead of recreating it.
     for (const duplicate of duplicates) {
@@ -101,6 +90,19 @@ async function applyMerge({ canonical, duplicates }: Merge) {
       where team_id = any(${duplicateIds})`;
 
     await sql`delete from teams where id = any(${duplicateIds})`;
+
+    // Only now can the survivor take what it was missing: sports_db_external_id
+    // is unique, so copying it while the row that holds it still existed would
+    // trip the index.
+    for (const duplicate of duplicates) {
+      await sql`update teams set
+        logo_url = coalesce(teams.logo_url, ${duplicate.logo_url}),
+        logo_provider = case when teams.logo_url is null then ${duplicate.logo_provider} else teams.logo_provider end,
+        country_id = coalesce(teams.country_id, ${duplicate.country_id}),
+        sports_db_external_id = coalesce(teams.sports_db_external_id, ${duplicate.sports_db_external_id}),
+        updated_at = now()
+        where id = ${canonical.id}`;
+    }
 
     // The clean slug is usually held by the row being removed, so the survivor
     // can take it back now that nothing else claims it.
