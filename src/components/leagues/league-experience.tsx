@@ -231,6 +231,7 @@ export function LeagueExperience({
               <ShieldCheckIcon aria-hidden="true" className="size-5 text-primary" />
               <span><strong className="block">{data.viewer.tier}</strong><span className="text-sm text-background/70">{decisions} settled picks</span></span>
             </span>
+            <Link href="/slip" className="mt-4 text-sm font-semibold text-primary underline-offset-4 hover:underline">Open your Weekly Slip</Link>
           </aside>
         </div>
       </section>
