@@ -1,7 +1,8 @@
-import { ActivityIcon, CircleAlertIcon, HistoryIcon, RefreshCwIcon, ScrollTextIcon } from "lucide-react";
+import { ActivityIcon, CircleAlertIcon, HistoryIcon, RefreshCwIcon, ScrollTextIcon, ShieldAlertIcon } from "lucide-react";
 
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import type { SharedIpCluster, SuspiciousFollow } from "@/services/abuse-signals";
 import type { AdminAuditEntry } from "@/services/admin-audit-log";
 import type {
   OperationalSummary,
@@ -223,6 +224,69 @@ export function AdminAuditLogPanel({ entries }: { entries: AdminAuditEntry[] }) 
               </li>
             ))}
           </ul>
+        )}
+      </CardContent>
+    </Card>
+  );
+}
+
+export function AbuseSignalsPanel({
+  sharedIpClusters,
+  suspiciousFollows,
+}: {
+  sharedIpClusters: SharedIpCluster[];
+  suspiciousFollows: SuspiciousFollow[];
+}) {
+  const isClear = sharedIpClusters.length === 0 && suspiciousFollows.length === 0;
+
+  return (
+    <Card className="rounded-sm">
+      <CardHeader>
+        <CardTitle className="flex items-center gap-2 font-heading text-2xl font-bold uppercase">
+          <ShieldAlertIcon aria-hidden="true" className="size-5" />
+          Abuse signals
+        </CardTitle>
+        <CardDescription>
+          Accounts that have ever shared a sign-in address, and follows between accounts that share
+          one now. A signal, not proof — review before acting on it.
+        </CardDescription>
+      </CardHeader>
+      <CardContent className="p-0">
+        {isClear ? (
+          <p className="border-t px-6 py-8 text-sm text-muted-foreground">
+            No shared-address accounts or follows found.
+          </p>
+        ) : (
+          <div className="divide-y border-t">
+            {sharedIpClusters.map((cluster) => (
+              <div key={cluster.ipAddress} className="px-6 py-5">
+                <div className="flex flex-wrap items-center gap-2">
+                  <Badge variant="outline">{cluster.accounts.length} accounts</Badge>
+                  <code className="text-sm text-muted-foreground">{cluster.ipAddress}</code>
+                </div>
+                <ul className="mt-2 flex flex-wrap gap-x-4 gap-y-1 text-sm">
+                  {cluster.accounts.map((account) => (
+                    <li key={account.id} className="text-muted-foreground">
+                      <span className="font-semibold text-foreground">{account.name}</span> · {account.email}
+                    </li>
+                  ))}
+                </ul>
+              </div>
+            ))}
+            {suspiciousFollows.map((follow) => (
+              <div key={`${follow.followerId}-${follow.specialistId}-${follow.leagueName}`} className="px-6 py-5">
+                <div className="flex flex-wrap items-center gap-2">
+                  <Badge variant="secondary">Shared-address follow</Badge>
+                  <span className="text-sm font-semibold">{follow.leagueName}</span>
+                </div>
+                <p className="mt-2 text-sm text-muted-foreground">
+                  <span className="font-semibold text-foreground">{follow.followerName}</span> follows{" "}
+                  <span className="font-semibold text-foreground">{follow.specialistName}</span>, both from{" "}
+                  <code>{follow.sharedIpAddress}</code>
+                </p>
+              </div>
+            ))}
+          </div>
         )}
       </CardContent>
     </Card>

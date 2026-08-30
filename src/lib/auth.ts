@@ -1,10 +1,12 @@
 import { betterAuth } from "better-auth/minimal";
+import { APIError } from "better-auth/api";
 import { drizzleAdapter } from "better-auth/adapters/drizzle";
 import { nextCookies } from "better-auth/next-js";
 
 import { db } from "@/db";
 import * as schema from "@/db/schema";
 import { resolveTrustedOrigins } from "@/lib/auth-origins";
+import { isDisposableEmailDomain } from "@/lib/disposable-email-domains";
 import { sendEmail } from "@/lib/email";
 import { passwordResetEmail, verificationEmail } from "@/lib/email-templates";
 import { requireBetterAuthSecret, serverEnv } from "@/lib/env";
@@ -50,6 +52,22 @@ export const auth = betterAuth({
         type: "string",
         required: false,
         input: false,
+      },
+    },
+  },
+  // Sign-up and sign-in already carry Better Auth's default rate limit (3
+  // requests per 10 seconds), so the remaining easy multi-account vector is a
+  // throwaway address rather than request volume.
+  databaseHooks: {
+    user: {
+      create: {
+        before: async (user) => {
+          if (isDisposableEmailDomain(user.email)) {
+            throw new APIError("BAD_REQUEST", {
+              message: "Use a permanent email address. A Weekly Lock record cannot be rebuilt under a new account.",
+            });
+          }
+        },
       },
     },
   },
