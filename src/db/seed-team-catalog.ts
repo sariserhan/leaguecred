@@ -5,6 +5,10 @@ import {
   teamImportEntries,
   teamMembershipEntries,
 } from "@/db/team-catalog-data";
+import {
+  verifiedTeamImportOverrides,
+  verifiedTeamOverrides,
+} from "@/db/verified-team-overrides";
 
 export async function seedTeamCatalog(sql: postgres.TransactionSql) {
   const leagueExternalIds = [...new Set(teamImportEntries.map((entry) => entry.leagueExternalId))];
@@ -106,4 +110,66 @@ export async function seedTeamCatalog(sql: postgres.TransactionSql) {
       fetched_at = excluded.fetched_at,
       updated_at = now()
   `;
+
+  for (const entry of verifiedTeamOverrides) {
+    const leagueSeason = seasonByLeague.get(entry.leagueExternalId);
+    if (!leagueSeason) throw new Error(`Could not resolve verified team override league ${entry.leagueExternalId}.`);
+
+    const [team] = await sql<Array<{ id: string }>>`
+      insert into teams (
+        provider, provider_external_id, sports_db_external_id, name, short_name,
+        logo_url, logo_provider, country_id
+      )
+      values (
+        ${entry.provider}, ${entry.providerExternalId}, ${entry.sportsDbExternalId},
+        ${entry.name}, ${entry.shortName}, ${entry.logoUrl}, 'thesportsdb',
+        (select country_id from leagues where id = ${leagueSeason.league_id})
+      )
+      on conflict (provider, provider_external_id) do update set
+        sports_db_external_id = excluded.sports_db_external_id,
+        name = excluded.name,
+        short_name = excluded.short_name,
+        logo_url = excluded.logo_url,
+        logo_provider = excluded.logo_provider,
+        country_id = excluded.country_id,
+        updated_at = now()
+      returning id
+    `;
+    if (!team) throw new Error(`Could not upsert verified team override ${entry.name}.`);
+
+    await sql`
+      insert into league_team_memberships (
+        league_id, season_id, team_id, source_provider, source_scope
+      )
+      values (
+        ${leagueSeason.league_id}, ${leagueSeason.season_id}, ${team.id},
+        ${entry.membershipSourceProvider}, ${entry.membershipSourceScope}
+      )
+      on conflict (league_id, season_id, team_id) do update set
+        source_provider = excluded.source_provider,
+        source_scope = excluded.source_scope,
+        updated_at = now()
+    `;
+  }
+
+  for (const entry of verifiedTeamImportOverrides) {
+    const leagueSeason = seasonByLeague.get(entry.leagueExternalId);
+    if (!leagueSeason) throw new Error(`Could not resolve verified import override league ${entry.leagueExternalId}.`);
+
+    await sql`
+      insert into league_team_imports (
+        league_id, season_id, provider, is_complete, team_count, note, fetched_at
+      )
+      values (
+        ${leagueSeason.league_id}, ${leagueSeason.season_id}, ${entry.provider},
+        ${entry.isComplete}, ${entry.teamCount}, ${entry.note}, now()
+      )
+      on conflict (league_id, season_id, provider) do update set
+        is_complete = excluded.is_complete,
+        team_count = excluded.team_count,
+        note = excluded.note,
+        fetched_at = excluded.fetched_at,
+        updated_at = now()
+    `;
+  }
 }
