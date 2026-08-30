@@ -92,3 +92,28 @@ describe("layout", () => {
     expect(longer! / shorter!).toBeLessThan(1.1);
   });
 });
+
+describe("injection", () => {
+  const hostile = '<img src=x onerror="alert(1)">';
+
+  it("escapes a display name before it reaches the html body", () => {
+    for (const build of [passwordResetEmail, verificationEmail]) {
+      const message = build({ name: hostile, url });
+      expect(message.html).not.toContain("<img src=x");
+      expect(message.html).toContain("&lt;img src=x");
+    }
+  });
+
+  it("escapes the action url in both attribute and text position", () => {
+    const message = passwordResetEmail({
+      name: "Aylin",
+      url: 'https://example.test/reset?a=1&b="><script>',
+    });
+    expect(message.html).not.toContain('"><script>');
+    expect(message.html).toContain("&amp;b=");
+  });
+
+  it("leaves the plain-text part unescaped, since it is not markup", () => {
+    expect(passwordResetEmail({ name: hostile, url }).text).toContain(hostile);
+  });
+});

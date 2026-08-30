@@ -1,4 +1,5 @@
 import { Resend } from "resend";
+import { escapeHtml } from "@/lib/escape-html";
 
 import { sqlClient } from "@/db";
 import { requireResendApiKey, serverEnv } from "@/lib/env";
@@ -19,15 +20,6 @@ function defaultSender(): EmailSender {
     );
     if (error) throw new Error(error.message);
   };
-}
-
-function escapeHtml(value: string) {
-  return value
-    .replace(/&/g, "&amp;")
-    .replace(/</g, "&lt;")
-    .replace(/>/g, "&gt;")
-    .replace(/"/g, "&quot;")
-    .replace(/'/g, "&#39;");
 }
 
 type ReminderCandidate = {

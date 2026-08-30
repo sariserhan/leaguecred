@@ -8,6 +8,8 @@
  * in globals.css, every rule is inlined, and the layout is a centred table.
  */
 
+import { escapeHtml } from "@/lib/escape-html";
+
 const token = {
   background: "#ffffff",
   foreground: "#050d1c",
@@ -81,13 +83,13 @@ function layout(input: LayoutInput) {
           </tr>
           <tr>
             <td class="gutter" style="padding:28px 40px 0">
-              <a class="cta" href="${input.actionUrl}" style="display:inline-block;background:${token.primary};color:${token.primaryForeground};text-decoration:none;padding:14px 28px;font-size:15px;font-weight:700;border-radius:5px">${input.actionLabel}</a>
+              <a class="cta" href="${escapeHtml(input.actionUrl)}" style="display:inline-block;background:${token.primary};color:${token.primaryForeground};text-decoration:none;padding:14px 28px;font-size:15px;font-weight:700;border-radius:5px">${input.actionLabel}</a>
             </td>
           </tr>
           <tr>
             <td class="gutter" style="padding:28px 40px 0">
               <p style="margin:0 0 6px;font-size:13px;line-height:1.6;color:${token.mutedForeground}">If the button does not work, paste this link into your browser:</p>
-              <p style="margin:0;font-size:13px;line-height:1.6;word-break:break-all"><a href="${input.actionUrl}" style="color:${token.foreground}">${input.actionUrl}</a></p>
+              <p style="margin:0;font-size:13px;line-height:1.6;word-break:break-all"><a href="${escapeHtml(input.actionUrl)}" style="color:${token.foreground}">${escapeHtml(input.actionUrl)}</a></p>
             </td>
           </tr>
           <tr>
@@ -114,6 +116,7 @@ function layout(input: LayoutInput) {
 
 export function passwordResetEmail(input: { name: string; url: string }): EmailMessage {
   const greeting = input.name ? `${input.name}, ` : "";
+  const htmlGreeting = input.name ? `${escapeHtml(input.name)}, ` : "";
   const body =
     "Use the button below to choose a new password. The link expires in one hour and can only be " +
     "used once. Your Weekly Lock record is not affected.";
@@ -127,7 +130,7 @@ export function passwordResetEmail(input: { name: string; url: string }): EmailM
     html: layout({
       preheader: "Choose a new password. The link expires in one hour.",
       heading: "Choose a new password",
-      body: `${greeting}${body}`,
+      body: `${htmlGreeting}${body}`,
       actionUrl: input.url,
       actionLabel: "Reset password",
       footnote:
@@ -138,6 +141,7 @@ export function passwordResetEmail(input: { name: string; url: string }): EmailM
 
 export function verificationEmail(input: { name: string; url: string }): EmailMessage {
   const greeting = input.name ? `${input.name}, ` : "";
+  const htmlGreeting = input.name ? `${escapeHtml(input.name)}, ` : "";
   const body =
     "Confirm this address so your account stays recoverable. A verified address is the only way " +
     "back in, and a Weekly Lock record cannot be rebuilt.";
@@ -150,7 +154,7 @@ export function verificationEmail(input: { name: string; url: string }): EmailMe
     html: layout({
       preheader: "Confirm your address so your record stays recoverable.",
       heading: "Confirm your address",
-      body: `${greeting}${body}`,
+      body: `${htmlGreeting}${body}`,
       actionUrl: input.url,
       actionLabel: "Confirm address",
       footnote:
