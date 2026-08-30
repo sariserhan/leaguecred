@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useTransition } from "react";
+import Image from "next/image";
 import { useRouter } from "next/navigation";
 import {
   CheckIcon,
@@ -43,13 +44,15 @@ import { cn } from "@/lib/utils";
 type ParticipationMode = "prove" | "follow";
 type Selection = { fixtureId: string; teamId: string; teamName: string };
 
-function TeamMark({ code, selected }: { code: string; selected: boolean }) {
+function TeamMark({ code, logoUrl, selected }: { code: string; logoUrl: string | null; selected: boolean }) {
   return (
     <span className={cn(
       "flex size-10 shrink-0 items-center justify-center rounded-full border font-heading text-sm font-bold",
       selected ? "border-primary bg-primary" : "bg-muted",
     )}>
-      {code}
+      {logoUrl ? (
+        <Image src={logoUrl} alt="" width={32} height={32} className="size-8 object-contain" />
+      ) : code}
     </span>
   );
 }
@@ -191,11 +194,11 @@ export function LeagueExperience({ data }: { data: LeagueExperienceData }) {
                 return (
                   <div key={fixture.id} className={cn("grid gap-3 p-3 sm:grid-cols-[1fr_auto_1fr] sm:items-center", homeSelected || awaySelected ? "bg-primary/10" : "bg-background")}>
                     <button type="button" disabled={disabled} onClick={() => setSelection({ fixtureId: fixture.id, teamId: fixture.homeTeamId, teamName: fixture.home })} className="flex items-center gap-3 text-left font-semibold disabled:cursor-not-allowed disabled:opacity-60" aria-pressed={homeSelected}>
-                      <TeamMark code={fixture.homeCode} selected={homeSelected} />{fixture.home}
+                      <TeamMark code={fixture.homeCode} logoUrl={fixture.homeLogoUrl} selected={homeSelected} />{fixture.home}
                     </button>
                     <span className="text-center text-sm text-muted-foreground">{fixture.kickoff}</span>
                     <button type="button" disabled={disabled} onClick={() => setSelection({ fixtureId: fixture.id, teamId: fixture.awayTeamId, teamName: fixture.away })} className="flex items-center justify-end gap-3 text-right font-semibold disabled:cursor-not-allowed disabled:opacity-60" aria-pressed={awaySelected}>
-                      {fixture.away}<TeamMark code={fixture.awayCode} selected={awaySelected} />
+                      {fixture.away}<TeamMark code={fixture.awayCode} logoUrl={fixture.awayLogoUrl} selected={awaySelected} />
                     </button>
                   </div>
                 );

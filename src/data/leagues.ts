@@ -118,9 +118,11 @@ export type DatabaseFixture = {
   id: string;
   home: string;
   homeCode: string;
+  homeLogoUrl: string | null;
   homeTeamId: string;
   away: string;
   awayCode: string;
+  awayLogoUrl: string | null;
   awayTeamId: string;
   kickoff: string;
 };
@@ -182,9 +184,9 @@ export async function getLeagueExperience(slug: string, userId?: string): Promis
 
   const viewerId = userId ?? "";
   const [fixtureRows, specialistRows, participationRows, pickRows, recordRows, followedRows] = await Promise.all([
-    sqlClient<Array<{ id: string; kickoff_at: Date; home_id: string; home: string; home_code: string; away_id: string; away: string; away_code: string }>>`
-      select f.id, f.kickoff_at, h.id as home_id, h.name as home, h.short_name as home_code,
-        a.id as away_id, a.name as away, a.short_name as away_code
+    sqlClient<Array<{ id: string; kickoff_at: Date; home_id: string; home: string; home_code: string; home_logo_url: string | null; away_id: string; away: string; away_code: string; away_logo_url: string | null }>>`
+      select f.id, f.kickoff_at, h.id as home_id, h.name as home, h.short_name as home_code, h.logo_url as home_logo_url,
+        a.id as away_id, a.name as away, a.short_name as away_code, a.logo_url as away_logo_url
       from fixtures f join teams h on h.id = f.home_team_id join teams a on a.id = f.away_team_id
       where f.matchweek_id = ${matchweek.id}
         and f.kickoff_at >= now()
@@ -220,8 +222,8 @@ export async function getLeagueExperience(slug: string, userId?: string): Promis
     league: { id: league.id, slug: league.slug, name: league.name, shortName: league.short_name, country: league.country, countryCode: league.country_code },
     matchweek: { id: matchweek.id, seasonId: matchweek.season_id, displayName: matchweek.display_name, lockAt: new Date(matchweek.lock_at).toISOString(), status: matchweek.status },
     fixtures: fixtureRows.map((fixture) => ({
-      id: fixture.id, home: fixture.home, homeCode: fixture.home_code, homeTeamId: fixture.home_id,
-      away: fixture.away, awayCode: fixture.away_code, awayTeamId: fixture.away_id,
+      id: fixture.id, home: fixture.home, homeCode: fixture.home_code, homeLogoUrl: fixture.home_logo_url, homeTeamId: fixture.home_id,
+      away: fixture.away, awayCode: fixture.away_code, awayLogoUrl: fixture.away_logo_url, awayTeamId: fixture.away_id,
       kickoff: new Intl.DateTimeFormat("en", { weekday: "long", hour: "2-digit", minute: "2-digit", timeZone: "UTC" }).format(new Date(fixture.kickoff_at)),
     })),
     specialists: specialistRows.map((specialist) => ({
