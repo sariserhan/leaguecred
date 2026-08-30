@@ -88,21 +88,21 @@ const returnedCalls = [
   {
     league: "Serie A",
     specialist: "Marco",
-    record: "92.0% · 23–2",
+    record: "79.2% · 19–5",
     call: "Atalanta",
     fixture: "vs Lecce",
   },
   {
     league: "La Liga",
     specialist: "LaLigaLens",
-    record: "91.3% · 21–2",
+    record: "77.4% · 24–7",
     call: "Real Sociedad",
     fixture: "vs Getafe",
   },
   {
     league: "Liga MX",
     specialist: "Diego",
-    record: "90.9% · 20–2",
+    record: "73.9% · 17–6",
     call: "Monterrey",
     fixture: "vs Necaxa",
   },
@@ -120,23 +120,21 @@ export default async function HomePage() {
           </h1>
           <p className="max-w-xl text-lg leading-8 text-muted-foreground sm:text-xl">
             Give the one match you are sure of—the week you know Galatasaray win. Get one
-            back from someone who watches La Liga every week. One call each, every week,
-            permanently on the record.
+            back from someone who watches La Liga every week.
           </p>
-          <div className="flex flex-col gap-3 sm:flex-row">
+          <div className="flex flex-col items-start gap-4 sm:flex-row sm:items-center sm:gap-6">
             <Link
               href="/leagues?intent=prove"
               className={buttonVariants({ size: "lg" })}
             >
-              Prove your league
+              Make this week&apos;s call
               <ArrowRightIcon data-icon="inline-end" />
             </Link>
             <Link
               href="/leagues?intent=follow"
-              className={buttonVariants({ variant: "outline", size: "lg" })}
+              className="text-sm font-semibold underline underline-offset-4 transition-colors hover:text-primary"
             >
-              Find a specialist
-              <ArrowRightIcon data-icon="inline-end" />
+              or follow a proven specialist instead
             </Link>
           </div>
         </div>
