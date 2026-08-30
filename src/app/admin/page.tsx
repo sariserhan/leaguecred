@@ -3,6 +3,7 @@ import Link from "next/link";
 import { ShieldCheckIcon } from "lucide-react";
 
 import {
+  AdminAuditLogPanel,
   DiagnosticsHeading,
   OperationalSummaryPanel,
   SettlementCorrectionsPanel,
@@ -12,6 +13,7 @@ import { FeatureFlagControls } from "@/components/admin/feature-flag-controls";
 import { SiteControls } from "@/components/admin/site-controls";
 import { buttonVariants } from "@/components/ui/button";
 import { requireAdmin } from "@/lib/admin";
+import { getAdminAuditLog } from "@/services/admin-audit-log";
 import {
   getOperationalSummary,
   getSettlementCorrections,
@@ -30,12 +32,13 @@ export default async function AdminPage() {
   // Authorization runs before anything is read, so a member never triggers a query.
   const viewer = await requireAdmin();
 
-  const [settings, flags, summary, syncRuns, corrections] = await Promise.all([
+  const [settings, flags, summary, syncRuns, corrections, auditLog] = await Promise.all([
     getSiteSettings(),
     getFeatureFlags(),
     getOperationalSummary(),
     getSyncRunDiagnostics(),
     getSettlementCorrections(),
+    getAdminAuditLog(),
   ]);
 
   return (
@@ -69,6 +72,7 @@ export default async function AdminPage() {
         <DiagnosticsHeading />
         <SyncRunsPanel runs={syncRuns} />
         <SettlementCorrectionsPanel corrections={corrections} />
+        <AdminAuditLogPanel entries={auditLog} />
       </section>
     </div>
   );

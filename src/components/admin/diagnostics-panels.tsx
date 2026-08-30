@@ -1,12 +1,18 @@
-import { ActivityIcon, CircleAlertIcon, RefreshCwIcon, ScrollTextIcon } from "lucide-react";
+import { ActivityIcon, CircleAlertIcon, HistoryIcon, RefreshCwIcon, ScrollTextIcon } from "lucide-react";
 
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import type { AdminAuditEntry } from "@/services/admin-audit-log";
 import type {
   OperationalSummary,
   SettlementCorrectionDiagnostic,
   SyncRunDiagnostic,
 } from "@/services/admin-diagnostics";
+
+const auditActionLabel: Record<AdminAuditEntry["action"], string> = {
+  site_settings_updated: "Site settings updated",
+  feature_flag_toggled: "Feature flag toggled",
+};
 
 const dateTimeFormatter = new Intl.DateTimeFormat("en", {
   month: "short",
@@ -154,6 +160,66 @@ export function SettlementCorrectionsPanel({
                 <code className="mt-2 block text-xs text-muted-foreground">
                   pick {correction.pickId}
                 </code>
+              </li>
+            ))}
+          </ul>
+        )}
+      </CardContent>
+    </Card>
+  );
+}
+
+function formatAuditValue(value: unknown): string {
+  if (value === null || value === undefined) return "—";
+  if (typeof value === "string") return value.length > 40 ? `"${value.slice(0, 40)}…"` : `"${value}"`;
+  return String(value);
+}
+
+function summarizeAuditChange(before: unknown, after: unknown): string {
+  const beforeRecord = (before ?? {}) as Record<string, unknown>;
+  const afterRecord = (after ?? {}) as Record<string, unknown>;
+  const keys = new Set([...Object.keys(beforeRecord), ...Object.keys(afterRecord)]);
+
+  const changes = [...keys]
+    .filter((key) => JSON.stringify(beforeRecord[key]) !== JSON.stringify(afterRecord[key]))
+    .map((key) => `${key}: ${formatAuditValue(beforeRecord[key])} → ${formatAuditValue(afterRecord[key])}`);
+
+  return changes.length > 0 ? changes.join(", ") : "First recorded value";
+}
+
+export function AdminAuditLogPanel({ entries }: { entries: AdminAuditEntry[] }) {
+  return (
+    <Card className="rounded-sm">
+      <CardHeader>
+        <CardTitle className="flex items-center gap-2 font-heading text-2xl font-bold uppercase">
+          <HistoryIcon aria-hidden="true" className="size-5" />
+          Admin activity
+        </CardTitle>
+        <CardDescription>
+          Every site-settings save and feature-flag toggle, newest first. This log cannot be edited
+          or removed.
+        </CardDescription>
+      </CardHeader>
+      <CardContent className="p-0">
+        {entries.length === 0 ? (
+          <p className="border-t px-6 py-8 text-sm text-muted-foreground">
+            No admin change has been recorded yet.
+          </p>
+        ) : (
+          <ul className="divide-y border-t">
+            {entries.map((entry) => (
+              <li key={entry.id} className="px-6 py-5">
+                <div className="flex flex-wrap items-center gap-2">
+                  <Badge variant="outline">{auditActionLabel[entry.action]}</Badge>
+                  <span className="text-sm font-semibold">{entry.target}</span>
+                  <span className="text-sm text-muted-foreground">{entry.actorName}</span>
+                  <span className="ml-auto text-xs text-muted-foreground">
+                    {formatMoment(entry.createdAt)}
+                  </span>
+                </div>
+                <p className="mt-2 text-sm leading-6 text-muted-foreground break-words">
+                  {summarizeAuditChange(entry.before, entry.after)}
+                </p>
               </li>
             ))}
           </ul>
