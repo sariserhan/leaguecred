@@ -145,7 +145,7 @@ export const getLeagueNavTeams = cache(async function getLeagueNavTeams(
   leagueSlug: string,
 ): Promise<TeamNavTeam[]> {
   return sqlClient<TeamNavTeam[]>`
-    select t.slug, t.name, t.logo_url as "logoUrl"
+    select distinct t.slug, t.name, t.logo_url as "logoUrl"
     from teams t
     join league_team_memberships membership on membership.team_id = t.id
     join seasons s on s.id = membership.season_id and s.is_current = true
