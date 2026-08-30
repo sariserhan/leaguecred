@@ -103,6 +103,7 @@ const aliases: Record<string, string> = {
   brndby: "brondby",
   estidianteslp: "estudiantesdelaplata",
   estudianteslp: "estudiantesdelaplata",
+  estudiantesriocuarto: "estudiantesderiocuarto",
   fccopenhagen: "copenhagen",
   fcmidtjylland: "midtjylland",
   fcnordsjaelland: "nordsjaelland",
