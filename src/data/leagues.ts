@@ -164,7 +164,20 @@ export async function getLeagueExperience(slug: string, userId?: string): Promis
   const [matchweek] = await sqlClient<MatchweekRow[]>`
     select id, season_id, display_name, lock_at, status from matchweeks
     where league_id = ${league.id}
-    order by case when status = 'upcoming' then 0 else 1 end, lock_at desc limit 1`;
+      and status = 'upcoming'
+      and exists(
+        select 1 from fixtures f
+        where f.matchweek_id = matchweeks.id
+          and f.kickoff_at >= now()
+          and f.status = 'scheduled'
+      )
+    order by (
+      select min(f.kickoff_at) from fixtures f
+      where f.matchweek_id = matchweeks.id
+        and f.kickoff_at >= now()
+        and f.status = 'scheduled'
+    ) asc
+    limit 1`;
   if (!matchweek) return null;
 
   const viewerId = userId ?? "";
@@ -173,7 +186,10 @@ export async function getLeagueExperience(slug: string, userId?: string): Promis
       select f.id, f.kickoff_at, h.id as home_id, h.name as home, h.short_name as home_code,
         a.id as away_id, a.name as away, a.short_name as away_code
       from fixtures f join teams h on h.id = f.home_team_id join teams a on a.id = f.away_team_id
-      where f.matchweek_id = ${matchweek.id} order by f.kickoff_at`,
+      where f.matchweek_id = ${matchweek.id}
+        and f.kickoff_at >= now()
+        and f.status = 'scheduled'
+      order by f.kickoff_at`,
     sqlClient<Array<{ id: string; name: string; wins: number; losses: number; settled_picks: number; followers: number; lock: string; source_pick_id: string }>>`
       select u.id, u.name, r.wins, r.losses, r.settled_picks,
         (select count(*)::int from league_follows lf where lf.specialist_user_id = u.id and lf.league_id = ${league.id}) as followers,

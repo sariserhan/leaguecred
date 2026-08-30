@@ -33,22 +33,16 @@ export async function generateMetadata(
 }
 
 export default async function LeaguePage(props: LeaguePageProps) {
-  const { slug } = await props.params;
-  const session = await getSession();
-  const league = (await getLeagueDirectory(session?.user.id)).find((item) => item.slug === slug);
-
-  if (!league) notFound();
-
-  if (league.slug !== "super-lig") {
-    const teamCatalog = await getLeagueTeamCatalog(slug);
-    return <LeagueComingSoon league={league} teamCatalog={teamCatalog} />;
-  }
-
-  const [experience, teamCatalog] = await Promise.all([
+  const [{ slug }, session] = await Promise.all([props.params, getSession()]);
+  const [leagueDirectory, experience, teamCatalog] = await Promise.all([
+    getLeagueDirectory(session?.user.id),
     getLeagueExperience(slug, session?.user.id),
     getLeagueTeamCatalog(slug),
   ]);
-  if (!experience) notFound();
+  const league = leagueDirectory.find((item) => item.slug === slug);
+
+  if (!league) notFound();
+  if (!experience) return <LeagueComingSoon league={league} teamCatalog={teamCatalog} />;
 
   return (
     <>

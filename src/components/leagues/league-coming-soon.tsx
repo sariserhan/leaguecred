@@ -29,7 +29,7 @@ export function LeagueComingSoon({
               {league.name}
             </h1>
             <p className="mt-4 max-w-3xl text-lg leading-8 text-muted-foreground">
-              Team catalog available now. Fixtures, Weekly Locks, and specialist records will appear after a complete current-season fixture source is connected.
+              Team catalog available now. The next fixture set will appear here when its schedule is published.
             </p>
           </div>
         </div>

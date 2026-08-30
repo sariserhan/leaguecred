@@ -34,19 +34,31 @@ export type EspnEvent = {
 
 type EspnScoreboardResponse = { events?: EspnEvent[] };
 
-// Football-Data.co.uk already supplies the other 12 supported domestic leagues.
+// ESPN provides the shared fixture source for every enabled LeagueCred competition.
 export const ESPN_FIXTURE_COMPETITIONS = [
+  { leagueSlug: "premier-league", externalId: "eng.1" },
   { leagueSlug: "uefa-champions-league", externalId: "uefa.champions" },
+  { leagueSlug: "la-liga", externalId: "esp.1" },
+  { leagueSlug: "serie-a", externalId: "ita.1" },
+  { leagueSlug: "bundesliga", externalId: "ger.1" },
+  { leagueSlug: "ligue-1", externalId: "fra.1" },
   { leagueSlug: "europa-league", externalId: "uefa.europa" },
   { leagueSlug: "brasileirao-serie-a", externalId: "bra.1" },
+  { leagueSlug: "super-lig", externalId: "tur.1" },
+  { leagueSlug: "primeira-liga", externalId: "por.1" },
+  { leagueSlug: "eredivisie", externalId: "ned.1" },
+  { leagueSlug: "efl-championship", externalId: "eng.2" },
   { leagueSlug: "liga-mx", externalId: "mex.1" },
   { leagueSlug: "major-league-soccer", externalId: "usa.1" },
   { leagueSlug: "liga-profesional-argentina", externalId: "arg.1" },
   { leagueSlug: "saudi-arabia-pro-league", externalId: "ksa.1" },
+  { leagueSlug: "belgium-jupiler-pro-league", externalId: "bel.1" },
+  { leagueSlug: "scotland-premiership", externalId: "sco.1" },
   { leagueSlug: "copa-libertadores", externalId: "conmebol.libertadores" },
   { leagueSlug: "uefa-conference-league", externalId: "uefa.europa.conf" },
   { leagueSlug: "austria-bundesliga", externalId: "aut.1" },
   { leagueSlug: "denmark-superliga", externalId: "den.1" },
+  { leagueSlug: "super-league-greece", externalId: "gre.1" },
 ] as const;
 
 function compactDate(isoDate: string) {

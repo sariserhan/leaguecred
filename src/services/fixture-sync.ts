@@ -38,7 +38,9 @@ export async function synchronizeFixtures(provider: FixtureProvider, now = new D
         source_external_id: sourceIds?.get(config.slug) ?? config.provider_external_id,
       }));
     const from = new Date(now); from.setUTCDate(from.getUTCDate() - 7);
-    const to = new Date(now); to.setUTCDate(to.getUTCDate() + 14);
+    // Store enough of the schedule for competitions whose next round is more than two weeks away.
+    // The league page still renders only its immediate upcoming matchweek.
+    const to = new Date(now); to.setUTCDate(to.getUTCDate() + 90);
 
     // Complete external requests concurrently and before opening write transactions.
     const fetched = await Promise.all(configs.map(async (config) => ({
@@ -53,7 +55,15 @@ export async function synchronizeFixtures(provider: FixtureProvider, now = new D
     requestCount = fetched.reduce((total, entry) => total + entry.batch.requestCount, 0);
 
     for (const { config, batch } of fetched) {
-      const rounds = Map.groupBy(batch.fixtures, (fixture) => fixture.round);
+      // Persist recent results and only the immediate next matchweek. This keeps the
+      // scheduled job bounded even when a provider returns an entire season.
+      const nextFixture = batch.fixtures
+        .filter((fixture) => fixture.status === "scheduled" && Date.parse(fixture.kickoffAt) >= now.getTime())
+        .toSorted((left, right) => Date.parse(left.kickoffAt) - Date.parse(right.kickoffAt))[0];
+      const relevantFixtures = batch.fixtures.filter((fixture) =>
+        fixture.status !== "scheduled" || fixture.round === nextFixture?.round,
+      );
+      const rounds = Map.groupBy(relevantFixtures, (fixture) => fixture.round);
       for (const [round, fixtures] of rounds) await synchronizeRound(provider.name, config, round, fixtures);
     }
 

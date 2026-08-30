@@ -8,9 +8,11 @@ const scheduledFixture = {
 };
 
 describe("ESPN fixture provider", () => {
-  it("covers the eleven competitions missing from Football-Data.co.uk", () => {
-    expect(ESPN_FIXTURE_COMPETITIONS).toHaveLength(11);
+  it("covers every enabled competition", () => {
+    expect(ESPN_FIXTURE_COMPETITIONS).toHaveLength(23);
     expect(ESPN_FIXTURE_COMPETITIONS.map((entry) => entry.leagueSlug)).toContain("denmark-superliga");
+    expect(ESPN_FIXTURE_COMPETITIONS.map((entry) => entry.leagueSlug)).toContain("premier-league");
+    expect(ESPN_FIXTURE_COMPETITIONS.map((entry) => entry.leagueSlug)).toContain("efl-championship");
     expect(ESPN_FIXTURE_COMPETITIONS.map((entry) => entry.leagueSlug)).not.toContain("switzerland-super-league");
     expect(ESPN_FIXTURE_COMPETITIONS.map((entry) => entry.leagueSlug)).not.toContain("czech-republic-czech-liga");
   });
