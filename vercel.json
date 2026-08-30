@@ -2,12 +2,12 @@
   "$schema": "https://openapi.vercel.sh/vercel.json",
   "crons": [
     {
-      "path": "/api/jobs/fixtures",
+      "path": "/api/jobs/daily",
       "schedule": "0 4 * * *"
     },
     {
-      "path": "/api/jobs/team-logos",
-      "schedule": "0 5 * * *"
+      "path": "/api/jobs/reminders",
+      "schedule": "0 9 * * *"
     }
   ]
 }

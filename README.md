@@ -61,7 +61,7 @@ The catalog seed idempotently loads the 25 competitions currently supported by t
 
 Fixture synchronization uses Football-Data.co.uk's published CSV files for the 12 supported domestic fixture feeds and their recent final results. The files are parsed in memory and discarded; Neon stores normalized fixtures, scores, provider aliases, and sync-run metadata. Champions League fixtures and delayed results come from football-data.org when `FOOTBALL_DATA_API_KEY` is configured. API-Football remains available for catalog metadata but is no longer the default fixture source.
 
-HTTP schedulers can call `POST /api/jobs/fixtures`, `POST /api/jobs/settlement`, and `POST /api/jobs/reminders` with `Authorization: Bearer $CRON_SECRET`.
+Vercel runs two cron jobs: `GET /api/jobs/daily` at 04:00 UTC, which chains fixture synchronization, settlement, and team-logo backfill in that order, and `GET /api/jobs/reminders` at 09:00 UTC. The individual routes `/api/jobs/fixtures`, `/api/jobs/settlement`, `/api/jobs/team-logos`, and `/api/jobs/reminders` remain available for manual runs. All of them accept GET or POST and require `Authorization: Bearer $CRON_SECRET`.
 
 `pnpm remind` emails anyone who has ever locked, followed, or been followed in a league about an upcoming matchweek closing within 24 hours, if they have not yet made this week's independent Weekly Lock. Each user is reminded at most once per matchweek (tracked in `lock_reminders`). Sending requires `RESEND_API_KEY`; `RESEND_FROM_EMAIL` defaults to Resend's unverified-domain test sender, which only delivers to Resend's own test addresses, so set a verified sender before relying on this in production.
 

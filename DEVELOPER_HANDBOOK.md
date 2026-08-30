@@ -266,7 +266,18 @@ must get a 404 at `/admin`, and an admin must keep browsing the site while maint
 
 ## Operations
 
-- Vercel invokes `GET /api/jobs/fixtures` daily at 04:00 UTC; manual schedulers may use GET or POST with `Authorization: Bearer $CRON_SECRET`.
+- Vercel runs two cron jobs, both by `GET` with `Authorization: Bearer $CRON_SECRET`:
+  `GET /api/jobs/daily` at 04:00 UTC and `GET /api/jobs/reminders` at 09:00 UTC.
+- `/api/jobs/daily` chains fixture sync, then settlement, then team-logo backfill. The order is
+  the point: settlement reads final scores, so it has to run after the sync rather than beside
+  it. Steps are independent, so one failure is recorded and the rest still run, and every step
+  is idempotent, so the next night recovers whatever failed.
+- Two cron entries is also the limit on a Hobby project, which is why the nightly work is one
+  chained route rather than three separate schedules.
+- The individual routes stay for manual runs: `/api/jobs/fixtures`, `/api/jobs/settlement`,
+  `/api/jobs/team-logos`, `/api/jobs/reminders`. All accept GET or POST with the same bearer.
+- The daily route answers 500 when any step failed, so a silent nightly failure shows up in the
+  Vercel cron log rather than only in the admin diagnostics.
 - Fixture sync fetches recent results plus a 14-day domestic window and the complete current Champions League season, recording request counts and failures in `api_sync_runs`.
 - Football-Data.co.uk is fetched as one fixture CSV and one in-memory season ZIP for all 12 domestic leagues; raw files are discarded after parsing.
 - After participation or status change freezes a matchweek, provider sync may update scores/statuses but not add eligible fixtures or move kickoffs.
