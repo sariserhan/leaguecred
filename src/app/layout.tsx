@@ -20,6 +20,7 @@ const barlowCondensed = Barlow_Condensed({
 });
 
 export const metadata: Metadata = {
+  metadataBase: new URL("https://leaguecred.com"),
   title: {
     default: "LeagueCred — Know one league",
     template: "%s · LeagueCred",
