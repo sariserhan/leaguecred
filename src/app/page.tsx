@@ -84,7 +84,7 @@ const returnedCalls = [
   },
   {
     league: "La Liga",
-    specialist: "Elena",
+    specialist: "LaLigaLens",
     record: "91.3% · 21–2",
     call: "Real Sociedad",
     fixture: "vs Getafe",
