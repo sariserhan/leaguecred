@@ -1,8 +1,10 @@
 import Link from "next/link";
 import {
+  ArrowDownIcon,
   ArrowRightIcon,
   ChartNoAxesColumnIncreasingIcon,
   ClipboardPenLineIcon,
+  ShieldCheckIcon,
   UsersRoundIcon,
 } from "lucide-react";
 
@@ -27,6 +29,25 @@ const steps = [
     description:
       "Your league knowledge helps someone else; their strongest call helps you in a league you do not know.",
     icon: UsersRoundIcon,
+  },
+] as const;
+
+const knowledgeExchange = [
+  {
+    title: "You know La Liga.",
+    description: "You watch it every week. You know the injuries, the mood, and which next game is the one to trust.",
+  },
+  {
+    title: "I know Serie A.",
+    description: "I have the same depth in Italy, so my one call gives you knowledge you would not get from a table alone.",
+  },
+  {
+    title: "A Chelsea fan knows Chelsea.",
+    description: "They follow every press conference, lineup change, and reaction around the club better than an outsider can.",
+  },
+  {
+    title: "A Galatasaray fan knows Galatasaray.",
+    description: "They understand the squad, the atmosphere, and what the next match means for their team.",
   },
 ] as const;
 
@@ -98,6 +119,71 @@ export default function HomePage() {
               );
             })}
           </ol>
+        </div>
+      </section>
+
+      <section className="page-shell py-14 sm:py-20">
+        <div className="grid overflow-hidden border lg:grid-cols-2">
+          <div className="bg-foreground p-7 text-background sm:p-10 lg:p-12">
+            <h2 className="font-heading text-5xl leading-none font-extrabold uppercase sm:text-6xl">
+              You know your league better than anyone.
+            </h2>
+            <p className="mt-6 max-w-xl text-lg leading-8 text-background/75">
+              The table cannot tell the whole story. Fans who live with a league know
+              how a team will react to its next game—and which one is almost too strong
+              to ignore.
+            </p>
+            <ol className="mt-10 divide-y divide-background/20 border-y border-background/20">
+              {knowledgeExchange.map((member) => (
+                <li key={member.title} className="py-5">
+                  <h3 className="font-heading text-2xl font-bold uppercase text-primary">{member.title}</h3>
+                  <p className="mt-2 max-w-xl leading-7 text-background/75">{member.description}</p>
+                </li>
+              ))}
+            </ol>
+          </div>
+
+          <div className="flex flex-col justify-center bg-background p-7 sm:p-10 lg:p-12">
+            <h2 className="section-title max-w-lg">Exchange your strongest call. Build the week together.</h2>
+            <p className="mt-5 max-w-xl leading-7 text-muted-foreground">
+              Everyone gives one team they believe will win with near-total confidence
+              from the league or club they truly understand. In return, everyone gets
+              the same kind of trusted call from the others.
+            </p>
+
+            <div className="mt-8 space-y-2">
+              {knowledgeExchange.map((member, index) => (
+                <div key={member.title}>
+                  <div className="flex items-center gap-4 border p-4">
+                    <span className="flex size-10 shrink-0 items-center justify-center rounded-full bg-foreground text-primary">
+                      <UsersRoundIcon aria-hidden="true" className="size-5" />
+                    </span>
+                    <span className="font-semibold">{member.title.replace(".", "")} call</span>
+                  </div>
+                  {index < knowledgeExchange.length - 1 ? <ArrowDownIcon aria-hidden="true" className="mx-auto my-1 size-5 text-primary" /> : null}
+                </div>
+              ))}
+            </div>
+
+            <div className="mt-8 border">
+              <div className="flex items-center gap-3 bg-primary px-5 py-4 text-primary-foreground">
+                <ShieldCheckIcon aria-hidden="true" className="size-6" />
+                <h3 className="font-heading text-xl font-bold uppercase">One community slip. Built from real league knowledge.</h3>
+              </div>
+              <div className="divide-y">
+                {knowledgeExchange.map((member) => (
+                  <div key={member.title} className="flex items-center justify-between gap-4 px-5 py-4">
+                    <span className="font-semibold">{member.title.replace(".", "")}</span>
+                    <span className="text-sm text-muted-foreground">One almost-sure winner</span>
+                  </div>
+                ))}
+              </div>
+            </div>
+            <p className="mt-5 text-sm leading-6 text-muted-foreground">
+              We do not win because one person guessed every league. We build the week together,
+              each person contributing the one call they know best.
+            </p>
+          </div>
         </div>
       </section>
     </>
