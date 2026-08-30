@@ -131,3 +131,29 @@ export async function followSpecialistPick(sourcePickId: string): Promise<League
     return actionError(error);
   }
 }
+
+export async function followSpecialist(specialistUserId: string, leagueId: string): Promise<LeagueActionResult> {
+  const parsed = z.object({ specialistUserId: z.string().min(1), leagueId: uuid }).safeParse({ specialistUserId, leagueId });
+  if (!parsed.success) return { ok: false, message: "That specialist or league is invalid." };
+  const userId = await authenticatedUserId();
+  if (!userId) return { ok: false, message: "Sign in before following a specialist." };
+  if (userId === parsed.data.specialistUserId) return { ok: false, message: "You cannot follow your own record." };
+
+  try {
+    const [league] = await sqlClient<Array<{ slug: string }>>`
+      select l.slug from leagues l
+      join user_league_records r on r.league_id = l.id
+      where l.id = ${parsed.data.leagueId} and l.enabled = true
+        and r.user_id = ${parsed.data.specialistUserId} and r.settled_picks >= 10
+      limit 1`;
+    if (!league) return { ok: false, message: "This specialist does not have a public record in that league." };
+    await sqlClient`insert into league_follows (follower_user_id, specialist_user_id, league_id)
+      values (${userId}, ${parsed.data.specialistUserId}, ${parsed.data.leagueId}) on conflict do nothing`;
+    revalidatePath(`/specialists/${parsed.data.specialistUserId}`);
+    revalidatePath(`/leagues/${league.slug}`);
+    revalidatePath("/leagues");
+    return { ok: true };
+  } catch (error) {
+    return actionError(error);
+  }
+}

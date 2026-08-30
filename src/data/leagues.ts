@@ -178,6 +178,7 @@ export type MatchweekHistoryData = {
   }>;
   locks: Array<{
     id: string;
+    specialistId: string;
     specialist: string;
     initials: string;
     team: string;
@@ -462,6 +463,7 @@ export const getMatchweekHistory = cache(async function getMatchweekHistory(
       order by votes desc, t.name`,
     sqlClient<Array<{
       id: string;
+      specialist_id: string;
       specialist: string;
       team: string;
       team_logo_url: string | null;
@@ -469,7 +471,7 @@ export const getMatchweekHistory = cache(async function getMatchweekHistory(
       away: string;
       result: MatchweekHistoryData["locks"][number]["result"];
     }>>`
-      select p.id, u.name as specialist, t.name as team, t.logo_url as team_logo_url,
+      select p.id, u.id as specialist_id, u.name as specialist, t.name as team, t.logo_url as team_logo_url,
         h.name as home, a.name as away, p.result
       from picks p
       join "user" u on u.id = p.user_id
@@ -518,6 +520,7 @@ export const getMatchweekHistory = cache(async function getMatchweekHistory(
     })),
     locks: lockRows.map((lock) => ({
       id: lock.id,
+      specialistId: lock.specialist_id,
       specialist: lock.specialist,
       initials: lock.specialist.split(/\s+/).map((part) => part[0]).join("").slice(0, 2).toUpperCase(),
       team: lock.team,
