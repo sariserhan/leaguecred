@@ -115,12 +115,16 @@ async function applyMerge({ canonical, duplicates }: Merge) {
 
 async function main() {
   const apply = process.argv.includes("--apply");
+  const onlyArg = process.argv.find((argument) => argument.startsWith("--only="));
+  const only = onlyArg ? new Set(onlyArg.slice("--only=".length).split(",")) : null;
 
   console.info(`Target database: ${describeDatabaseTarget()}`);
   console.info(apply ? "Applying merges." : "Dry run. Pass --apply to write.");
 
   try {
-    const { merges, unresolved } = planTeamMerges(await loadTeams());
+    const planned = planTeamMerges(await loadTeams());
+    const merges = only ? planned.merges.filter((merge) => [merge.canonical.slug, ...merge.duplicates.map((team) => team.slug)].some((slug) => only.has(slug))) : planned.merges;
+    const unresolved = only ? [] : planned.unresolved;
 
     if (merges.length === 0) console.info("\nNo duplicate clubs to merge.");
     for (const merge of merges) {
