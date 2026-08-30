@@ -6,6 +6,11 @@ None.
 
 ## Next
 
+- [ ] Merge the parallel branch carrying its own 0010. Both migrations keep their
+      file; resolve drizzle/meta/_journal.json by listing their 0010 before
+      0011_region_countries, and keep `when` strictly increasing. Nothing else
+      needs renaming — drizzle ignores `idx` and the filename number, and orders
+      only by `when`. `pnpm db:migrate` now refuses to run if that is wrong.
 - [ ] Run `pnpm teams:dedupe --apply` against each database to merge the 46 clubs
       catalogued twice. The dry run is clean and leaves only Barcelona SC and
       Liverpool of Montevideo, which really are separate clubs.

@@ -3,6 +3,7 @@ import { migrate } from "drizzle-orm/postgres-js/migrator";
 import postgres from "postgres";
 
 import { describeDatabaseTarget } from "@/lib/env";
+import { assertMigrationsReachable } from "@/db/migration-preflight-check";
 
 /**
  * Runs committed migrations as part of a deploy, so shipping schema and
@@ -44,6 +45,9 @@ async function main() {
   console.info(`Applying migrations to ${describeDatabaseTarget(url)} ...`);
   const client = postgres(url, { max: 1, prepare: false });
   try {
+    // The migrator silently ignores a migration timed below what the database
+    // has already applied, so check before trusting it to run them.
+    await assertMigrationsReachable(client, "drizzle");
     await migrate(drizzle(client), { migrationsFolder: "drizzle" });
     console.info("Database migrations applied.");
   } finally {
