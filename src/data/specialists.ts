@@ -19,6 +19,7 @@ export type SpecialistDirectoryEntry = {
   currentWinStreak: number;
   confidenceAdjustedAccuracy: number;
   followers: number;
+  provisional: boolean;
 };
 
 export async function getSpecialistDirectory(): Promise<SpecialistDirectoryEntry[]> {
@@ -36,10 +37,12 @@ export async function getSpecialistDirectory(): Promise<SpecialistDirectoryEntry
       select r.league_id, l.name as league_name, l.slug as league_slug, r.wins, r.losses,
         r.settled_picks, r.current_win_streak, r.confidence_adjusted_accuracy
       from user_league_records r join leagues l on l.id = r.league_id
-      where r.user_id = u.id and r.settled_picks >= ${MINIMUM_SETTLED_PICKS_FOR_RANK}
-      order by r.confidence_adjusted_accuracy desc nulls last, r.settled_picks desc limit 1
+      where r.user_id = u.id and r.settled_picks > 0 and l.enabled = true
+      order by (r.settled_picks >= ${MINIMUM_SETTLED_PICKS_FOR_RANK}) desc,
+        r.confidence_adjusted_accuracy desc nulls last, r.settled_picks desc limit 1
     ) strongest on true
-    order by strongest.confidence_adjusted_accuracy desc nulls last, strongest.settled_picks desc
+    order by (strongest.settled_picks >= ${MINIMUM_SETTLED_PICKS_FOR_RANK}) desc,
+      strongest.confidence_adjusted_accuracy desc nulls last, strongest.settled_picks desc
     limit 100`;
 
   return rows.map((row) => ({
@@ -49,6 +52,7 @@ export async function getSpecialistDirectory(): Promise<SpecialistDirectoryEntry
     wins: row.wins, losses: row.losses, settledPicks: row.settled_picks,
     currentWinStreak: row.current_win_streak,
     confidenceAdjustedAccuracy: Number(row.confidence_adjusted_accuracy), followers: row.followers,
+    provisional: row.settled_picks < MINIMUM_SETTLED_PICKS_FOR_RANK,
   }));
 }
 

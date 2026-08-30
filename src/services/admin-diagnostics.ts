@@ -1,6 +1,7 @@
 import { sqlClient } from "@/db";
 import type { PickResult } from "@/db/schema";
 import { toEpochMilliseconds, toIsoTimestamp } from "@/lib/timestamps";
+import { MINIMUM_SETTLED_PICKS_FOR_RANK } from "@/lib/reputation";
 
 export type SyncRunDiagnostic = {
   id: string;
@@ -32,6 +33,38 @@ export type OperationalSummary = {
   failedSyncRuns: number;
   lastSuccessfulSyncAt: string | null;
 };
+
+export type AdminManagementSummary = {
+  counts: { users: number; enabledLeagues: number; upcomingFixtures: number; provisionalRecords: number };
+  upcoming: Array<{ id: string; league: string; fixture: string; kickoffAt: string; matchweek: string }>;
+  accounts: Array<{ id: string; name: string; email: string; createdAt: string; independentPicks: number; follows: number }>;
+};
+
+export async function getAdminManagementSummary(): Promise<AdminManagementSummary> {
+  const [countRows, upcomingRows, accountRows] = await Promise.all([
+    sqlClient<Array<{ users: number; leagues: number; fixtures: number; provisional: number }>>`
+      select (select count(*)::int from "user") users,
+        (select count(*)::int from leagues where enabled = true) leagues,
+        (select count(*)::int from fixtures where status = 'scheduled' and kickoff_at > now()) fixtures,
+        (select count(*)::int from user_league_records where settled_picks > 0 and settled_picks < ${MINIMUM_SETTLED_PICKS_FOR_RANK}) provisional`,
+    sqlClient<Array<{ id: string; league: string; home: string; away: string; kickoff_at: Date | string; matchweek: string }>>`
+      select f.id, l.name league, h.name home, a.name away, f.kickoff_at, mw.display_name matchweek
+      from fixtures f join leagues l on l.id=f.league_id join teams h on h.id=f.home_team_id
+      join teams a on a.id=f.away_team_id join matchweeks mw on mw.id=f.matchweek_id
+      where f.status='scheduled' and f.kickoff_at > now() order by f.kickoff_at limit 8`,
+    sqlClient<Array<{ id: string; name: string; email: string; created_at: Date | string; picks: number; follows: number }>>`
+      select u.id,u.name,u.email,u.created_at,
+        (select count(*)::int from picks p where p.user_id=u.id) picks,
+        (select count(*)::int from league_follows f where f.follower_user_id=u.id) follows
+      from "user" u order by u.created_at desc limit 8`,
+  ]);
+  const counts = countRows[0];
+  return {
+    counts: { users: counts?.users ?? 0, enabledLeagues: counts?.leagues ?? 0, upcomingFixtures: counts?.fixtures ?? 0, provisionalRecords: counts?.provisional ?? 0 },
+    upcoming: upcomingRows.map((row) => ({ id: row.id, league: row.league, fixture: `${row.home} vs ${row.away}`, kickoffAt: toIsoTimestamp(row.kickoff_at), matchweek: row.matchweek })),
+    accounts: accountRows.map((row) => ({ id: row.id, name: row.name, email: row.email, createdAt: toIsoTimestamp(row.created_at), independentPicks: row.picks, follows: row.follows })),
+  };
+}
 
 export async function getSyncRunDiagnostics(limit = 15): Promise<SyncRunDiagnostic[]> {
   const rows = await sqlClient<Array<{

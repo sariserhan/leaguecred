@@ -84,7 +84,7 @@ export function SiteHeader({
                     <Icon className="size-5 text-primary" />{label}<ChevronRightIcon className="ml-auto size-5 text-muted-foreground" />
                   </DialogClose>
                 ))}
-                {session ? <><DialogClose render={<Link href="/network" className="flex min-h-16 items-center gap-3 px-5 font-semibold hover:bg-muted" />}><Settings2Icon className="size-5 text-primary" />My network<ChevronRightIcon className="ml-auto size-5 text-muted-foreground" /></DialogClose><DialogClose render={<Link href="/slip" className="flex min-h-16 items-center gap-3 px-5 font-semibold hover:bg-muted" />}><CircleUserRoundIcon className="size-5 text-primary" />Weekly Slip<ChevronRightIcon className="ml-auto size-5 text-muted-foreground" /></DialogClose></> : null}
+                {session ? <><DialogClose render={<Link href="/network" className="flex min-h-16 items-center gap-3 px-5 font-semibold hover:bg-muted" />}><Settings2Icon className="size-5 text-primary" />My network<ChevronRightIcon className="ml-auto size-5 text-muted-foreground" /></DialogClose><DialogClose render={<Link href="/slip" className="flex min-h-16 items-center gap-3 px-5 font-semibold hover:bg-muted" />}><CircleUserRoundIcon className="size-5 text-primary" />Weekly Slip<ChevronRightIcon className="ml-auto size-5 text-muted-foreground" /></DialogClose><DialogClose render={<Link href="/settings" className="flex min-h-16 items-center gap-3 px-5 font-semibold hover:bg-muted" />}><Settings2Icon className="size-5 text-primary" />Settings<ChevronRightIcon className="ml-auto size-5 text-muted-foreground" /></DialogClose></> : null}
               </nav>
             </DialogContent>
           </Dialog>
@@ -176,6 +176,7 @@ export function SiteHeader({
                 <DropdownMenuItem render={<Link href="/slip" />} className="rounded-none px-2 py-2.5"><TrophyIcon />Weekly Slip</DropdownMenuItem>
                 <DropdownMenuItem render={<Link href="/network" />} className="rounded-none px-2 py-2.5"><Settings2Icon />My network</DropdownMenuItem>
                 <DropdownMenuItem render={<Link href="/onboarding" />} className="rounded-none px-2 py-2.5"><UsersRoundIcon />Set up leagues</DropdownMenuItem>
+                <DropdownMenuItem render={<Link href="/settings" />} className="rounded-none px-2 py-2.5"><Settings2Icon />Settings</DropdownMenuItem>
                 {isAdmin ? <DropdownMenuItem render={<Link href="/admin" />} className="rounded-none px-2 py-2.5"><ShieldCheckIcon />Admin</DropdownMenuItem> : null}
               </DropdownMenuGroup>
               <DropdownMenuSeparator />

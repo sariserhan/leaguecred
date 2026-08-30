@@ -24,6 +24,10 @@ None.
 
 ## Completed
 
+- [x] Add account settings for profile, password, league, network, and notification controls
+- [x] Add founding-season and provisional specialist discovery states
+- [x] Add management views for upcoming fixtures, recent accounts, and provisional records
+- [x] Add dedicated loading and recovery states for network and settings
 - [x] Define the league-expertise exchange product model
 - [x] Build the Next.js and shadcn foundation
 - [x] Implement homepage, league discovery, and dynamic league routes

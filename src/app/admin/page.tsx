@@ -11,11 +11,13 @@ import {
 } from "@/components/admin/diagnostics-panels";
 import { FeatureFlagControls } from "@/components/admin/feature-flag-controls";
 import { SiteControls } from "@/components/admin/site-controls";
+import { AdminManagementPanels } from "@/components/admin/management-panels";
 import { buttonVariants } from "@/components/ui/button";
 import { requireAdmin } from "@/lib/admin";
 import { getAdminAuditLog } from "@/services/admin-audit-log";
 import {
   getOperationalSummary,
+  getAdminManagementSummary,
   getSettlementCorrections,
   getSyncRunDiagnostics,
 } from "@/services/admin-diagnostics";
@@ -32,13 +34,14 @@ export default async function AdminPage() {
   // Authorization runs before anything is read, so a member never triggers a query.
   const viewer = await requireAdmin();
 
-  const [settings, flags, summary, syncRuns, corrections, auditLog] = await Promise.all([
+  const [settings, flags, summary, syncRuns, corrections, auditLog, management] = await Promise.all([
     getSiteSettings(),
     getFeatureFlags(),
     getOperationalSummary(),
     getSyncRunDiagnostics(),
     getSettlementCorrections(),
     getAdminAuditLog(),
+    getAdminManagementSummary(),
   ]);
 
   return (
@@ -67,6 +70,8 @@ export default async function AdminPage() {
       <SiteControls settings={settings} />
 
       <FeatureFlagControls flags={flags} />
+
+      <AdminManagementPanels data={management} />
 
       <section className="flex flex-col gap-6">
         <DiagnosticsHeading />
