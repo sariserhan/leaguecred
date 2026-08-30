@@ -4,6 +4,7 @@ import {
   EMAIL_WIDTH,
   lockReminderEmail,
   passwordResetEmail,
+  specialistLockedEmail,
   verificationEmail,
 } from "@/lib/email-templates";
 
@@ -17,9 +18,17 @@ const remind = lockReminderEmail({
   lockAt: "Saturday, 12:00 UTC",
   url,
 });
+const specialistLocked = specialistLockedEmail({
+  name: "Deniz",
+  specialistName: "Aylin",
+  leagueName: "Süper Lig",
+  matchweekName: "Matchweek 6",
+  lockAt: "Saturday, 12:00 UTC",
+  url,
+});
 // Every message the product sends. Adding one here without adding it to the
 // shell is what the structural assertions below are for.
-const every = [reset, verify, remind];
+const every = [reset, verify, remind, specialistLocked];
 
 describe("content", () => {
   it("carries the action link in both the text and html parts", () => {
@@ -152,11 +161,44 @@ describe("lock reminder", () => {
   });
 });
 
+describe("specialist lock notification", () => {
+  it("names the specialist and league in the subject", () => {
+    expect(specialistLocked.subject).toBe("Aylin just locked their Süper Lig call");
+  });
+
+  it("names the league, matchweek, and deadline being missed", () => {
+    expect(specialistLocked.text).toContain("Süper Lig · Matchweek 6");
+    expect(specialistLocked.html).toContain("Matchweek 6");
+    expect(specialistLocked.text).toContain("Saturday, 12:00 UTC");
+  });
+
+  it("warns that revealing forfeits the recipient's own independent record", () => {
+    expect(specialistLocked.text).toContain("forfeits your own independent record");
+    expect(specialistLocked.html).toContain("forfeits your own independent record");
+  });
+
+  it("escapes a hostile specialist or recipient name", () => {
+    const hostile = specialistLockedEmail({
+      name: '<img src=x onerror="alert(1)">',
+      specialistName: '<img src=y onerror="alert(2)">',
+      leagueName: "Süper Lig",
+      matchweekName: "Matchweek 6",
+      lockAt: "Saturday",
+      url,
+    });
+    expect(hostile.html).not.toContain("<img src=x");
+    expect(hostile.html).not.toContain("<img src=y");
+    expect(hostile.html).toContain("&lt;img src=x");
+    expect(hostile.html).toContain("&lt;img src=y");
+  });
+});
+
 describe("sender identity", () => {
   it("sends each kind of message from the address that describes it", () => {
     expect(reset.from).toBe("LeagueCred <no-reply@leaguecred.com>");
     expect(verify.from).toBe("LeagueCred <welcome@leaguecred.com>");
     expect(remind.from).toBe("LeagueCred <notification@leaguecred.com>");
+    expect(specialistLocked.from).toBe("LeagueCred <notification@leaguecred.com>");
   });
 
   it("gives every message a sender on the product domain", () => {
