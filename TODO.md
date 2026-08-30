@@ -6,9 +6,11 @@ None.
 
 ## Next
 
-- [ ] Run `pnpm teams:dedupe --apply` against each database to merge the 46 clubs
-      catalogued twice. The dry run is clean and leaves only Barcelona SC and
-      Liverpool of Montevideo, which really are separate clubs.
+- [ ] Run `pnpm teams:dedupe --apply` against each database to merge the clubs
+      catalogued twice (48 on the dev catalog; the job re-counts each run, so
+      read its dry run rather than trusting a number here). It should leave
+      Barcelona SC and Liverpool of Montevideo alone — those really are
+      separate clubs, and are the check that the safety rule still holds.
 - [ ] Rotate the Neon database password and update Vercel and .env.local
 
 ## Blocked
