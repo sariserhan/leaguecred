@@ -26,6 +26,8 @@ export type TeamFixture = {
   opponentScore: number | null;
 };
 
+export type TeamNavOption = { slug: string; name: string; country: string | null };
+
 type FixtureRow = {
   id: string;
   league_name: string;
@@ -117,4 +119,15 @@ export const getTeamProfile = cache(async function getTeamProfile(teamSlug: stri
     upcoming: upcomingRows.map(mapFixture),
     recent: recentRows.map(mapFixture),
   };
+});
+
+export const getTeamNavOptions = cache(async function getTeamNavOptions(): Promise<TeamNavOption[]> {
+  return sqlClient<TeamNavOption[]>`
+    select distinct t.slug, t.name, c.name as country
+    from teams t
+    join league_team_memberships membership on membership.team_id = t.id
+    join seasons s on s.id = membership.season_id and s.is_current = true
+    join leagues l on l.id = membership.league_id and l.enabled = true
+    left join countries c on c.id = t.country_id
+    order by t.name, c.name`;
 });

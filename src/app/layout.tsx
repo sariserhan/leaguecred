@@ -5,6 +5,7 @@ import { SiteBanner } from "@/components/site-banner";
 import { SiteHeader } from "@/components/site-header";
 import { SiteFooter } from "@/components/site-footer";
 import { viewerIsAdmin } from "@/lib/admin";
+import { getTeamNavOptions } from "@/data/teams";
 
 import "./globals.css";
 
@@ -30,7 +31,7 @@ export const metadata: Metadata = {
 };
 
 export default async function RootLayout({ children }: LayoutProps<"/">) {
-  const isAdmin = await viewerIsAdmin();
+  const [isAdmin, teams] = await Promise.all([viewerIsAdmin(), getTeamNavOptions()]);
 
   return (
     <html
@@ -40,7 +41,7 @@ export default async function RootLayout({ children }: LayoutProps<"/">) {
     >
       <body className="flex min-h-screen flex-col bg-background text-foreground">
         <SiteBanner />
-        <SiteHeader isAdmin={isAdmin} />
+        <SiteHeader isAdmin={isAdmin} teams={teams} />
         <main className="flex-1">{children}</main>
         <SiteFooter />
       </body>
