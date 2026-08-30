@@ -2,6 +2,8 @@ import type postgres from "postgres";
 
 import { sqlClient } from "@/db";
 import { ApiFootballProvider, type ApiFootballTeam } from "@/providers/api-football";
+import { FootballDataOrgProvider, type FootballDataTeam } from "@/providers/football-data-org";
+import { TheSportsDbProvider, type SportsDbTeam } from "@/providers/thesportsdb";
 import { normalizeTeamName } from "@/services/team-names";
 
 type MissingTeam = {
@@ -39,6 +41,144 @@ const knownApiIds: Record<string, string> = {
   Milan: "489",
   Roma: "497",
 };
+
+const footballDataCompetitions = [
+  { slug: "premier-league", code: "PL" },
+  { slug: "la-liga", code: "PD" },
+  { slug: "serie-a", code: "SA" },
+  { slug: "bundesliga", code: "BL1" },
+  { slug: "ligue-1", code: "FL1" },
+  { slug: "primeira-liga", code: "PPL" },
+  { slug: "eredivisie", code: "DED" },
+  { slug: "efl-championship", code: "ELC" },
+] as const;
+
+const sportsDbSearches: Record<string, string> = {
+  Guimaraes: "Vitoria Guimaraes",
+  Mechelen: "KV Mechelen",
+  "RAAL La Louviere": "RAAL La Louviere",
+  "St. Gilloise": "Union St Gilloise",
+  Standard: "Standard Liege",
+  Waregem: "Zulte Waregem",
+  Westerlo: "Westerlo",
+  Hearts: "Heart of Midlothian",
+  Aris: "Aris",
+  Levadeiakos: "Levadiakos",
+  "OFI Crete": "OFI",
+  "Volos NFC": "Volos",
+};
+
+const verifiedLogoFallbacks: Record<string, { logoUrl: string; provider: string }> = {
+  "Oud-Heverlee Leuven": {
+    logoUrl: "https://upload.wikimedia.org/wikipedia/commons/2/24/OH_LEUVEN.png",
+    provider: "wikimedia-commons",
+  },
+  "St Truiden": {
+    logoUrl: "https://media.api-sports.io/football/teams/735.png",
+    provider: "api-football",
+  },
+};
+
+function matchSportsDbTeam(name: string, country: string, results: SportsDbTeam[]) {
+  const normalized = normalizeTeamName(name);
+  const candidates = results.filter((team) => team.strSport === "Soccer" && team.strCountry === country
+    && team.strBadge && !/(women|u\d\d|youth|reserves?)/i.test(team.strTeam));
+  const exact = candidates.filter((team) => normalizeTeamName(team.strTeam) === normalized);
+  if (exact.length === 1) return exact[0];
+  const partial = candidates.filter((team) => {
+    const candidate = normalizeTeamName(team.strTeam);
+    return normalized.length >= 4 && (candidate.includes(normalized) || normalized.includes(candidate));
+  });
+  return partial.length === 1 ? partial[0] : null;
+}
+
+export async function synchronizeTheSportsDbLogos(provider = new TheSportsDbProvider()) {
+  const missing = await sqlClient<Array<{ id: string; name: string; country: string }>>`
+    select distinct t.id, t.name, c.name as country from teams t
+    join league_team_memberships m on m.team_id = t.id
+    join seasons s on s.id = m.season_id and s.is_current = true
+    join countries c on c.id = t.country_id
+    where t.logo_url is null order by t.name`;
+
+  const fetched: Array<{ team: typeof missing[number]; logoUrl: string; provider: string } | null> = [];
+  for (const [index, team] of missing.entries()) {
+    const fallback = verifiedLogoFallbacks[team.name];
+    if (fallback) {
+      fetched.push({ team, ...fallback });
+      continue;
+    }
+    if (index > 0) await new Promise((resolve) => setTimeout(resolve, 300));
+    const results = await provider.searchTeams(sportsDbSearches[team.name] ?? team.name);
+    const match = matchSportsDbTeam(team.name, team.country, results);
+    fetched.push(match?.strBadge ? { team, logoUrl: match.strBadge, provider: "thesportsdb" } : null);
+  }
+
+  const resolved = fetched.filter((entry) => entry !== null);
+  await sqlClient.begin(async (sql) => {
+    for (const entry of resolved) {
+      await sql`update teams set logo_url = ${entry.logoUrl}, logo_provider = ${entry.provider}, updated_at = now()
+        where id = ${entry.team.id} and logo_url is null`;
+    }
+  });
+  return {
+    requestCount: missing.length - missing.filter((team) => verifiedLogoFallbacks[team.name]).length,
+    updated: resolved.length,
+    unresolved: missing.filter((team) => !resolved.some((entry) => entry.team.id === team.id)).map((team) => team.name),
+  };
+}
+
+function matchFootballDataTeam(name: string, roster: FootballDataTeam[]) {
+  const normalized = normalizeTeamName(name);
+  const exact = roster.filter((team) => normalizeTeamName(team.name) === normalized);
+  if (exact.length === 1) return exact[0];
+  const partial = roster.filter((team) => {
+    const candidate = normalizeTeamName(team.name);
+    return normalized.length >= 4 && (candidate.includes(normalized) || normalized.includes(candidate));
+  });
+  return partial.length === 1 ? partial[0] : null;
+}
+
+export async function synchronizeFootballDataOrgLogos(provider = new FootballDataOrgProvider()) {
+  const slugs = footballDataCompetitions.map((entry) => entry.slug);
+  const configs = await sqlClient<Array<{ slug: string; league_id: string; season_id: string; provider_season: string }>>`
+    select l.slug, l.id as league_id, s.id as season_id, s.provider_season
+    from leagues l join seasons s on s.league_id = l.id and s.is_current = true
+    where l.slug in ${sqlClient(slugs)}`;
+  const configBySlug = new Map(configs.map((config) => [config.slug, config]));
+
+  // Fetch all external data before opening a transaction.
+  const batches = await Promise.all(footballDataCompetitions.map(async (competition) => {
+    const config = configBySlug.get(competition.slug);
+    if (!config) return null;
+    const payload = await provider.fetchTeams({ competitionExternalId: competition.code, season: config.provider_season });
+    return { config, teams: payload.teams };
+  }));
+
+  let updated = 0;
+  const unresolved: string[] = [];
+  for (const batch of batches) {
+    if (!batch) continue;
+    const missing = await sqlClient<Array<{ id: string; name: string }>>`
+      select distinct t.id, t.name from teams t
+      join league_team_memberships m on m.team_id = t.id
+      where m.league_id = ${batch.config.league_id} and m.season_id = ${batch.config.season_id}
+        and t.logo_url is null`;
+    const matches = missing.map((team) => ({ team, providerTeam: matchFootballDataTeam(team.name, batch.teams) }));
+    unresolved.push(...matches.filter((match) => !match.providerTeam?.crest)
+      .map((match) => `${batch.config.slug}:${match.team.name}`));
+
+    await sqlClient.begin(async (sql) => {
+      for (const match of matches) {
+        if (!match.providerTeam?.crest) continue;
+        const result = await sql`update teams set logo_url = ${match.providerTeam.crest},
+          logo_provider = 'football-data-org', updated_at = now()
+          where id = ${match.team.id} and logo_url is null returning id`;
+        updated += result.count;
+      }
+    });
+  }
+  return { requestCount: batches.filter(Boolean).length, updated, unresolved };
+}
 
 function isSeniorTeam(team: ApiFootballTeam) {
   return !/(^|\s)(u\d\d|w|women|b|ii|reserves?|youth)(\s|$)/i.test(team.name);
