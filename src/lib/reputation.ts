@@ -1,3 +1,10 @@
+/**
+ * Spec section 20: eligibility requires at least this many settled non-void
+ * independent picks. The tier label, the leaderboard filters, the specialist
+ * counts, and the on-screen copy all read this one value.
+ */
+export const MINIMUM_SETTLED_PICKS_FOR_RANK = 10;
+
 export function calculateAccuracy(wins: number, losses: number) {
   assertRecord(wins, losses);
 
@@ -38,7 +45,7 @@ export function wilsonLowerBound(
 export function isLeaderboardEligible(
   wins: number,
   losses: number,
-  minimumSettledPicks = 10,
+  minimumSettledPicks = MINIMUM_SETTLED_PICKS_FOR_RANK,
 ) {
   assertRecord(wins, losses);
 

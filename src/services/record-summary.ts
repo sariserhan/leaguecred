@@ -1,4 +1,4 @@
-import { wilsonLowerBound } from "@/lib/reputation";
+import { MINIMUM_SETTLED_PICKS_FOR_RANK, wilsonLowerBound } from "@/lib/reputation";
 
 export type SettledResult = "win" | "loss" | "void";
 
@@ -41,7 +41,7 @@ export function calculateRecordSummary(results: readonly SettledResult[]): Recor
     settledPicks,
     currentWinStreak,
     bestWinStreak,
-    tier: settledPicks < 10 ? "Provisional" : "Established",
+    tier: settledPicks < MINIMUM_SETTLED_PICKS_FOR_RANK ? "Provisional" : "Established",
     confidenceAdjustedAccuracy: wilsonLowerBound(wins, losses).toFixed(6),
   };
 }
