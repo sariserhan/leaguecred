@@ -3,6 +3,7 @@ import type postgres from "postgres";
 import { sqlClient } from "@/db";
 import type { FixtureProvider, ProviderFixture } from "@/providers/fixtures";
 import { teamNamesMatch } from "@/services/team-names";
+import { teamSlug } from "@/lib/team-path";
 
 type LeagueConfig = {
   id: string;
@@ -188,8 +189,8 @@ async function resolveTeam(
 
   if (!row) {
     [row] = await sql<Array<{ id: string }>>`
-      insert into teams (provider, provider_external_id, name, short_name, logo_url, logo_provider, country_id)
-      values (${providerName}, ${team.externalId}, ${team.name}, ${team.shortName}, ${team.logoUrl}, ${team.logoUrl ? providerName : null}, ${config.country_id})
+      insert into teams (provider, provider_external_id, name, slug, short_name, logo_url, logo_provider, country_id)
+      values (${providerName}, ${team.externalId}, ${team.name}, ${teamSlug(team.name)}, ${team.shortName}, ${team.logoUrl}, ${team.logoUrl ? providerName : null}, ${config.country_id})
       on conflict (provider, provider_external_id) do update
       set name = excluded.name, short_name = excluded.short_name,
           logo_url = coalesce(excluded.logo_url, teams.logo_url),

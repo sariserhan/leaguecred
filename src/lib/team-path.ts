@@ -1,6 +1,6 @@
 const teamIdPattern = /([0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12})$/i;
 
-function slugify(name: string) {
+export function teamSlug(name: string) {
   return name
     .normalize("NFD")
     .replace(/[\u0300-\u036f]/g, "")
@@ -9,8 +9,8 @@ function slugify(name: string) {
     .replace(/(^-|-$)/g, "") || "team";
 }
 
-export function teamHref(team: { id: string; name: string }) {
-  return `/teams/${slugify(team.name)}-${team.id}`;
+export function teamHref(team: { slug: string }) {
+  return `/teams/${team.slug}`;
 }
 
 export function teamIdFromPath(path: string) {

@@ -3,6 +3,7 @@ import type postgres from "postgres";
 import { sqlClient } from "@/db";
 import { FootballDataOrgProvider, type FootballDataTeam } from "@/providers/football-data-org";
 import { normalizeTeamName } from "@/services/team-names";
+import { teamSlug } from "@/lib/team-path";
 
 type CompetitionConfig = {
   league_id: string;
@@ -35,8 +36,8 @@ async function resolveFootballDataTeam(
 
   if (!resolved) {
     [resolved] = await sql<Array<{ id: string }>>`
-      insert into teams (provider, provider_external_id, name, short_name, logo_url, logo_provider, country_id)
-      values ('football-data-org', ${String(team.id)}, ${team.name}, ${shortName(team)}, ${team.crest},
+      insert into teams (provider, provider_external_id, name, slug, short_name, logo_url, logo_provider, country_id)
+      values ('football-data-org', ${String(team.id)}, ${team.name}, ${teamSlug(team.name)}, ${shortName(team)}, ${team.crest},
         ${team.crest ? "football-data-org" : null}, ${config.country_id})
       on conflict (provider, provider_external_id) do update set
         name = excluded.name, short_name = excluded.short_name,

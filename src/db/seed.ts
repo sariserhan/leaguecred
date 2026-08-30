@@ -1,4 +1,5 @@
 import { sqlClient } from "@/db";
+import { teamSlug } from "@/lib/team-path";
 
 const ids = {
   turkey: "00000000-0000-4000-8000-000000000001",
@@ -74,8 +75,8 @@ async function main() {
       [ids.trabzonspor, "998", "Trabzonspor", "TS"], [ids.rizespor, "1007", "Rizespor", "RIZ"],
     ] as const;
     for (const [id, externalId, name, shortName] of teamRows) {
-      await sql`insert into teams (id, provider, provider_external_id, name, short_name, country_id)
-        values (${id}, 'api-football', ${externalId}, ${name}, ${shortName}, ${ids.turkey})
+      await sql`insert into teams (id, provider, provider_external_id, name, slug, short_name, country_id)
+        values (${id}, 'api-football', ${externalId}, ${name}, ${teamSlug(name)}, ${shortName}, ${ids.turkey})
         on conflict (provider, provider_external_id) do update set name = excluded.name, short_name = excluded.short_name`;
     }
 

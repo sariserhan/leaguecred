@@ -139,6 +139,7 @@ export const teams = pgTable("teams", {
   provider: text("provider").notNull(),
   providerExternalId: text("provider_external_id").notNull(),
   name: text("name").notNull(),
+  slug: text("slug").notNull().unique(),
   shortName: text("short_name").notNull(),
   logoUrl: text("logo_url"),
   logoProvider: text("logo_provider"),

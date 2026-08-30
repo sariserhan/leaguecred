@@ -90,15 +90,15 @@ export async function getLeagueDirectory(userId?: string): Promise<League[]> {
 }
 
 export type LeagueTeamCatalog = {
-  teams: Array<{ id: string; name: string; shortName: string; logoUrl: string | null }>;
+  teams: Array<{ id: string; name: string; slug: string; shortName: string; logoUrl: string | null }>;
   isComplete: boolean;
   sources: string[];
 };
 
 export async function getLeagueTeamCatalog(slug: string): Promise<LeagueTeamCatalog> {
   const [teams, imports] = await Promise.all([
-    sqlClient<Array<{ id: string; name: string; short_name: string; logo_url: string | null }>>`
-      select distinct t.id, t.name, t.short_name, t.logo_url
+    sqlClient<Array<{ id: string; name: string; slug: string; short_name: string; logo_url: string | null }>>`
+      select distinct t.id, t.name, t.slug, t.short_name, t.logo_url
       from teams t
       join league_team_memberships ltm on ltm.team_id = t.id
       join leagues l on l.id = ltm.league_id
@@ -117,6 +117,7 @@ export async function getLeagueTeamCatalog(slug: string): Promise<LeagueTeamCata
     teams: teams.map((team) => ({
       id: team.id,
       name: team.name,
+      slug: team.slug,
       shortName: team.short_name,
       logoUrl: team.logo_url,
     })),

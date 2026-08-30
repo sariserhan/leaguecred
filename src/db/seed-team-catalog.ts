@@ -9,6 +9,7 @@ import {
   verifiedTeamImportOverrides,
   verifiedTeamOverrides,
 } from "@/db/verified-team-overrides";
+import { teamSlug } from "@/lib/team-path";
 
 export async function seedTeamCatalog(sql: postgres.TransactionSql) {
   const leagueExternalIds = [...new Set(teamImportEntries.map((entry) => entry.leagueExternalId))];
@@ -30,12 +31,13 @@ export async function seedTeamCatalog(sql: postgres.TransactionSql) {
     provider_external_id: entry.apiFootballId,
     sports_db_external_id: entry.sportsDbId,
     name: entry.name,
+    slug: teamSlug(entry.name),
     short_name: entry.shortName,
     logo_url: entry.logoUrl,
     logo_provider: "thesportsdb",
   }));
   const teamValues = sql(teamRows,
-    "provider", "provider_external_id", "sports_db_external_id", "name",
+    "provider", "provider_external_id", "sports_db_external_id", "name", "slug",
     "short_name", "logo_url", "logo_provider") as postgres.Helper<unknown>;
   const teams = await sql<Array<{ id: string; provider_external_id: string }>>`
     insert into teams ${teamValues}
@@ -117,12 +119,12 @@ export async function seedTeamCatalog(sql: postgres.TransactionSql) {
 
     const [team] = await sql<Array<{ id: string }>>`
       insert into teams (
-        provider, provider_external_id, sports_db_external_id, name, short_name,
+        provider, provider_external_id, sports_db_external_id, name, slug, short_name,
         logo_url, logo_provider, country_id
       )
       values (
         ${entry.provider}, ${entry.providerExternalId}, ${entry.sportsDbExternalId},
-        ${entry.name}, ${entry.shortName}, ${entry.logoUrl}, 'thesportsdb',
+        ${entry.name}, ${teamSlug(entry.name)}, ${entry.shortName}, ${entry.logoUrl}, 'thesportsdb',
         (select country_id from leagues where id = ${leagueSeason.league_id})
       )
       on conflict (provider, provider_external_id) do update set

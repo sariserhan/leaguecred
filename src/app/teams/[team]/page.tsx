@@ -27,7 +27,7 @@ function FixtureRow({ fixture, recent }: { fixture: TeamFixture; recent?: boolea
 export async function generateMetadata(props: TeamPageProps): Promise<Metadata> {
   const { team } = await props.params;
   const data = await getTeamProfile(team);
-  return data ? { title: data.team.name, description: `${data.team.name} fixtures, recent results, and current-season record.` } : { title: "Team not found" };
+  return data ? { title: data.team.name, description: `${data.team.name} fixtures, recent results, and current-season record.`, alternates: { canonical: `/teams/${data.team.slug}` }, openGraph: { title: `${data.team.name} fixtures and results`, description: `${data.team.name} fixtures, recent results, and current-season record.` } } : { title: "Team not found" };
 }
 
 export default async function TeamPage(props: TeamPageProps) {

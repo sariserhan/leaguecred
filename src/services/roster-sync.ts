@@ -5,6 +5,7 @@ import {
   type RosterTeam,
 } from "@/providers/football-data-uk-rosters";
 import { normalizeTeamName } from "@/services/team-names";
+import { teamSlug } from "@/lib/team-path";
 import { VERIFIED_WEB_ROSTERS } from "@/services/verified-rosters";
 
 type LeagueConfig = {
@@ -78,10 +79,10 @@ async function synchronizeRoster(batch: RosterBatch, config: LeagueConfig) {
       }
       const [inserted] = await sql<Array<{ id: string }>>`
         insert into teams (
-          provider, provider_external_id, name, short_name, logo_url, logo_provider, country_id
+          provider, provider_external_id, name, slug, short_name, logo_url, logo_provider, country_id
         )
         values (
-          ${batch.provider}, ${entry.team.externalId}, ${entry.team.name}, ${entry.team.shortName},
+          ${batch.provider}, ${entry.team.externalId}, ${entry.team.name}, ${teamSlug(entry.team.name)}, ${entry.team.shortName},
           null, null, ${config.country_id}
         )
         on conflict (provider, provider_external_id) do update set

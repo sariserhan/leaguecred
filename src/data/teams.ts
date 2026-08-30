@@ -4,10 +4,9 @@ import { cache } from "react";
 
 import { sqlClient } from "@/db";
 import type { FixtureStatus } from "@/db/schema";
-import { teamIdFromPath } from "@/lib/team-path";
 
 export type TeamProfileData = {
-  team: { id: string; name: string; shortName: string; logoUrl: string | null; country: string | null };
+  team: { id: string; name: string; slug: string; shortName: string; logoUrl: string | null; country: string | null };
   leagues: Array<{ slug: string; name: string }>;
   record: { played: number; wins: number; draws: number; losses: number; goalsFor: number; goalsAgainst: number };
   upcoming: TeamFixture[];
@@ -40,14 +39,11 @@ type FixtureRow = {
   opponent_score: number | null;
 };
 
-export const getTeamProfile = cache(async function getTeamProfile(teamPath: string): Promise<TeamProfileData | null> {
-  const teamId = teamIdFromPath(teamPath);
-  if (!teamId) return null;
-
-  const [team] = await sqlClient<Array<{ id: string; name: string; short_name: string; logo_url: string | null; country: string | null }>>`
-    select t.id, t.name, t.short_name, t.logo_url, c.name as country
+export const getTeamProfile = cache(async function getTeamProfile(teamSlug: string): Promise<TeamProfileData | null> {
+  const [team] = await sqlClient<Array<{ id: string; name: string; slug: string; short_name: string; logo_url: string | null; country: string | null }>>`
+    select t.id, t.name, t.slug, t.short_name, t.logo_url, c.name as country
     from teams t left join countries c on c.id = t.country_id
-    where t.id = ${teamId}
+    where t.slug = ${teamSlug}
     limit 1`;
   if (!team) return null;
 
@@ -115,7 +111,7 @@ export const getTeamProfile = cache(async function getTeamProfile(teamPath: stri
     opponentScore: fixture.opponent_score,
   });
   return {
-    team: { id: team.id, name: team.name, shortName: team.short_name, logoUrl: team.logo_url, country: team.country },
+    team: { id: team.id, name: team.name, slug: team.slug, shortName: team.short_name, logoUrl: team.logo_url, country: team.country },
     leagues: leagueRows,
     record: { played: record.played, wins: record.wins, draws: record.draws, losses: record.losses, goalsFor: record.goals_for, goalsAgainst: record.goals_against },
     upcoming: upcomingRows.map(mapFixture),
