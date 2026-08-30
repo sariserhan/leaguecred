@@ -11,10 +11,20 @@ export type SpecialistProfileData = {
   leagues: Array<{
     id: string; slug: string; name: string; wins: number; losses: number; settledPicks: number;
     currentWinStreak: number; confidenceAdjustedAccuracy: number; followedByViewer: boolean;
+    tier: string; leagueFollowers: number; seasonRank: number | null;
+  }>;
+  /** Spec section 22 keeps leagues known and leagues followed visibly apart. */
+  followedLeagues: Array<{
+    id: string; slug: string; name: string; specialistId: string; specialistName: string;
   }>;
   recentLocks: Array<{
     id: string; leagueName: string; leagueSlug: string; team: string; result: "win" | "loss" | "void";
     fixture: string; submittedAt: string;
+  }>;
+  /** Spec section 23: attributed, and never mixed into the independent record. */
+  followedHistory: Array<{
+    id: string; leagueName: string; leagueSlug: string; team: string;
+    specialistId: string; specialistName: string; result: "win" | "loss" | "void" | "pending";
   }>;
   viewer: { authenticated: boolean; isSelf: boolean };
 };
@@ -36,16 +46,34 @@ export const getSpecialistProfile = cache(async function getSpecialistProfile(
   if (!specialist) return null;
 
   const currentViewerId = viewerId ?? "";
-  const [leagueRows, recentLockRows] = await Promise.all([
+  const [leagueRows, recentLockRows, followedLeagueRows, followedHistoryRows] = await Promise.all([
     sqlClient<Array<{
       id: string; slug: string; name: string; wins: number; losses: number; settled_picks: number;
       current_win_streak: number; confidence_adjusted_accuracy: string; followed_by_viewer: boolean;
+      tier: string; league_followers: number; season_rank: number | null;
     }>>`
       select l.id, l.slug, l.name, r.wins, r.losses, r.settled_picks, r.current_win_streak,
-        r.confidence_adjusted_accuracy,
+        r.confidence_adjusted_accuracy, r.tier,
+        (select count(*)::int from league_follows lf
+          where lf.specialist_user_id = r.user_id and lf.league_id = l.id) as league_followers,
+        season_rank.rank as season_rank,
         exists(select 1 from league_follows lf where lf.follower_user_id = ${currentViewerId} and lf.specialist_user_id = ${specialist.id} and lf.league_id = l.id) as followed_by_viewer
       from user_league_records r
       join leagues l on l.id = r.league_id
+      left join lateral (
+        select ranked.rank from (
+          select sr.user_id, rank() over (
+            order by sr.confidence_adjusted_accuracy desc nulls last,
+              sr.wins::numeric / nullif(sr.wins + sr.losses, 0) desc nulls last,
+              sr.settled_picks desc, sr.last_settled_at asc nulls last
+          ) as rank
+          from user_league_season_records sr
+          join seasons s on s.id = sr.season_id and s.is_current = true
+          where sr.league_id = r.league_id
+            and sr.settled_picks >= ${MINIMUM_SETTLED_PICKS_FOR_RANK}
+        ) ranked
+        where ranked.user_id = r.user_id
+      ) season_rank on true
       where r.user_id = ${specialist.id} and r.settled_picks >= ${MINIMUM_SETTLED_PICKS_FOR_RANK}
       order by r.confidence_adjusted_accuracy desc nulls last, r.settled_picks desc, l.name
       limit 12`,
@@ -60,6 +88,27 @@ export const getSpecialistProfile = cache(async function getSpecialistProfile(
       join teams a on a.id = f.away_team_id
       where p.user_id = ${specialist.id} and p.result in ('win', 'loss', 'void')
       order by p.settled_at desc nulls last, p.submitted_at desc
+      limit 12`,
+    sqlClient<Array<{ id: string; slug: string; name: string; specialist_id: string; specialist_name: string }>>`
+      select l.id, l.slug, l.name, u.id as specialist_id, u.name as specialist_name
+      from league_follows f
+      join leagues l on l.id = f.league_id
+      join "user" u on u.id = f.specialist_user_id
+      where f.follower_user_id = ${specialist.id}
+      order by l.name`,
+    sqlClient<Array<{
+      id: string; league_name: string; league_slug: string; team: string;
+      specialist_id: string; specialist_name: string; result: "win" | "loss" | "void" | "pending";
+    }>>`
+      select fp.id, l.name as league_name, l.slug as league_slug, t.name as team,
+        u.id as specialist_id, u.name as specialist_name, fp.result
+      from followed_picks fp
+      join leagues l on l.id = fp.league_id
+      join picks sp on sp.id = fp.source_pick_id
+      join teams t on t.id = sp.selected_team_id
+      join "user" u on u.id = sp.user_id
+      where fp.follower_user_id = ${specialist.id}
+      order by fp.followed_at desc
       limit 12`,
   ]);
 
@@ -82,11 +131,21 @@ export const getSpecialistProfile = cache(async function getSpecialistProfile(
       id: league.id, slug: league.slug, name: league.name, wins: league.wins, losses: league.losses,
       settledPicks: league.settled_picks, currentWinStreak: league.current_win_streak,
       confidenceAdjustedAccuracy: Number(league.confidence_adjusted_accuracy), followedByViewer: league.followed_by_viewer,
+      tier: league.tier, leagueFollowers: league.league_followers,
+      seasonRank: league.season_rank === null ? null : Number(league.season_rank),
+    })),
+    followedLeagues: followedLeagueRows.map((league) => ({
+      id: league.id, slug: league.slug, name: league.name,
+      specialistId: league.specialist_id, specialistName: league.specialist_name,
     })),
     recentLocks: recentLockRows.map((lock) => ({
       id: lock.id, leagueName: lock.league_name, leagueSlug: lock.league_slug, team: lock.team,
       result: lock.result, fixture: `${lock.home} vs ${lock.away}`,
       submittedAt: new Date(lock.submitted_at).toISOString(),
+    })),
+    followedHistory: followedHistoryRows.map((entry) => ({
+      id: entry.id, leagueName: entry.league_name, leagueSlug: entry.league_slug, team: entry.team,
+      specialistId: entry.specialist_id, specialistName: entry.specialist_name, result: entry.result,
     })),
     viewer: { authenticated: Boolean(viewerId), isSelf: viewerId === specialist.id },
   };

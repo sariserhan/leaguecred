@@ -2,16 +2,16 @@
 
 import Link from "next/link";
 import { useState, useTransition } from "react";
-import { CheckIcon, FlameIcon, UserPlusIcon, UsersRoundIcon } from "lucide-react";
+import { CheckIcon, FlameIcon, TrophyIcon, UserPlusIcon, UsersRoundIcon } from "lucide-react";
 
 import { followSpecialist } from "@/app/leagues/actions";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import type { SpecialistProfileData } from "@/data/specialists";
 
-function ResultBadge({ result }: { result: "win" | "loss" | "void" }) {
-  const variants = { win: "default", loss: "destructive", void: "outline" } as const;
-  const labels = { win: "Correct", loss: "Missed", void: "Void" };
+function ResultBadge({ result }: { result: "win" | "loss" | "void" | "pending" }) {
+  const variants = { win: "default", loss: "destructive", void: "outline", pending: "outline" } as const;
+  const labels = { win: "Correct", loss: "Missed", void: "Void", pending: "Pending" };
   return <Badge variant={variants[result]}>{labels[result]}</Badge>;
 }
 
@@ -52,12 +52,69 @@ export function SpecialistProfile({ data }: { data: SpecialistProfileData }) {
             {data.leagues.map((league) => {
               const followed = followedLeagueIds.has(league.id);
               const accuracy = league.settledPicks === 0 ? 0 : (league.wins / league.settledPicks) * 100;
-              return <article key={league.id} className="grid gap-4 px-5 py-4 sm:grid-cols-[1fr_auto] sm:items-center"><div><Link href={`/leagues/${league.slug}`} className="font-bold hover:text-primary">{league.name}</Link><p className="mt-1 text-sm text-muted-foreground">{accuracy.toFixed(1)}% · {league.wins}–{league.losses} · {league.settledPicks} independent locks</p><p className="mt-1 flex items-center gap-1 text-xs font-semibold text-primary"><FlameIcon aria-hidden="true" className="size-3" />{league.currentWinStreak}W current streak</p></div>{data.viewer.isSelf ? <Badge variant="outline">Your profile</Badge> : followed ? <Badge variant="secondary"><CheckIcon data-icon="inline-start" />Following</Badge> : <Button size="sm" disabled={pending} onClick={() => followLeague(league.id)}><UserPlusIcon data-icon="inline-start" />{pendingLeagueId === league.id ? "Following…" : "Follow"}</Button>}</article>;
+              return <article key={league.id} className="grid gap-4 px-5 py-4 sm:grid-cols-[1fr_auto] sm:items-center"><div><div className="flex flex-wrap items-center gap-2"><Link href={`/leagues/${league.slug}`} className="font-bold hover:text-primary">{league.name}</Link><Badge variant={league.tier === "Established" ? "secondary" : "outline"}>{league.tier}</Badge></div><p className="mt-1 text-sm text-muted-foreground">{accuracy.toFixed(1)}% · {league.wins}–{league.losses} · {league.settledPicks} independent locks</p><p className="mt-1 flex flex-wrap items-center gap-x-3 gap-y-1 text-xs font-semibold"><span className="flex items-center gap-1 text-primary"><FlameIcon aria-hidden="true" className="size-3" />{league.currentWinStreak}W current streak</span>{league.seasonRank ? <span className="flex items-center gap-1 text-muted-foreground"><TrophyIcon aria-hidden="true" className="size-3" />Season rank #{league.seasonRank}</span> : null}<span className="text-muted-foreground">{league.leagueFollowers} league follower{league.leagueFollowers === 1 ? "" : "s"}</span></p></div>{data.viewer.isSelf ? <Badge variant="outline">Your profile</Badge> : followed ? <Badge variant="secondary"><CheckIcon data-icon="inline-start" />Following</Badge> : <Button size="sm" disabled={pending} onClick={() => followLeague(league.id)}><UserPlusIcon data-icon="inline-start" />{pendingLeagueId === league.id ? "Following…" : "Follow"}</Button>}</article>;
             })}
           </div>
         </section>
 
         <section className="border" aria-labelledby="recent-heading"><div className="border-b px-5 py-4"><h2 id="recent-heading" className="font-heading text-2xl font-bold uppercase">Recent calls</h2><p className="mt-1 text-sm text-muted-foreground">Independent Weekly Locks only.</p></div><div className="divide-y">{data.recentLocks.map((lock) => <article key={lock.id} className="p-4"><div className="flex items-center justify-between gap-3"><Link href={`/leagues/${lock.leagueSlug}`} className="font-semibold hover:text-primary">{lock.leagueName}</Link><ResultBadge result={lock.result} /></div><strong className="mt-2 block">{lock.team}</strong><p className="mt-1 text-sm text-muted-foreground">{lock.fixture}</p></article>)}</div></section>
+      </div>
+
+      <div className="mt-7 grid gap-7 xl:grid-cols-[1fr_390px]">
+        <section className="border" aria-labelledby="following-heading">
+          <div className="border-b px-5 py-4">
+            <h2 id="following-heading" className="font-heading text-2xl font-bold uppercase">Leagues followed</h2>
+            <p className="mt-1 text-sm text-muted-foreground">
+              Leagues where this account follows someone else. Following never builds an independent record.
+            </p>
+          </div>
+          {data.followedLeagues.length === 0 ? (
+            <p className="px-5 py-8 text-sm text-muted-foreground">No leagues followed yet.</p>
+          ) : (
+            <div className="divide-y">
+              {data.followedLeagues.map((league) => (
+                <article key={league.id} className="flex flex-wrap items-center justify-between gap-3 px-5 py-4">
+                  <Link href={`/leagues/${league.slug}`} className="font-bold hover:text-primary">{league.name}</Link>
+                  <p className="text-sm text-muted-foreground">
+                    Following{" "}
+                    <Link href={`/specialists/${league.specialistId}`} className="font-semibold hover:text-primary">
+                      {league.specialistName}
+                    </Link>
+                  </p>
+                </article>
+              ))}
+            </div>
+          )}
+        </section>
+
+        <section className="border" aria-labelledby="followed-history-heading">
+          <div className="border-b px-5 py-4">
+            <h2 id="followed-history-heading" className="font-heading text-2xl font-bold uppercase">Followed calls</h2>
+            <p className="mt-1 text-sm text-muted-foreground">Attributed, and separate from the record above.</p>
+          </div>
+          {data.followedHistory.length === 0 ? (
+            <p className="px-5 py-8 text-sm text-muted-foreground">No followed calls yet.</p>
+          ) : (
+            <div className="divide-y">
+              {data.followedHistory.map((entry) => (
+                <article key={entry.id} className="p-4">
+                  <div className="flex items-center justify-between gap-3">
+                    <Link href={`/leagues/${entry.leagueSlug}`} className="font-semibold hover:text-primary">{entry.leagueName}</Link>
+                    <ResultBadge result={entry.result} />
+                  </div>
+                  <p className="mt-2 text-sm">
+                    Followed{" "}
+                    <Link href={`/specialists/${entry.specialistId}`} className="font-semibold hover:text-primary">
+                      {entry.specialistName}
+                    </Link>
+                    {"\u2019s "}
+                    <strong>{entry.team}</strong> pick
+                  </p>
+                </article>
+              ))}
+            </div>
+          )}
+        </section>
       </div>
     </div>
   );
