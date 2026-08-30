@@ -71,6 +71,13 @@
       "when": 1788124319347,
       "tag": "0009_shiny_klaw",
       "breakpoints": true
+    },
+    {
+      "idx": 10,
+      "version": "7",
+      "when": 1788128013562,
+      "tag": "0010_user-league-preferences",
+      "breakpoints": true
     }
   ]
 }

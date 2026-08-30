@@ -31,8 +31,8 @@ type ReminderCandidate = {
   lock_at: Date;
 };
 
-// A user is "engaged" with a league once they have ever locked, followed, or
-// been followed there; a fresh signup with zero history gets no reminders.
+// A user is engaged once they have participated, followed, or explicitly marked
+// a league as known during onboarding.
 export async function sendLockReminders(options: { hoursBeforeLock?: number; send?: EmailSender } = {}) {
   const hoursBeforeLock = options.hoursBeforeLock ?? 24;
   const send = options.send ?? defaultSender;
@@ -46,6 +46,8 @@ export async function sendLockReminders(options: { hoursBeforeLock?: number; sen
       select user_id, league_id from matchweek_participation
       union
       select follower_user_id as user_id, league_id from league_follows
+      union
+      select user_id, league_id from user_league_preferences where kind = 'know'
     ) engaged on engaged.league_id = mw.league_id
     join "user" u on u.id = engaged.user_id
     where mw.status = 'upcoming'
