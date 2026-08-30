@@ -91,7 +91,7 @@ export function SiteHeader({
                           aria-label="Back to leagues"
                           closeOnClick={false}
                           onClick={() => setSelectedLeague(null)}
-                          className="flex size-7 items-center justify-center text-lg text-muted-foreground outline-none hover:bg-muted hover:text-foreground"
+                          className="cursor-pointer flex size-7 items-center justify-center text-lg text-muted-foreground outline-none hover:bg-muted hover:text-foreground"
                         >
                           ←
                         </Menu.Item>
@@ -103,7 +103,7 @@ export function SiteHeader({
                           <Menu.LinkItem
                             key={team.slug}
                             href={`/teams/${team.slug}`}
-                            className="flex items-center gap-3 px-3 py-2 text-sm font-medium outline-none transition-colors data-highlighted:bg-muted data-highlighted:text-foreground"
+                            className="cursor-pointer flex items-center gap-3 px-3 py-2 text-sm font-medium outline-none transition-colors data-highlighted:bg-muted data-highlighted:text-foreground"
                           >
                             {team.logoUrl ? <Image src={team.logoUrl} alt="" width={28} height={28} className="size-7 object-contain" /> : <span className="flex size-7 items-center justify-center bg-muted text-[10px] font-bold">{team.name.slice(0, 3).toUpperCase()}</span>}
                             <span className="truncate">{team.name}</span>
@@ -118,7 +118,7 @@ export function SiteHeader({
                           key={league.slug}
                           closeOnClick={false}
                           onClick={() => setSelectedLeague(league)}
-                          className="flex items-center gap-3 px-3 py-2 text-sm font-medium outline-none transition-colors data-highlighted:bg-muted data-highlighted:text-foreground"
+                          className="cursor-pointer flex items-center gap-3 px-3 py-2 text-sm font-medium outline-none transition-colors data-highlighted:bg-muted data-highlighted:text-foreground"
                         >
                           {league.logoUrl ? <Image src={league.logoUrl} alt="" width={32} height={32} className="size-8 object-contain" /> : <span className="flex size-8 items-center justify-center bg-muted text-xs font-bold">{league.name.slice(0, 2).toUpperCase()}</span>}
                           <span className="min-w-0 flex-1 truncate">{league.name}</span>
