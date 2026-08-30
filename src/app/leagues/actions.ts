@@ -41,7 +41,13 @@ export async function submitWeeklyLock(fixtureId: string, selectedTeamId: string
       const [fixture] = await sql<Array<{ league_id: string; season_id: string; matchweek_id: string; slug: string }>>`
         select f.league_id, f.season_id, f.matchweek_id, l.slug
         from fixtures f join leagues l on l.id = f.league_id join matchweeks mw on mw.id = f.matchweek_id
-        where f.id = ${parsed.data.fixtureId} for update of mw, f`;
+        where f.id = ${parsed.data.fixtureId}
+          and f.status = 'scheduled'
+          and f.kickoff_at > now()
+          and mw.status = 'upcoming'
+          and mw.lock_at > now()
+          and (f.home_team_id = ${parsed.data.selectedTeamId} or f.away_team_id = ${parsed.data.selectedTeamId})
+        for update of mw, f`;
       if (!fixture) throw new Error("fixture is not eligible");
 
       await sql`insert into matchweek_participation (user_id, league_id, matchweek_id, mode)

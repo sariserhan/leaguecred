@@ -72,6 +72,12 @@ export function LeagueExperience({ data }: { data: LeagueExperienceData }) {
     weekday: "long", hour: "2-digit", minute: "2-digit", timeZone: "UTC", timeZoneName: "short",
   }).format(new Date(data.matchweek.lockAt));
   const interactionLocked = data.matchweek.status !== "upcoming" || new Date(data.matchweek.lockAt) <= new Date();
+  const fixturesByDate = new Map<string, typeof data.fixtures>();
+  for (const fixture of data.fixtures) {
+    const fixtures = fixturesByDate.get(fixture.kickoffDate);
+    if (fixtures) fixtures.push(fixture);
+    else fixturesByDate.set(fixture.kickoffDate, [fixture]);
+  }
 
   function requireAuthentication() {
     if (data.viewer.authenticated) return true;
@@ -183,30 +189,37 @@ export function LeagueExperience({ data }: { data: LeagueExperienceData }) {
         <div className="mt-6 grid gap-7 xl:grid-cols-[1fr_390px]">
           <section className="border" aria-labelledby="fixtures-heading">
             <div className="border-b px-5 py-4"><h2 id="fixtures-heading" className="font-heading text-2xl font-bold uppercase">Select the team you believe will win</h2></div>
-            <div className="divide-y">
-              {data.fixtures.map((fixture) => {
-                const homeSelected = selection?.teamId === fixture.homeTeamId;
-                const awaySelected = selection?.teamId === fixture.awayTeamId;
-                const disabled = mode === "follow" || Boolean(lockedTeam) || interactionLocked;
-                return (
-                  <div key={fixture.id} className={cn("grid gap-3 p-3 sm:grid-cols-[1fr_auto_1fr] sm:items-center", homeSelected || awaySelected ? "bg-primary/10" : "bg-background")}>
-                    <button type="button" disabled={disabled} onClick={() => setSelection({ fixtureId: fixture.id, teamId: fixture.homeTeamId, teamName: fixture.home })} className="flex items-center gap-3 text-left font-semibold disabled:cursor-not-allowed disabled:opacity-60" aria-pressed={homeSelected}>
-                      <TeamMark code={fixture.homeCode} logoUrl={fixture.homeLogoUrl} />{fixture.home}
-                    </button>
-                    <span className="text-center text-sm text-muted-foreground">{fixture.kickoff}</span>
-                    <button type="button" disabled={disabled} onClick={() => setSelection({ fixtureId: fixture.id, teamId: fixture.awayTeamId, teamName: fixture.away })} className="flex items-center justify-end gap-3 text-right font-semibold disabled:cursor-not-allowed disabled:opacity-60" aria-pressed={awaySelected}>
-                      {fixture.away}<TeamMark code={fixture.awayCode} logoUrl={fixture.awayLogoUrl} />
-                    </button>
+            <div>
+              {[...fixturesByDate].map(([date, fixtures]) => (
+                <section key={date} className="border-b last:border-b-0" aria-label={date}>
+                  <h3 className="border-b bg-muted px-4 py-2 text-sm font-bold uppercase tracking-wide">{date}</h3>
+                  <div className="divide-y">
+                    {fixtures.map((fixture) => {
+                      const homeSelected = selection?.teamId === fixture.homeTeamId;
+                      const awaySelected = selection?.teamId === fixture.awayTeamId;
+                      const disabled = mode === "follow" || Boolean(lockedTeam) || interactionLocked;
+                      return (
+                        <div key={fixture.id} className={cn("grid gap-3 p-3 sm:grid-cols-[1fr_auto_1fr] sm:items-center", homeSelected || awaySelected ? "bg-primary/10" : "bg-background")}>
+                          <button type="button" disabled={disabled} onClick={() => setSelection({ fixtureId: fixture.id, teamId: fixture.homeTeamId, teamName: fixture.home })} className="flex items-center gap-3 text-left font-semibold disabled:cursor-not-allowed disabled:opacity-60" aria-pressed={homeSelected}>
+                            <TeamMark code={fixture.homeCode} logoUrl={fixture.homeLogoUrl} />{fixture.home}
+                          </button>
+                          <span className="text-center text-sm text-muted-foreground">{fixture.kickoff}</span>
+                          <button type="button" disabled={disabled} onClick={() => setSelection({ fixtureId: fixture.id, teamId: fixture.awayTeamId, teamName: fixture.away })} className="flex items-center justify-end gap-3 text-right font-semibold disabled:cursor-not-allowed disabled:opacity-60" aria-pressed={awaySelected}>
+                            {fixture.away}<TeamMark code={fixture.awayCode} logoUrl={fixture.awayLogoUrl} />
+                          </button>
+                        </div>
+                      );
+                    })}
                   </div>
-                );
-              })}
+                </section>
+              ))}
             </div>
             <div className="border-t bg-muted p-3">
               {lockedTeam ? (
                 <div className="flex min-h-11 items-center justify-center gap-2 font-semibold"><CheckIcon aria-hidden="true" className="size-5 text-primary" />{lockedTeam} is your independent Weekly Lock</div>
               ) : mode === "prove" ? (
                 <Button size="lg" className="w-full" disabled={!selection || pending || interactionLocked} onClick={() => requireAuthentication() && setLockConfirmOpen(true)}>
-                  {pending ? <Spinner data-icon="inline-start" /> : <LockKeyholeIcon data-icon="inline-start" />}Lock {selection?.teamName ?? "a team"}
+                  {pending ? <Spinner data-icon="inline-start" /> : <LockKeyholeIcon data-icon="inline-start" />}Lock your one pick: {selection?.teamName ?? "choose a team"}
                 </Button>
               ) : (
                 <div className="flex min-h-11 items-center justify-center gap-2 text-sm text-muted-foreground"><UsersRoundIcon aria-hidden="true" className="size-5" />Follow mode selected — choose a specialist call</div>

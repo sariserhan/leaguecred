@@ -124,6 +124,7 @@ export type DatabaseFixture = {
   awayCode: string;
   awayLogoUrl: string | null;
   awayTeamId: string;
+  kickoffDate: string;
   kickoff: string;
 };
 
@@ -224,7 +225,8 @@ export async function getLeagueExperience(slug: string, userId?: string): Promis
     fixtures: fixtureRows.map((fixture) => ({
       id: fixture.id, home: fixture.home, homeCode: fixture.home_code, homeLogoUrl: fixture.home_logo_url, homeTeamId: fixture.home_id,
       away: fixture.away, awayCode: fixture.away_code, awayLogoUrl: fixture.away_logo_url, awayTeamId: fixture.away_id,
-      kickoff: new Intl.DateTimeFormat("en", { weekday: "long", hour: "2-digit", minute: "2-digit", timeZone: "UTC" }).format(new Date(fixture.kickoff_at)),
+      kickoffDate: new Intl.DateTimeFormat("en", { weekday: "long", month: "long", day: "numeric", timeZone: "UTC" }).format(new Date(fixture.kickoff_at)),
+      kickoff: new Intl.DateTimeFormat("en", { hour: "2-digit", minute: "2-digit", timeZone: "UTC", timeZoneName: "short" }).format(new Date(fixture.kickoff_at)),
     })),
     specialists: specialistRows.map((specialist) => ({
       id: specialist.id,
