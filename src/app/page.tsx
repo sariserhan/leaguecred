@@ -11,21 +11,21 @@ import { buttonVariants } from "@/components/ui/button";
 
 const steps = [
   {
-    title: "Pick independently",
+    title: "Give your surest call",
     description:
-      "Choose one highest-confidence Weekly Lock from a league you know better than anyone.",
+      "Choose the one team you are closest to certain will win from the league you truly know.",
     icon: ClipboardPenLineIcon,
   },
   {
-    title: "Build league credibility",
+    title: "Earn trust with results",
     description:
       "Your record is tracked forever. Accuracy and consistency earn trust over time.",
     icon: ChartNoAxesColumnIncreasingIcon,
   },
   {
-    title: "Help someone elsewhere",
+    title: "Receive another expert's call",
     description:
-      "Others follow your expertise. You follow proven specialists in theirs.",
+      "Your league knowledge helps someone else; their strongest call helps you in a league you do not know.",
     icon: UsersRoundIcon,
   },
 ] as const;
@@ -36,11 +36,12 @@ export default function HomePage() {
       <section className="page-shell grid min-h-[650px] items-center gap-12 py-16 lg:grid-cols-[0.82fr_1.18fr] lg:py-8">
         <div className="flex flex-col items-start gap-8">
           <h1 className="display-title max-w-[760px] normal-case">
-            Know one league. Discover the people who know the others.
+            Bring your surest winner. Find theirs.
           </h1>
           <p className="max-w-xl text-lg leading-8 text-muted-foreground sm:text-xl">
-            Share one highest-confidence Weekly Lock from your league. Follow
-            proven specialists everywhere else.
+            This is not a place for casual “maybe this team wins” picks. Give one
+            team you are almost certain will win from the league you know best,
+            then receive a proven specialist&apos;s surest call from a league you do not.
           </p>
           <div className="flex flex-col gap-3 sm:flex-row">
             <Link
@@ -72,10 +73,10 @@ export default function HomePage() {
       <section id="how-it-works" className="border-y bg-secondary">
         <div className="page-shell grid gap-10 py-14 lg:grid-cols-[0.75fr_1.25fr] lg:py-16">
           <div className="flex flex-col gap-4">
-            <h2 className="section-title">One pick. A permanent record.</h2>
+            <h2 className="section-title">Not a guess. An exchange of real league knowledge.</h2>
             <p className="max-w-md leading-7 text-muted-foreground">
-              LeagueCred is built on independent picks and long-term credibility.
-              Your one pick creates value for you and for others.
+              You bring one near-certain winner from your league each week. In return,
+              you can follow someone whose record proves they know theirs.
             </p>
           </div>
           <ol className="grid gap-8 md:grid-cols-3">
