@@ -15,6 +15,21 @@ type FootballDataMatch = {
 
 type FootballDataResponse = { matches: FootballDataMatch[] };
 
+export type FootballDataTeam = {
+  id: number;
+  name: string;
+  shortName: string | null;
+  tla: string | null;
+  crest: string | null;
+  area: { name: string } | null;
+};
+
+type FootballDataTeamsResponse = {
+  competition: { name: string };
+  season: { startDate: string };
+  teams: FootballDataTeam[];
+};
+
 export function normalizeFootballDataStatus(status: string): FixtureStatus {
   if (["SCHEDULED", "TIMED"].includes(status)) return "scheduled";
   if (["IN_PLAY", "PAUSED", "EXTRA_TIME", "PENALTY_SHOOTOUT"].includes(status)) return "live";
@@ -55,6 +70,17 @@ export function mapFootballDataMatch(match: FootballDataMatch): ProviderFixture 
 export class FootballDataOrgProvider implements FixtureProvider {
   readonly name = "football-data-org";
   readonly competitions = [{ leagueSlug: "uefa-champions-league", externalId: "CL" }] as const;
+
+  async fetchTeams(input: { competitionExternalId: string; season: string }) {
+    const url = new URL(`competitions/${input.competitionExternalId}/teams`, `${serverEnv.footballDataBaseUrl}/`);
+    url.searchParams.set("season", input.season);
+    const response = await fetch(url, {
+      headers: { "X-Auth-Token": requireFootballDataApiKey() },
+      cache: "no-store",
+    });
+    if (!response.ok) throw new Error(`football-data.org team request failed with ${response.status}`);
+    return (await response.json()) as FootballDataTeamsResponse;
+  }
 
   async fetchFixtures(input: { leagueExternalId: string; season: string; from: string; to: string }): Promise<FixtureBatch> {
     const url = new URL(`competitions/${input.leagueExternalId}/matches`, `${serverEnv.footballDataBaseUrl}/`);

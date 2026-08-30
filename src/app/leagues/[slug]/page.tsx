@@ -3,6 +3,7 @@ import { notFound } from "next/navigation";
 
 import { LeagueComingSoon } from "@/components/leagues/league-coming-soon";
 import { LeagueExperience } from "@/components/leagues/league-experience";
+import { TeamCatalogSection } from "@/components/leagues/team-catalog-section";
 import { getLeagueDirectory, getLeagueExperience, getLeagueTeamCatalog } from "@/data/leagues";
 import { getSession } from "@/lib/auth-session";
 
@@ -43,8 +44,18 @@ export default async function LeaguePage(props: LeaguePageProps) {
     return <LeagueComingSoon league={league} teamCatalog={teamCatalog} />;
   }
 
-  const experience = await getLeagueExperience(slug, session?.user.id);
+  const [experience, teamCatalog] = await Promise.all([
+    getLeagueExperience(slug, session?.user.id),
+    getLeagueTeamCatalog(slug),
+  ]);
   if (!experience) notFound();
 
-  return <LeagueExperience data={experience} />;
+  return (
+    <>
+      <LeagueExperience data={experience} />
+      <div className="page-shell pb-14 sm:pb-20">
+        <TeamCatalogSection teamCatalog={teamCatalog} />
+      </div>
+    </>
+  );
 }

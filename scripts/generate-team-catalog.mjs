@@ -10,7 +10,7 @@ const domesticFallbacks = JSON.parse(readFileSync(domesticPath, "utf8"));
 const cupResponses = JSON.parse(readFileSync(cupsPath, "utf8"));
 const searches = JSON.parse(readFileSync(searchesPath, "utf8"));
 const cupLeagueIds = new Map([
-  ["ucl-events", "2"], ["uel-events", "3"],
+  ["uel-events", "3"],
   ["libertadores-events", "13"], ["conference-events", "848"],
 ]);
 
@@ -98,7 +98,7 @@ const membershipRows = [...memberships.values()].sort((a, b) =>
 imports.sort((a, b) => Number(a.leagueExternalId) - Number(b.leagueExternalId));
 
 if (teams.length !== 290) throw new Error(`Expected 290 teams, received ${teams.length}`);
-if (membershipRows.length < 298) throw new Error(`Expected at least 298 memberships, received ${membershipRows.length}`);
+if (membershipRows.length < 272) throw new Error(`Expected at least 272 memberships, received ${membershipRows.length}`);
 
 const output = [
   "export const teamCatalogEntries = [",

@@ -1,7 +1,8 @@
 import Image from "next/image";
 import Link from "next/link";
-import { ArrowLeftIcon, ShieldAlertIcon, UsersRoundIcon } from "lucide-react";
+import { ArrowLeftIcon, UsersRoundIcon } from "lucide-react";
 
+import { TeamCatalogSection } from "@/components/leagues/team-catalog-section";
 import { buttonVariants } from "@/components/ui/button";
 import type { LeagueTeamCatalog } from "@/data/leagues";
 import type { League } from "@/lib/league-data";
@@ -34,48 +35,9 @@ export function LeagueComingSoon({
         </div>
       </header>
 
-      <section className="mt-10" aria-labelledby="teams-heading">
-        <div className="flex flex-col gap-4 border-b pb-5 sm:flex-row sm:items-end sm:justify-between">
-          <div>
-            <p className="text-sm font-semibold tracking-[0.08em] text-primary uppercase">Current data import</p>
-            <h2 id="teams-heading" className="font-heading text-4xl font-bold uppercase">
-              {teamCatalog.teams.length} teams cataloged
-            </h2>
-          </div>
-          {!teamCatalog.isComplete ? (
-            <p className="flex max-w-xl items-start gap-2 text-sm text-muted-foreground">
-              <ShieldAlertIcon aria-hidden="true" className="mt-0.5 size-4 shrink-0 text-primary" />
-              Partial membership: free-source limits mean this is not yet the complete verified roster.
-            </p>
-          ) : null}
-        </div>
-
-        {teamCatalog.teams.length > 0 ? (
-          <ul className="mt-6 grid gap-3 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
-            {teamCatalog.teams.map((team) => (
-              <li
-                key={team.id}
-                className="flex min-h-24 items-center gap-4 border bg-card p-4 [contain-intrinsic-size:0_96px] [content-visibility:auto]"
-              >
-                <span className="flex size-14 shrink-0 items-center justify-center bg-white p-1.5">
-                  {team.logoUrl ? (
-                    <Image src={team.logoUrl} alt="" width={44} height={44} className="size-11 object-contain" />
-                  ) : (
-                    <span className="font-bold text-muted-foreground">{team.shortName}</span>
-                  )}
-                </span>
-                <span className="font-semibold">{team.name}</span>
-              </li>
-            ))}
-          </ul>
-        ) : (
-          <p className="mt-6 border p-6 text-muted-foreground">No team records have been imported yet.</p>
-        )}
-
-        <p className="mt-5 text-xs text-muted-foreground">
-          Team metadata and artwork supplied by TheSportsDB. Competition and cross-reference IDs supplied by API-Football.
-        </p>
-      </section>
+      <div className="mt-10">
+        <TeamCatalogSection teamCatalog={teamCatalog} />
+      </div>
 
       <div className="mt-10 flex flex-col gap-3 sm:flex-row">
         <Link href="/leagues/super-lig" className={buttonVariants({ size: "lg" })}>

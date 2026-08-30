@@ -52,6 +52,13 @@ export async function seedTeamCatalog(sql: postgres.TransactionSql) {
     where source_provider = 'thesportsdb'
       and season_id in ${currentSeasonIds}
   `;
+  // Event samples are not participant lists. Never reintroduce the old inferred UCL roster.
+  await sql`delete from league_team_memberships
+    where source_provider = 'thesportsdb'
+      and league_id in (select id from leagues where slug = 'uefa-champions-league')`;
+  await sql`delete from league_team_imports
+    where provider = 'thesportsdb'
+      and league_id in (select id from leagues where slug = 'uefa-champions-league')`;
 
   const membershipRows = teamMembershipEntries.map((entry) => {
     const leagueSeason = seasonByLeague.get(entry.leagueExternalId);

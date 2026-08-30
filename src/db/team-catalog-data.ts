@@ -292,32 +292,6 @@ export const teamCatalogEntries = [
 ] as const;
 
 export const teamMembershipEntries = [
-  {"leagueExternalId":"2","apiFootballTeamId":"10124","sourceScope":"event-sample"},
-  {"leagueExternalId":"2","apiFootballTeamId":"1165","sourceScope":"event-sample"},
-  {"leagueExternalId":"2","apiFootballTeamId":"13976","sourceScope":"event-sample"},
-  {"leagueExternalId":"2","apiFootballTeamId":"14281","sourceScope":"event-sample"},
-  {"leagueExternalId":"2","apiFootballTeamId":"15847","sourceScope":"event-sample"},
-  {"leagueExternalId":"2","apiFootballTeamId":"2260","sourceScope":"event-sample"},
-  {"leagueExternalId":"2","apiFootballTeamId":"2271","sourceScope":"event-sample"},
-  {"leagueExternalId":"2","apiFootballTeamId":"2402","sourceScope":"event-sample"},
-  {"leagueExternalId":"2","apiFootballTeamId":"278","sourceScope":"event-sample"},
-  {"leagueExternalId":"2","apiFootballTeamId":"3327","sourceScope":"event-sample"},
-  {"leagueExternalId":"2","apiFootballTeamId":"3342","sourceScope":"event-sample"},
-  {"leagueExternalId":"2","apiFootballTeamId":"3364","sourceScope":"event-sample"},
-  {"leagueExternalId":"2","apiFootballTeamId":"3502","sourceScope":"event-sample"},
-  {"leagueExternalId":"2","apiFootballTeamId":"3872","sourceScope":"event-sample"},
-  {"leagueExternalId":"2","apiFootballTeamId":"4625","sourceScope":"event-sample"},
-  {"leagueExternalId":"2","apiFootballTeamId":"5354","sourceScope":"event-sample"},
-  {"leagueExternalId":"2","apiFootballTeamId":"574","sourceScope":"event-sample"},
-  {"leagueExternalId":"2","apiFootballTeamId":"632","sourceScope":"event-sample"},
-  {"leagueExternalId":"2","apiFootballTeamId":"646","sourceScope":"event-sample"},
-  {"leagueExternalId":"2","apiFootballTeamId":"652","sourceScope":"event-sample"},
-  {"leagueExternalId":"2","apiFootballTeamId":"664","sourceScope":"event-sample"},
-  {"leagueExternalId":"2","apiFootballTeamId":"667","sourceScope":"event-sample"},
-  {"leagueExternalId":"2","apiFootballTeamId":"673","sourceScope":"event-sample"},
-  {"leagueExternalId":"2","apiFootballTeamId":"687","sourceScope":"event-sample"},
-  {"leagueExternalId":"2","apiFootballTeamId":"701","sourceScope":"event-sample"},
-  {"leagueExternalId":"2","apiFootballTeamId":"7808","sourceScope":"event-sample"},
   {"leagueExternalId":"3","apiFootballTeamId":"1011","sourceScope":"event-sample"},
   {"leagueExternalId":"3","apiFootballTeamId":"211","sourceScope":"event-sample"},
   {"leagueExternalId":"3","apiFootballTeamId":"2599","sourceScope":"event-sample"},
@@ -593,7 +567,6 @@ export const teamMembershipEntries = [
 ] as const;
 
 export const teamImportEntries = [
-  {"leagueExternalId":"2","isComplete":false,"teamCount":26,"note":"TheSportsDB free current-season event sample; limited to 15 events and not a complete participant list."},
   {"leagueExternalId":"3","isComplete":false,"teamCount":18,"note":"TheSportsDB free current-season event sample; limited to 15 events and not a complete participant list."},
   {"leagueExternalId":"13","isComplete":false,"teamCount":17,"note":"TheSportsDB free current-season event sample; limited to 15 events and not a complete participant list."},
   {"leagueExternalId":"39","isComplete":false,"teamCount":10,"note":"TheSportsDB free league list; capped at 10 returned teams."},

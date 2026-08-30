@@ -13,6 +13,19 @@ type ApiFixture = {
 };
 type ApiResponse = { errors: unknown[] | Record<string, string>; paging: { current: number; total: number }; response: ApiFixture[] };
 
+export type ApiFootballTeam = {
+  id: number;
+  name: string;
+  code: string | null;
+  country: string;
+  logo: string | null;
+};
+
+type ApiTeamResponse = {
+  errors: unknown[] | Record<string, string>;
+  response: Array<{ team: ApiFootballTeam }>;
+};
+
 const liveStatuses = new Set(["1H", "HT", "2H", "ET", "P", "BT"]);
 
 export function normalizeApiFootballStatus(status: string): FixtureStatus {
@@ -46,6 +59,36 @@ function mapFixture(item: ApiFixture): ProviderFixture {
 
 export class ApiFootballProvider implements FixtureProvider {
   readonly name = "api-football";
+
+  async searchTeams(name: string) {
+    const url = new URL("teams", `${serverEnv.apiFootballBaseUrl}/`);
+    url.searchParams.set("search", name);
+    const response = await fetch(url, {
+      headers: { "x-apisports-key": requireApiFootballKey() },
+      cache: "no-store",
+    });
+    if (!response.ok) throw new Error(`API-Football team request failed with ${response.status}`);
+    const payload = (await response.json()) as ApiTeamResponse;
+    if (Array.isArray(payload.errors) ? payload.errors.length > 0 : Object.keys(payload.errors).length > 0) {
+      throw new Error(`API-Football returned errors: ${JSON.stringify(payload.errors)}`);
+    }
+    return payload.response.map((entry) => entry.team);
+  }
+
+  async fetchTeam(id: string) {
+    const url = new URL("teams", `${serverEnv.apiFootballBaseUrl}/`);
+    url.searchParams.set("id", id);
+    const response = await fetch(url, {
+      headers: { "x-apisports-key": requireApiFootballKey() },
+      cache: "no-store",
+    });
+    if (!response.ok) throw new Error(`API-Football team request failed with ${response.status}`);
+    const payload = (await response.json()) as ApiTeamResponse;
+    if (Array.isArray(payload.errors) ? payload.errors.length > 0 : Object.keys(payload.errors).length > 0) {
+      throw new Error(`API-Football returned errors: ${JSON.stringify(payload.errors)}`);
+    }
+    return payload.response[0]?.team ?? null;
+  }
 
   async fetchFixtures(input: { leagueExternalId: string; season: string; from: string; to: string }): Promise<FixtureBatch> {
     const fixtures: ProviderFixture[] = [];
