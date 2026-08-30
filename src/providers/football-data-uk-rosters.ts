@@ -56,7 +56,6 @@ export const FOOTBALL_DATA_UK_ROSTER_COMPETITIONS = [
   { kind: "extra", leagueSlug: "brasileirao-serie-a", sourceCode: "BRA", expectedTeamCount: 20, seasonStyle: "calendar" },
   { kind: "extra", leagueSlug: "denmark-superliga", sourceCode: "DNK", expectedTeamCount: 12, seasonStyle: "split" },
   { kind: "extra", leagueSlug: "liga-mx", sourceCode: "MEX", expectedTeamCount: 18, seasonStyle: "split" },
-  { kind: "extra", leagueSlug: "switzerland-super-league", sourceCode: "SWZ", expectedTeamCount: 12, seasonStyle: "split" },
   { kind: "extra", leagueSlug: "major-league-soccer", sourceCode: "USA", expectedTeamCount: 30, seasonStyle: "calendar" },
 ] as const satisfies readonly (MainCompetition | ExtraCompetition)[];
 

@@ -31,7 +31,6 @@ export const espnTeamCompetitions = [
   { slug: "saudi-arabia-pro-league", code: "ksa.1" },
   { slug: "copa-libertadores", code: "conmebol.libertadores" },
   { slug: "austria-bundesliga", code: "aut.1" },
-  { slug: "switzerland-super-league", code: "sui.1" },
   { slug: "denmark-superliga", code: "den.1" },
   // Domestic catalogs fill teams whose continental competition catalog is incomplete.
   { slug: "europa-league", code: "nor.1" },

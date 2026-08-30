@@ -2,6 +2,7 @@ import type postgres from "postgres";
 
 import { sqlClient } from "@/db";
 import type { FixtureProvider, ProviderFixture } from "@/providers/fixtures";
+import { teamNamesMatch } from "@/services/team-names";
 
 type LeagueConfig = {
   id: string;
@@ -39,9 +40,19 @@ export async function synchronizeFixtures(provider: FixtureProvider, now = new D
     const from = new Date(now); from.setUTCDate(from.getUTCDate() - 7);
     const to = new Date(now); to.setUTCDate(to.getUTCDate() + 14);
 
-    for (const config of configs) {
-      const batch = await provider.fetchFixtures({ leagueExternalId: config.source_external_id, season: config.provider_season, from: isoDate(from), to: isoDate(to) });
-      requestCount += batch.requestCount;
+    // Complete external requests concurrently and before opening write transactions.
+    const fetched = await Promise.all(configs.map(async (config) => ({
+      config,
+      batch: await provider.fetchFixtures({
+        leagueExternalId: config.source_external_id,
+        season: config.provider_season,
+        from: isoDate(from),
+        to: isoDate(to),
+      }),
+    })));
+    requestCount = fetched.reduce((total, entry) => total + entry.batch.requestCount, 0);
+
+    for (const { config, batch } of fetched) {
       const rounds = Map.groupBy(batch.fixtures, (fixture) => fixture.round);
       for (const [round, fixtures] of rounds) await synchronizeRound(provider.name, config, round, fixtures);
     }
@@ -80,11 +91,18 @@ async function synchronizeRound(providerName: string, config: LeagueConfig, roun
         newFixtures.push(fixture);
         continue;
       }
-      const winnerId = fixture.winnerExternalId === fixture.home.externalId
+      const homeId = existing.matchweek_frozen
         ? existing.home_team_id
-        : fixture.winnerExternalId === fixture.away.externalId ? existing.away_team_id : null;
+        : await resolveTeam(sql, providerName, fixture.home, config);
+      const awayId = existing.matchweek_frozen
+        ? existing.away_team_id
+        : await resolveTeam(sql, providerName, fixture.away, config);
+      const winnerId = fixture.winnerExternalId === fixture.home.externalId
+        ? homeId
+        : fixture.winnerExternalId === fixture.away.externalId ? awayId : null;
       await sql`update fixtures set
         kickoff_at = case when ${existing.matchweek_frozen} then kickoff_at else ${fixture.kickoffAt} end,
+        home_team_id = ${homeId}, away_team_id = ${awayId},
         status = ${fixture.status}, home_score = ${fixture.homeScore}, away_score = ${fixture.awayScore},
         winner_team_id = ${winnerId}, last_synced_at = now(), updated_at = now()
         where id = ${existing.id}`;
@@ -123,17 +141,38 @@ async function resolveTeam(
   config: LeagueConfig,
 ) {
   let [row] = await sql<Array<{ id: string }>>`
-    select team_id as id from team_provider_aliases
-    where provider = ${providerName} and provider_external_id = ${team.externalId}`;
+    select alias.team_id as id
+    from team_provider_aliases alias
+    join league_team_memberships membership
+      on membership.team_id = alias.team_id
+      and membership.league_id = ${config.id}
+      and membership.season_id = ${config.season_id}
+    where alias.provider = ${providerName}
+      and alias.provider_external_id = ${team.externalId}`;
 
   if (!row) {
     [row] = await sql<Array<{ id: string }>>`
       select t.id from teams t
-      left join league_team_memberships ltm
+      join league_team_memberships ltm
         on ltm.team_id = t.id and ltm.league_id = ${config.id} and ltm.season_id = ${config.season_id}
       where lower(t.name) = lower(${team.name})
-      order by (ltm.id is not null) desc, t.created_at asc
+      order by t.created_at asc
       limit 1`;
+  }
+
+  if (!row) {
+    const currentTeams = await sql<Array<{ id: string; name: string }>>`
+      select t.id, t.name from teams t
+      join league_team_memberships ltm
+        on ltm.team_id = t.id and ltm.league_id = ${config.id} and ltm.season_id = ${config.season_id}`;
+    const matches = currentTeams.filter((candidate) => teamNamesMatch(candidate.name, team.name));
+    if (matches.length === 1) row = matches[0];
+  }
+
+  if (!row) {
+    [row] = await sql<Array<{ id: string }>>`
+      select team_id as id from team_provider_aliases
+      where provider = ${providerName} and provider_external_id = ${team.externalId}`;
   }
 
   if (!row) {

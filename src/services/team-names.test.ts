@@ -18,6 +18,14 @@ describe("teamNamesMatch", () => {
     ["Guadalajara Chivas", "CD Guadalajara"],
     ["Nordsjaelland", "FC Nordsjælland"],
     ["Salzburg", "Red Bull Salzburg"],
+    ["Club Brugge", "Club Brugge KV"],
+    ["Internazionale", "FC Internazionale Milano"],
+    ["Sporting CP", "Sporting Clube de Portugal"],
+    ["Red Bull Bragantino", "Bragantino"],
+    ["Guadalajara", "CD Guadalajara"],
+    ["Belgrano (Córdoba)", "Belgrano"],
+    ["WSG Swarovski Tirol", "WSG Tirol"],
+    ["F.C. København", "FC Copenhagen"],
   ])("matches %s to %s", (left, right) => {
     expect(teamNamesMatch(left, right)).toBe(true);
   });

@@ -40,17 +40,6 @@ export const VERIFIED_WEB_ROSTERS: RosterBatch[] = [
     ],
   }),
   batch({
-    leagueSlug: "czech-republic-czech-liga",
-    provider: "czech-fa-official",
-    expectedTeamCount: 16,
-    sourceUrl: "https://www.fotbal.cz/souteze/rozpis-celostatnich-soutezi-2026-27/p82",
-    names: [
-      "Slovácko", "Sparta Prague", "Bohemians 1905", "Baník Ostrava", "Hradec Králové",
-      "Slovan Liberec", "Viktoria Plzeň", "Zbrojovka Brno", "Zlín", "Jablonec",
-      "Mladá Boleslav", "Pardubice", "Teplice", "Artis Brno", "Sigma Olomouc", "Slavia Prague",
-    ],
-  }),
-  batch({
     leagueSlug: "europa-league",
     provider: "uefa-official",
     expectedTeamCount: 36,

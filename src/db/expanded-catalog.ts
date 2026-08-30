@@ -2,6 +2,11 @@ import type postgres from "postgres";
 
 import { catalogEntries } from "@/db/catalog-data";
 
+export const disabledLeagueSlugs = new Set([
+  "switzerland-super-league",
+  "czech-republic-czech-liga",
+]);
+
 export async function seedExpandedLeagueCatalog(sql: postgres.TransactionSql) {
   const distinctCountries = [...new Map(catalogEntries.map((entry) => [entry.countryCode, {
     name: entry.country,
@@ -30,7 +35,7 @@ export async function seedExpandedLeagueCatalog(sql: postgres.TransactionSql) {
       short_name: entry.shortName,
       region: entry.region,
       logo_url: entry.logoUrl,
-      enabled: true,
+      enabled: !disabledLeagueSlugs.has(entry.slug),
       priority: entry.priority,
     };
   });

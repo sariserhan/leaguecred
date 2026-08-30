@@ -18,7 +18,6 @@ describe("verified current rosters", () => {
       roster.expectedTeamCount,
     ]))).toEqual({
       "saudi-arabia-pro-league": 18,
-      "czech-republic-czech-liga": 16,
       "europa-league": 36,
       "uefa-conference-league": 36,
       "copa-libertadores": 32,

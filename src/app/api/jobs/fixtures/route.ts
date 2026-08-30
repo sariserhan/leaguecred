@@ -1,7 +1,7 @@
 import { isAuthorizedCronRequest } from "@/lib/cron-auth";
 import { synchronizeFreeFixtureSources } from "@/services/free-fixture-sync";
 
-export const maxDuration = 60;
+export const maxDuration = 300;
 
 async function synchronize(request: Request) {
   if (!isAuthorizedCronRequest(request)) return Response.json({ error: "Unauthorized" }, { status: 401 });
