@@ -111,6 +111,7 @@ export function SiteHeader({
                         {selectedLeague.logoUrl ? <Image src={selectedLeague.logoUrl} alt="" width={28} height={28} className="size-7 object-contain" /> : null}
                         <span className="truncate text-sm font-bold">{selectedLeague.name}</span>
                       </div>
+                      <Menu.LinkItem href={`/leagues/${selectedLeague.slug}/standings`} className="cursor-pointer flex items-center px-3 py-2 text-sm font-semibold text-primary outline-none hover:bg-muted">View standings</Menu.LinkItem>
                       <div className="max-h-80 overflow-y-auto py-1">
                         {(teamsByLeague[selectedLeague.slug] ?? []).map((team) => (
                           <Menu.LinkItem
