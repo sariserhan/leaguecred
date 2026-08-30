@@ -1,7 +1,9 @@
 import Image from "next/image";
+import Link from "next/link";
 import { ShieldAlertIcon } from "lucide-react";
 
 import type { LeagueTeamCatalog } from "@/data/leagues";
+import { teamHref } from "@/lib/team-path";
 
 export function TeamCatalogSection({ teamCatalog }: { teamCatalog: LeagueTeamCatalog }) {
   return (
@@ -24,7 +26,8 @@ export function TeamCatalogSection({ teamCatalog }: { teamCatalog: LeagueTeamCat
       {teamCatalog.teams.length > 0 ? (
         <ul className="mt-6 grid gap-3 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
           {teamCatalog.teams.map((team) => (
-            <li key={team.id} className="flex min-h-24 items-center gap-4 border bg-card p-4 [contain-intrinsic-size:0_96px] [content-visibility:auto]">
+            <li key={team.id} className="[contain-intrinsic-size:0_96px] [content-visibility:auto]">
+              <Link href={teamHref(team)} className="flex min-h-24 items-center gap-4 border bg-card p-4 transition-colors hover:bg-muted">
               <span className="flex size-14 shrink-0 items-center justify-center bg-white p-1.5">
                 {team.logoUrl ? (
                   <Image src={team.logoUrl} alt="" width={44} height={44} className="size-11 object-contain" />
@@ -33,6 +36,7 @@ export function TeamCatalogSection({ teamCatalog }: { teamCatalog: LeagueTeamCat
                 )}
               </span>
               <span className="font-semibold">{team.name}</span>
+              </Link>
             </li>
           ))}
         </ul>
