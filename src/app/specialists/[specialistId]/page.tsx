@@ -5,6 +5,8 @@ import { SpecialistProfile } from "@/components/specialists/specialist-profile";
 import { getSpecialistProfile } from "@/data/specialists";
 import { getSession } from "@/lib/auth-session";
 import { enforceMaintenanceGate } from "@/lib/maintenance";
+import { getPersonalizedRecommendations } from "@/data/recommendations";
+import { getLeaguePreferences } from "@/data/league-preferences";
 
 export const dynamic = "force-dynamic";
 
@@ -22,5 +24,7 @@ export default async function SpecialistPage(props: SpecialistPageProps) {
   const [{ specialistId }, session] = await Promise.all([props.params, getSession()]);
   const data = await getSpecialistProfile(specialistId, session?.user.id);
   if (!data) notFound();
-  return <SpecialistProfile data={data} />;
+  const preferences = data.viewer.isSelf ? await getLeaguePreferences(data.specialist.id) : null;
+  const recommendations = data.viewer.isSelf ? await getPersonalizedRecommendations(data.specialist.id) : [];
+  return <SpecialistProfile data={data} recommendations={recommendations} hasHelpPreferences={Boolean(preferences?.help.length)} />;
 }

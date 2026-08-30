@@ -131,6 +131,13 @@ async function applyResult(
     on conflict(user_id,dedupe_key) do update set title=excluded.title,body=excluded.body,read_at=null,created_at=now()`;
   await rebuildRecord(sql, pick.user_id, pick.league_id, null);
   await rebuildRecord(sql, pick.user_id, pick.league_id, pick.season_id);
+  await sql`insert into notifications(user_id,kind,title,body,href,dedupe_key)
+    select pref.user_id,'specialist_recommendation','New top specialist in ' || l.name,u.name || ' now leads the proven records.',
+      '/specialists/' || u.id,'specialist-recommendation/' || l.id || '/' || u.id
+    from user_league_preferences pref join leagues l on l.id=pref.league_id join "user" u on u.id=${pick.user_id}
+    where pref.league_id=${pick.league_id} and pref.kind='help' and pref.user_id<>${pick.user_id}
+      and ${pick.user_id}=(select r.user_id from user_league_records r where r.league_id=${pick.league_id} and r.settled_picks>=10 order by r.confidence_adjusted_accuracy desc nulls last,r.settled_picks desc,r.last_settled_at asc limit 1)
+    on conflict(user_id,dedupe_key) do nothing`;
 }
 
 async function rebuildRecord(

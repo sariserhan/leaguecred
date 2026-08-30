@@ -40,7 +40,7 @@ export const adminAuditActionEnum = pgEnum("admin_audit_action", [
   "site_settings_updated", "feature_flag_toggled",
 ]);
 export const leaguePreferenceKindEnum = pgEnum("league_preference_kind", ["know", "help"]);
-export const notificationKindEnum = pgEnum("notification_kind", ["lock_deadline", "specialist_lock", "pick_result", "followed_result"]);
+export const notificationKindEnum = pgEnum("notification_kind", ["lock_deadline", "specialist_lock", "pick_result", "followed_result", "specialist_recommendation"]);
 
 // Better Auth core tables. Property names intentionally match its Drizzle adapter.
 export const user = pgTable("user", {

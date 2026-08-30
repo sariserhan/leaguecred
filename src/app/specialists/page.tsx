@@ -7,7 +7,8 @@ import { enforceMaintenanceGate } from "@/lib/maintenance";
 export const dynamic = "force-dynamic";
 export const metadata: Metadata = { title: "Find specialists", description: "Compare verified football specialists by league, record, and evidence." };
 
-export default async function SpecialistsPage() {
+export default async function SpecialistsPage({ searchParams }: PageProps<"/specialists">) {
   await enforceMaintenanceGate();
-  return <SpecialistDirectory specialists={await getSpecialistDirectory()} />;
+  const league = (await searchParams).league;
+  return <SpecialistDirectory specialists={await getSpecialistDirectory()} initialLeague={typeof league === "string" ? league : undefined} />;
 }

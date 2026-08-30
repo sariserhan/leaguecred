@@ -85,6 +85,13 @@
       "when": 1788128742692,
       "tag": "0011_in-app-notifications",
       "breakpoints": true
+    },
+    {
+      "idx": 12,
+      "version": "7",
+      "when": 1788130102986,
+      "tag": "0012_specialist-recommendations",
+      "breakpoints": true
     }
   ]
 }
