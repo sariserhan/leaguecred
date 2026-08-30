@@ -17,6 +17,14 @@ function ResultBadge({ result }: { result: "win" | "loss" | "void" | "pending" }
   return <Badge variant={variants[result]}>{labels[result]}</Badge>;
 }
 
+function RecentForm({ locks }: { locks: SpecialistProfileData["recentLocks"] }) {
+  const recent = locks.slice(0, 10).toReversed();
+  if (!recent.length) return null;
+  const wins = recent.filter((lock) => lock.result === "win").length;
+  const decisions = recent.filter((lock) => lock.result !== "void").length;
+  return <section className="border" aria-labelledby="form-heading"><div className="border-b px-5 py-4"><h2 id="form-heading" className="font-heading text-2xl font-bold uppercase">Recent form</h2><p className="mt-1 text-sm text-muted-foreground">Last {recent.length} settled independent calls.</p></div><div className="p-5"><div className="flex h-28 items-end gap-2" role="img" aria-label={`${wins} wins from ${decisions} recent decisions`}>{recent.map((lock, index) => <span key={lock.id} className={lock.result === "win" ? "flex-1 bg-primary" : lock.result === "loss" ? "h-1/3 flex-1 bg-destructive" : "h-1/6 flex-1 bg-muted-foreground/30"} style={{ height: lock.result === "win" ? `${55 + index * 5}%` : undefined }} title={`${lock.leagueName}: ${lock.result}`} />)}</div><div className="mt-3 flex items-end justify-between gap-4"><span className="text-xs text-muted-foreground">Oldest → newest</span><strong className="font-heading text-3xl text-primary">{decisions ? Math.round((wins / decisions) * 100) : 0}%</strong></div></div></section>;
+}
+
 export function SpecialistProfile({ data }: { data: SpecialistProfileData }) {
   const router = useRouter();
   const [followedLeagueIds, setFollowedLeagueIds] = useState(() => new Set(data.leagues.filter((league) => league.followedByViewer).map((league) => league.id)));
@@ -78,7 +86,7 @@ export function SpecialistProfile({ data }: { data: SpecialistProfileData }) {
           </div>
         </section>
 
-        <section className="border" aria-labelledby="recent-heading"><div className="border-b px-5 py-4"><h2 id="recent-heading" className="font-heading text-2xl font-bold uppercase">Recent calls</h2><p className="mt-1 text-sm text-muted-foreground">Independent Weekly Locks only.</p></div><div className="divide-y">{data.recentLocks.map((lock) => <article key={lock.id} className="p-4"><div className="flex items-center justify-between gap-3"><Link href={`/leagues/${lock.leagueSlug}`} className="font-semibold hover:text-primary">{lock.leagueName}</Link><ResultBadge result={lock.result} /></div><strong className="mt-2 block">{lock.team}</strong><p className="mt-1 text-sm text-muted-foreground">{lock.fixture}</p></article>)}</div></section>
+        <div className="grid content-start gap-7"><RecentForm locks={data.recentLocks} /><section className="border" aria-labelledby="recent-heading"><div className="border-b px-5 py-4"><h2 id="recent-heading" className="font-heading text-2xl font-bold uppercase">Recent calls</h2><p className="mt-1 text-sm text-muted-foreground">Independent Weekly Locks only.</p></div><div className="divide-y">{data.recentLocks.map((lock) => <article key={lock.id} className="p-4"><div className="flex items-center justify-between gap-3"><Link href={`/leagues/${lock.leagueSlug}`} className="font-semibold hover:text-primary">{lock.leagueName}</Link><ResultBadge result={lock.result} /></div><strong className="mt-2 block">{lock.team}</strong><p className="mt-1 text-sm text-muted-foreground">{lock.fixture}</p></article>)}</div></section></div>
       </div>
 
       <div className="mt-7 grid gap-7 xl:grid-cols-[1fr_390px]">

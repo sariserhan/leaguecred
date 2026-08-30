@@ -40,6 +40,7 @@ import {
 import { Spinner } from "@/components/ui/spinner";
 import { ToggleGroup, ToggleGroupItem } from "@/components/ui/toggle-group";
 import { LeagueLeaderboard } from "@/components/leagues/league-leaderboard";
+import { LockCountdown } from "@/components/lock-countdown";
 import type { LeagueExperienceData, PastMatchweek } from "@/data/leagues";
 import { cn } from "@/lib/utils";
 
@@ -225,6 +226,7 @@ export function LeagueExperience({
                 <LockKeyholeIcon aria-hidden="true" className="size-4" />
                 Locks close {lockAt}
               </span>
+              {!interactionLocked ? <div className="bg-background text-foreground"><LockCountdown lockAt={data.matchweek.lockAt} compact /></div> : null}
             </div>
           </div>
           <aside className="grid grid-cols-[1fr_auto] items-end gap-x-5 gap-y-1 border-t border-background/20 py-5 lg:flex lg:flex-col lg:items-stretch lg:justify-center lg:border-t-0 lg:border-l lg:py-8 lg:pl-8">
@@ -331,6 +333,8 @@ export function LeagueExperience({
           {leaderboardEnabled ? <LeagueLeaderboard leagueName={data.league.name} entries={data.leaderboard} /> : null}
         </section>
       </div>
+
+      {!lockedTeam && !interactionLocked ? <div className="fixed inset-x-0 bottom-0 z-30 border-t border-primary bg-foreground p-3 text-background shadow-2xl sm:hidden"><div className="flex items-center gap-3"><div className="min-w-0 flex-1"><span className="block text-[10px] font-bold uppercase text-primary">{mode === "prove" ? "Your Weekly Lock" : "Follow mode"}</span><strong className="block truncate">{mode === "prove" ? selection?.teamName ?? "Choose a team above" : "Choose a specialist call"}</strong></div>{mode === "prove" ? <Button disabled={!selection || pending} onClick={() => requireAuthentication() && setLockConfirmOpen(true)}><LockKeyholeIcon data-icon="inline-start" />Lock pick</Button> : <Button render={<a href="#specialists" />}><UsersRoundIcon data-icon="inline-start" />Specialists</Button>}</div></div> : null}
 
       <Dialog open={lockConfirmOpen} onOpenChange={setLockConfirmOpen}>
         <DialogContent><DialogHeader><DialogTitle className="font-heading text-3xl font-bold uppercase">Lock {selection?.teamName}?</DialogTitle><DialogDescription>This independent {data.league.name} prediction cannot be changed or deleted. Specialist picks reveal after confirmation.</DialogDescription></DialogHeader><DialogFooter><Button variant="outline" onClick={() => setLockConfirmOpen(false)}>Go back</Button><Button onClick={confirmLock} disabled={pending}>{pending ? <Spinner data-icon="inline-start" /> : <LockKeyholeIcon data-icon="inline-start" />}Confirm Weekly Lock</Button></DialogFooter></DialogContent>
