@@ -22,7 +22,7 @@ None.
 ## Later
 
 - [ ] Additional launch leagues with current provider mappings
-- [ ] Analytics and abuse monitoring
+- [ ] Product/web analytics (deferred; PostHog is the marketplace pick when this is picked up)
 - [ ] Decide whether expertise is scoped to clubs as well as leagues
 - [ ] Plan the first season, when no record clears the rank threshold yet
 - [ ] Consider live in-UI feedback (toast or similar) when another user's
@@ -73,3 +73,4 @@ None.
 - [x] Reconcile the two branches' migrations so both reach production in order
 - [x] Merge the clubs catalogued twice, on dev and production
 - [x] Refuse to run migrations that the database can no longer reach
+- [x] Block disposable-email signups and surface shared-address abuse signals to admins

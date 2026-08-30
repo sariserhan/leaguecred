@@ -3,6 +3,7 @@ import Link from "next/link";
 import { ShieldCheckIcon } from "lucide-react";
 
 import {
+  AbuseSignalsPanel,
   AdminAuditLogPanel,
   DiagnosticsHeading,
   OperationalSummaryPanel,
@@ -13,6 +14,7 @@ import { FeatureFlagControls } from "@/components/admin/feature-flag-controls";
 import { SiteControls } from "@/components/admin/site-controls";
 import { buttonVariants } from "@/components/ui/button";
 import { requireAdmin } from "@/lib/admin";
+import { getSharedIpAccounts, getSuspiciousFollows } from "@/services/abuse-signals";
 import { getAdminAuditLog } from "@/services/admin-audit-log";
 import { refreshLeagueFixtures } from "@/app/admin/actions";
 import { getLeagueNavOptions } from "@/data/teams";
@@ -34,7 +36,7 @@ export default async function AdminPage() {
   // Authorization runs before anything is read, so a member never triggers a query.
   const viewer = await requireAdmin();
 
-  const [settings, flags, summary, syncRuns, corrections, auditLog, leagues] = await Promise.all([
+  const [settings, flags, summary, syncRuns, corrections, auditLog, leagues, sharedIpClusters, suspiciousFollows] = await Promise.all([
     getSiteSettings(),
     getFeatureFlags(),
     getOperationalSummary(),
@@ -42,6 +44,8 @@ export default async function AdminPage() {
     getSettlementCorrections(),
     getAdminAuditLog(),
     getLeagueNavOptions(),
+    getSharedIpAccounts(),
+    getSuspiciousFollows(),
   ]);
 
   return (
@@ -78,6 +82,7 @@ export default async function AdminPage() {
         <SyncRunsPanel runs={syncRuns} />
         <SettlementCorrectionsPanel corrections={corrections} />
         <AdminAuditLogPanel entries={auditLog} />
+        <AbuseSignalsPanel sharedIpClusters={sharedIpClusters} suspiciousFollows={suspiciousFollows} />
       </section>
     </div>
   );
