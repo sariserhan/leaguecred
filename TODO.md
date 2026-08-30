@@ -6,6 +6,10 @@ None.
 
 ## Next
 
+- [ ] Stop shipping all 531 teams into every page: the header Teams menu is built
+      in the root layout, so each route runs the nav query and inlines the whole
+      catalog. Load a league's teams on demand, or move it behind a /teams index.
+- [ ] Deduplicate the team catalog (AEK Athens appears twice; some clubs have country "Europe")
 - [ ] Rotate the Neon database password and update Vercel and .env.local
 - [ ] Let an admin promote another admin from the dashboard
 - [ ] Add an audit trail for admin setting and flag changes
@@ -56,4 +60,6 @@ None.
 - [x] Lead the homepage with the exchange instead of the one-pick rule
 - [x] Explain the exchange with named clubs across four countries
 - [x] Give the hero one primary action and one credible accuracy range
+- [x] Draw the hero pitch backdrop to real proportions, on grass
+- [x] Reach any team page from a Teams menu in the header
 - [x] Draw the hero pitch to real dimensions instead of a bordered box

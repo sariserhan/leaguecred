@@ -26,7 +26,8 @@ export type TeamFixture = {
   opponentScore: number | null;
 };
 
-export type TeamNavOption = { slug: string; name: string; country: string | null };
+export type TeamNavTeam = { slug: string; name: string; logoUrl: string | null };
+export type TeamNavLeague = { slug: string; name: string; country: string | null; logoUrl: string | null; teams: TeamNavTeam[] };
 
 type FixtureRow = {
   id: string;
@@ -121,13 +122,23 @@ export const getTeamProfile = cache(async function getTeamProfile(teamSlug: stri
   };
 });
 
-export const getTeamNavOptions = cache(async function getTeamNavOptions(): Promise<TeamNavOption[]> {
-  return sqlClient<TeamNavOption[]>`
-    select distinct t.slug, t.name, c.name as country
-    from teams t
-    join league_team_memberships membership on membership.team_id = t.id
+export const getTeamNavOptions = cache(async function getTeamNavOptions(): Promise<TeamNavLeague[]> {
+  const rows = await sqlClient<Array<{ league_slug: string; league_name: string; league_country: string | null; league_logo_url: string | null; team_slug: string; team_name: string; team_logo_url: string | null }>>`
+    select l.slug as league_slug, l.name as league_name, c.name as league_country, l.logo_url as league_logo_url,
+      t.slug as team_slug, t.name as team_name, t.logo_url as team_logo_url
+    from leagues l
+    join countries c on c.id = l.country_id
+    join league_team_memberships membership on membership.league_id = l.id
     join seasons s on s.id = membership.season_id and s.is_current = true
-    join leagues l on l.id = membership.league_id and l.enabled = true
-    left join countries c on c.id = t.country_id
-    order by t.name, c.name`;
+    join teams t on t.id = membership.team_id
+    where l.enabled = true
+    order by l.priority, l.name, t.name`;
+
+  const leagues = new Map<string, TeamNavLeague>();
+  for (const row of rows) {
+    const league = leagues.get(row.league_slug) ?? { slug: row.league_slug, name: row.league_name, country: row.league_country, logoUrl: row.league_logo_url, teams: [] };
+    league.teams.push({ slug: row.team_slug, name: row.team_name, logoUrl: row.team_logo_url });
+    leagues.set(row.league_slug, league);
+  }
+  return [...leagues.values()];
 });

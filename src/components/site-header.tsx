@@ -1,13 +1,16 @@
 "use client";
 
+import { useState } from "react";
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
-import { ShieldCheckIcon } from "lucide-react";
+import { Menu } from "@base-ui/react/menu";
+import Image from "next/image";
+import { ChevronDownIcon, ShieldCheckIcon } from "lucide-react";
 
 import { Button, buttonVariants } from "@/components/ui/button";
 import { authClient } from "@/lib/auth-client";
 import { cn } from "@/lib/utils";
-import type { TeamNavOption } from "@/data/teams";
+import type { TeamNavLeague } from "@/data/teams";
 
 const navItems = [
   { href: "/leagues", label: "Leagues" },
@@ -20,10 +23,11 @@ export function SiteHeader({
   teams,
 }: {
   isAdmin?: boolean;
-  teams: TeamNavOption[];
+  teams: TeamNavLeague[];
 }) {
   const pathname = usePathname();
   const router = useRouter();
+  const [selectedLeague, setSelectedLeague] = useState<TeamNavLeague | null>(null);
   const { data: session, isPending } = authClient.useSession();
 
   async function signOut() {
@@ -67,22 +71,66 @@ export function SiteHeader({
               </Link>
             );
           })}
-          <label className="sr-only" htmlFor="team-picker">Open a team page</label>
-          <select
-            id="team-picker"
-            defaultValue=""
-            onChange={(event) => {
-              if (event.target.value) router.push(`/teams/${event.target.value}`);
-            }}
-            className="h-9 max-w-40 border bg-background px-2 text-sm font-semibold text-muted-foreground outline-none transition-colors hover:border-foreground focus:border-ring focus:ring-2 focus:ring-ring/30"
-          >
-            <option value="">Teams</option>
-            {teams.map((team) => (
-              <option key={team.slug} value={team.slug}>
-                {team.name}{team.country ? ` · ${team.country}` : ""}
-              </option>
-            ))}
-          </select>
+          <Menu.Root onOpenChange={(open) => { if (!open) setSelectedLeague(null); }}>
+            <Menu.Trigger
+              className={cn(
+                buttonVariants({ variant: "ghost", size: "lg" }),
+                pathname.startsWith("/teams") ? "text-foreground" : "text-muted-foreground",
+              )}
+            >
+              Teams
+              <ChevronDownIcon className="size-4 transition-transform data-[pressed]:rotate-180" aria-hidden="true" />
+            </Menu.Trigger>
+            <Menu.Portal>
+              <Menu.Positioner sideOffset={8} align="start" className="z-50 outline-none">
+                <Menu.Popup className="w-72 border bg-popover p-1 text-popover-foreground shadow-lg outline-none">
+                  {selectedLeague ? (
+                    <>
+                      <div className="flex items-center gap-2 border-b px-3 py-2">
+                        <Menu.Item
+                          aria-label="Back to leagues"
+                          closeOnClick={false}
+                          onClick={() => setSelectedLeague(null)}
+                          className="flex size-7 items-center justify-center text-lg text-muted-foreground outline-none hover:bg-muted hover:text-foreground"
+                        >
+                          ←
+                        </Menu.Item>
+                        {selectedLeague.logoUrl ? <Image src={selectedLeague.logoUrl} alt="" width={28} height={28} className="size-7 object-contain" /> : null}
+                        <span className="truncate text-sm font-bold">{selectedLeague.name}</span>
+                      </div>
+                      <div className="max-h-80 overflow-y-auto py-1">
+                        {selectedLeague.teams.map((team) => (
+                          <Menu.LinkItem
+                            key={team.slug}
+                            href={`/teams/${team.slug}`}
+                            className="flex items-center gap-3 px-3 py-2 text-sm font-medium outline-none transition-colors data-highlighted:bg-muted data-highlighted:text-foreground"
+                          >
+                            {team.logoUrl ? <Image src={team.logoUrl} alt="" width={28} height={28} className="size-7 object-contain" /> : <span className="flex size-7 items-center justify-center bg-muted text-[10px] font-bold">{team.name.slice(0, 3).toUpperCase()}</span>}
+                            <span className="truncate">{team.name}</span>
+                          </Menu.LinkItem>
+                        ))}
+                      </div>
+                    </>
+                  ) : (
+                    <div className="max-h-96 overflow-y-auto py-1">
+                      {teams.map((league) => (
+                        <Menu.Item
+                          key={league.slug}
+                          closeOnClick={false}
+                          onClick={() => setSelectedLeague(league)}
+                          className="flex items-center gap-3 px-3 py-2 text-sm font-medium outline-none transition-colors data-highlighted:bg-muted data-highlighted:text-foreground"
+                        >
+                          {league.logoUrl ? <Image src={league.logoUrl} alt="" width={32} height={32} className="size-8 object-contain" /> : <span className="flex size-8 items-center justify-center bg-muted text-xs font-bold">{league.name.slice(0, 2).toUpperCase()}</span>}
+                          <span className="min-w-0 flex-1 truncate">{league.name}</span>
+                          <span aria-hidden="true" className="text-muted-foreground">→</span>
+                        </Menu.Item>
+                      ))}
+                    </div>
+                  )}
+                </Menu.Popup>
+              </Menu.Positioner>
+            </Menu.Portal>
+          </Menu.Root>
         </nav>
 
         <div className="flex items-center gap-2">
