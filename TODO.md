@@ -8,7 +8,7 @@ None.
 
 - [ ] Add production hosting, managed PostgreSQL, and scheduled jobs
 - [ ] Add admin diagnostics for fixture sync runs and settlement corrections
-- [ ] Add current-season and career leaderboard views
+- [x] Add current-season and career leaderboard views
 
 ## Blocked
 
