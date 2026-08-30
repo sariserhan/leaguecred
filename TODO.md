@@ -6,7 +6,7 @@ None.
 
 ## Next
 
-- [ ] Add production hosting and managed PostgreSQL
+- [ ] Rotate the Neon database password and update Vercel and .env.local
 - [ ] Let an admin promote another admin from the dashboard
 - [ ] Add an audit trail for admin setting and flag changes
 
@@ -18,6 +18,8 @@ None.
 
 - [ ] Additional launch leagues with current provider mappings
 - [ ] Analytics and abuse monitoring
+- [ ] Decide whether expertise is scoped to clubs as well as leagues
+- [ ] Plan the first season, when no record clears the rank threshold yet
 
 ## Completed
 
@@ -47,3 +49,7 @@ None.
 - [x] Schedule fixture sync, settlement, and reminders via Vercel Cron
 - [x] Add lock-reminder emails for an unmade Weekly Lock
 - [x] Add notifications when a followed specialist locks
+- [x] Add production hosting, managed PostgreSQL, and a verified sending domain
+- [x] Merge the duplicate profile routes into /specialists
+- [x] Apply database migrations during deployment
+- [x] Trust the apex and www hosts as authentication origins
