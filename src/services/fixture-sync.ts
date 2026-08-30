@@ -11,6 +11,8 @@ type LeagueConfig = {
   provider: string;
   provider_external_id: string;
   country_id: string;
+  region: string;
+  country_is_region: boolean;
   provider_season: string;
   season_id: string;
   season_start_date: string;
@@ -27,9 +29,12 @@ export async function synchronizeFixtures(provider: FixtureProvider, now = new D
   let requestCount = 0;
   try {
     const availableConfigs = await sqlClient<Omit<LeagueConfig, "source_external_id">[]>`
-      select l.id, l.slug, l.provider, l.provider_external_id, l.country_id, s.provider_season, s.id as season_id,
+      select l.id, l.slug, l.provider, l.provider_external_id, l.country_id, l.region,
+        c.is_region as country_is_region, s.provider_season, s.id as season_id,
         s.start_date as season_start_date
-      from leagues l join seasons s on s.league_id = l.id and s.is_current = true
+      from leagues l
+      join countries c on c.id = l.country_id
+      join seasons s on s.league_id = l.id and s.is_current = true
       where l.enabled = true order by l.priority`;
     const sourceIds = provider.competitions
       ? new Map(provider.competitions.map((competition) => [competition.leagueSlug, competition.externalId]))
@@ -187,10 +192,28 @@ async function resolveTeam(
       where provider = ${providerName} and provider_external_id = ${team.externalId}`;
   }
 
+  // Every lookup above is scoped to this league's own membership. A continental
+  // competition has no membership yet on the first sync, so its clubs — which
+  // already exist under their domestic league — matched nothing and were
+  // inserted a second time, stamped with the competition's region as a country.
+  // Match across the domestic leagues of the same region instead. Holding it to
+  // one region is what keeps unrelated clubs that share a name apart: Liverpool
+  // of Montevideo plays the Libertadores, not the Champions League.
+  if (!row && config.country_is_region) {
+    const regionTeams = await sql<Array<{ id: string; name: string }>>`
+      select distinct t.id, t.name from teams t
+      join league_team_memberships ltm on ltm.team_id = t.id
+      join leagues l on l.id = ltm.league_id and l.enabled = true and l.region = ${config.region}
+      join countries c on c.id = l.country_id and c.is_region = false`;
+    const matches = regionTeams.filter((candidate) => teamNamesMatch(candidate.name, team.name));
+    // Anything but a single club is ambiguous, and guessing would merge two.
+    if (new Set(matches.map((match) => match.id)).size === 1) row = matches[0];
+  }
+
   if (!row) {
     [row] = await sql<Array<{ id: string }>>`
       insert into teams (provider, provider_external_id, name, slug, short_name, logo_url, logo_provider, country_id)
-      values (${providerName}, ${team.externalId}, ${team.name}, ${teamSlug(team.name)}, ${team.shortName}, ${team.logoUrl}, ${team.logoUrl ? providerName : null}, ${config.country_id})
+      values (${providerName}, ${team.externalId}, ${team.name}, ${teamSlug(team.name)}, ${team.shortName}, ${team.logoUrl}, ${team.logoUrl ? providerName : null}, ${config.country_is_region ? null : config.country_id})
       on conflict (provider, provider_external_id) do update
       set name = excluded.name, short_name = excluded.short_name,
           logo_url = coalesce(excluded.logo_url, teams.logo_url),

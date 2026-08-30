@@ -96,6 +96,9 @@ export const countries = pgTable("countries", {
   name: text("name").notNull(),
   code: text("code").notNull().unique(),
   flagUrl: text("flag_url"),
+  /** True for the confederation regions continental competitions are filed
+   * under (Europe, South America). No club's country may point at one. */
+  isRegion: boolean("is_region").default(false).notNull(),
   createdAt,
 });
 

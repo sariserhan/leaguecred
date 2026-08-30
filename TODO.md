@@ -6,10 +6,9 @@ None.
 
 ## Next
 
-- [ ] Stop shipping all 531 teams into every page: the header Teams menu is built
-      in the root layout, so each route runs the nav query and inlines the whole
-      catalog. Load a league's teams on demand, or move it behind a /teams index.
-- [ ] Deduplicate the team catalog (AEK Athens appears twice; some clubs have country "Europe")
+- [ ] Run `pnpm teams:dedupe --apply` against each database to merge the 46 clubs
+      catalogued twice. The dry run is clean and leaves only Barcelona SC and
+      Liverpool of Montevideo, which really are separate clubs.
 - [ ] Rotate the Neon database password and update Vercel and .env.local
 - [ ] Let an admin promote another admin from the dashboard
 - [ ] Add an audit trail for admin setting and flag changes
@@ -62,4 +61,6 @@ None.
 - [x] Give the hero one primary action and one credible accuracy range
 - [x] Draw the hero pitch backdrop to real proportions, on grass
 - [x] Reach any team page from a Teams menu in the header
+- [x] Load the header's clubs a league at a time instead of shipping the catalog
+- [x] Stop continental competitions creating a second row for a club, and a bogus country with it
 - [x] Draw the hero pitch to real dimensions instead of a bordered box

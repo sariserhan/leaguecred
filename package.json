@@ -28,6 +28,7 @@
     "remind": "tsx src/jobs/send-lock-reminders.ts",
     "notify:specialist-locks": "tsx src/jobs/notify-specialist-locks.ts",
     "admin:grant": "tsx src/jobs/grant-admin.ts",
+    "teams:dedupe": "tsx src/jobs/dedupe-teams.ts",
     "check": "pnpm lint && pnpm typecheck && pnpm test && pnpm build",
     "check:full": "pnpm check && pnpm test:integration"
   },

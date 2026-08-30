@@ -71,6 +71,13 @@
       "when": 1788126159102,
       "tag": "0009_lying_betty_ross",
       "breakpoints": true
+    },
+    {
+      "idx": 10,
+      "version": "7",
+      "when": 1788126160102,
+      "tag": "0010_region_countries",
+      "breakpoints": true
     }
   ]
 }
