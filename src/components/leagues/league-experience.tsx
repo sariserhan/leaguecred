@@ -2,6 +2,7 @@
 
 import { useState, useTransition } from "react";
 import Image from "next/image";
+import Link from "next/link";
 import { useRouter } from "next/navigation";
 import {
   CheckIcon,
@@ -55,7 +56,7 @@ function TeamMark({ code, logoUrl }: { code: string; logoUrl: string | null }) {
   );
 }
 
-function PastMatchweekHistory({ matchweeks }: { matchweeks: PastMatchweek[] }) {
+function PastMatchweekHistory({ leagueSlug, matchweeks }: { leagueSlug: string; matchweeks: PastMatchweek[] }) {
   if (matchweeks.length === 0) return null;
 
   return (
@@ -73,8 +74,13 @@ function PastMatchweekHistory({ matchweeks }: { matchweeks: PastMatchweek[] }) {
           <details key={matchweek.id} open={index === 0} className="group">
             <summary className="flex cursor-pointer list-none items-center justify-between gap-3 px-5 py-4 font-semibold marker:content-none hover:bg-muted">
               <span>{matchweek.displayName}</span>
-              <span className="text-sm text-muted-foreground group-open:hidden">Show results</span>
-              <span className="hidden text-sm text-muted-foreground group-open:inline">Hide results</span>
+              <span className="flex items-center gap-3 text-sm text-muted-foreground">
+                <Link href={`/leagues/${leagueSlug}/weeks/${matchweek.id}`} className="relative z-10 font-semibold text-foreground underline-offset-4 hover:text-primary hover:underline">
+                  Week details
+                </Link>
+                <span className="group-open:hidden">Show results</span>
+                <span className="hidden group-open:inline">Hide results</span>
+              </span>
             </summary>
             <div className="divide-y border-t">
               {matchweek.fixtures.map((fixture) => {
@@ -285,7 +291,7 @@ export function LeagueExperience({
             </div>
             </section>
 
-            <PastMatchweekHistory matchweeks={data.pastMatchweeks} />
+            <PastMatchweekHistory leagueSlug={data.league.slug} matchweeks={data.pastMatchweeks} />
           </div>
 
           <Card id="specialists" className="rounded-sm">

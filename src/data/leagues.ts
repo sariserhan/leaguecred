@@ -1,7 +1,11 @@
 import "server-only";
 
+import { cache } from "react";
+
 import { sqlClient } from "@/db";
+import type { FixtureStatus } from "@/db/schema";
 import type { League, Region } from "@/lib/league-data";
+import { MINIMUM_SETTLED_PICKS_FOR_RANK } from "@/lib/reputation";
 
 const flags: Record<string, string> = {
   AR: "🇦🇷", BR: "🇧🇷", CA: "🇨🇦", DE: "🇩🇪", ES: "🇪🇸", GB: "🏴",
@@ -30,7 +34,7 @@ export async function getLeagueDirectory(userId?: string): Promise<League[]> {
   const currentUserId = userId ?? "";
   const rows = await sqlClient<DirectoryRow[]>`
     select l.slug, c.name as country, c.code as country_code, c.flag_url, l.name, l.short_name, l.logo_url, l.region,
-      (select count(*)::int from user_league_records r where r.league_id = l.id and r.settled_picks >= 10) as specialist_count,
+      (select count(*)::int from user_league_records r where r.league_id = l.id and r.settled_picks >= ${MINIMUM_SETTLED_PICKS_FOR_RANK}) as specialist_count,
       own.wins, own.losses,
       exists(select 1 from matchweeks mw where mw.league_id = l.id) as has_experience,
       exists(
@@ -141,7 +145,45 @@ export type PastMatchweek = {
     awayCode: string;
     awayLogoUrl: string | null;
     awayScore: number | null;
-    status: "finished" | "cancelled" | "abandoned" | "postponed" | "suspended" | "unknown";
+    status: FixtureStatus;
+  }>;
+};
+
+export type MatchweekHistoryData = {
+  league: { slug: string; name: string; country: string };
+  matchweek: { id: string; displayName: string };
+  fixtures: Array<{
+    id: string;
+    home: string;
+    homeLogoUrl: string | null;
+    homeScore: number | null;
+    away: string;
+    awayLogoUrl: string | null;
+    awayScore: number | null;
+    status: FixtureStatus;
+  }>;
+  summary: {
+    totalLocks: number;
+    contributors: number;
+    correctLocks: number;
+    settledLocks: number;
+    followedCalls: number;
+  };
+  teamVotes: Array<{
+    id: string;
+    name: string;
+    logoUrl: string | null;
+    votes: number;
+    wins: number;
+  }>;
+  locks: Array<{
+    id: string;
+    specialist: string;
+    initials: string;
+    team: string;
+    teamLogoUrl: string | null;
+    fixture: string;
+    result: "win" | "loss" | "void" | "pending";
   }>;
 };
 
@@ -253,7 +295,7 @@ export async function getLeagueExperience(slug: string, userId?: string): Promis
       join "user" u on u.id = r.user_id
       join picks p on p.user_id = r.user_id and p.league_id = r.league_id and p.matchweek_id = ${matchweek.id}
       join teams t on t.id = p.selected_team_id
-      where r.league_id = ${league.id} and r.settled_picks >= 10 and u.id <> ${viewerId}
+      where r.league_id = ${league.id} and r.settled_picks >= ${MINIMUM_SETTLED_PICKS_FOR_RANK} and u.id <> ${viewerId}
       order by r.confidence_adjusted_accuracy desc nulls last, r.settled_picks desc limit 10`,
     sqlClient<Array<{ mode: "independent" | "follow"; expert_picks_revealed_at: Date | null }>>`
       select mode, expert_picks_revealed_at from matchweek_participation
@@ -269,15 +311,15 @@ export async function getLeagueExperience(slug: string, userId?: string): Promis
       select u.id, u.name, record.wins, record.losses, record.settled_picks, record.current_win_streak, record.confidence_adjusted_accuracy
       from user_league_season_records record
       join "user" u on u.id = record.user_id
-      where record.league_id = ${league.id} and record.season_id = ${matchweek.season_id} and record.settled_picks >= 10
-      order by record.confidence_adjusted_accuracy desc nulls last, record.settled_picks desc, u.name asc
+      where record.league_id = ${league.id} and record.season_id = ${matchweek.season_id} and record.settled_picks >= ${MINIMUM_SETTLED_PICKS_FOR_RANK}
+      order by record.confidence_adjusted_accuracy desc nulls last, record.wins::numeric / nullif(record.wins + record.losses, 0) desc nulls last, record.settled_picks desc, record.last_settled_at asc nulls last, u.name asc
       limit 50`,
     sqlClient<Array<{ id: string; name: string; wins: number; losses: number; settled_picks: number; current_win_streak: number; confidence_adjusted_accuracy: string }>>`
       select u.id, u.name, record.wins, record.losses, record.settled_picks, record.current_win_streak, record.confidence_adjusted_accuracy
       from user_league_records record
       join "user" u on u.id = record.user_id
-      where record.league_id = ${league.id} and record.settled_picks >= 10
-      order by record.confidence_adjusted_accuracy desc nulls last, record.settled_picks desc, u.name asc
+      where record.league_id = ${league.id} and record.settled_picks >= ${MINIMUM_SETTLED_PICKS_FOR_RANK}
+      order by record.confidence_adjusted_accuracy desc nulls last, record.wins::numeric / nullif(record.wins + record.losses, 0) desc nulls last, record.settled_picks desc, record.last_settled_at asc nulls last, u.name asc
       limit 50`,
   ]);
 
@@ -351,3 +393,137 @@ export async function getLeagueExperience(slug: string, userId?: string): Promis
     },
   };
 }
+
+export const getMatchweekHistory = cache(async function getMatchweekHistory(
+  slug: string,
+  matchweekId: string,
+): Promise<MatchweekHistoryData | null> {
+  if (!/^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(matchweekId)) {
+    return null;
+  }
+
+  const [matchweek] = await sqlClient<Array<{
+    id: string;
+    display_name: string;
+    league_slug: string;
+    league_name: string;
+    country: string;
+  }>>`
+    select mw.id, mw.display_name, l.slug as league_slug, l.name as league_name, c.name as country
+    from matchweeks mw
+    join leagues l on l.id = mw.league_id
+    join countries c on c.id = l.country_id
+    where mw.id = ${matchweekId}
+      and l.slug = ${slug}
+      and l.enabled = true
+      and mw.end_at < now()
+    limit 1`;
+  if (!matchweek) return null;
+
+  const [fixtureRows, summaryRows, teamVoteRows, lockRows] = await Promise.all([
+    sqlClient<Array<{
+      id: string;
+      status: MatchweekHistoryData["fixtures"][number]["status"];
+      home: string;
+      home_logo_url: string | null;
+      home_score: number | null;
+      away: string;
+      away_logo_url: string | null;
+      away_score: number | null;
+    }>>`
+      select f.id, f.status, h.name as home, h.logo_url as home_logo_url, f.home_score,
+        a.name as away, a.logo_url as away_logo_url, f.away_score
+      from fixtures f
+      join teams h on h.id = f.home_team_id
+      join teams a on a.id = f.away_team_id
+      where f.matchweek_id = ${matchweek.id}
+      order by f.kickoff_at`,
+    sqlClient<Array<{
+      total_locks: number;
+      contributors: number;
+      correct_locks: number;
+      settled_locks: number;
+      followed_calls: number;
+    }>>`
+      select count(p.id)::int as total_locks,
+        count(distinct p.user_id)::int as contributors,
+        count(p.id) filter (where p.result = 'win')::int as correct_locks,
+        count(p.id) filter (where p.result in ('win', 'loss'))::int as settled_locks,
+        (select count(*)::int from followed_picks fp where fp.matchweek_id = ${matchweek.id}) as followed_calls
+      from picks p
+      where p.matchweek_id = ${matchweek.id}`,
+    sqlClient<Array<{ id: string; name: string; logo_url: string | null; votes: number; wins: number }>>`
+      select t.id, t.name, t.logo_url, count(p.id)::int as votes,
+        count(p.id) filter (where p.result = 'win')::int as wins
+      from picks p
+      join teams t on t.id = p.selected_team_id
+      where p.matchweek_id = ${matchweek.id}
+      group by t.id, t.name, t.logo_url
+      order by votes desc, t.name`,
+    sqlClient<Array<{
+      id: string;
+      specialist: string;
+      team: string;
+      team_logo_url: string | null;
+      home: string;
+      away: string;
+      result: MatchweekHistoryData["locks"][number]["result"];
+    }>>`
+      select p.id, u.name as specialist, t.name as team, t.logo_url as team_logo_url,
+        h.name as home, a.name as away, p.result
+      from picks p
+      join "user" u on u.id = p.user_id
+      join teams t on t.id = p.selected_team_id
+      join fixtures f on f.id = p.fixture_id
+      join teams h on h.id = f.home_team_id
+      join teams a on a.id = f.away_team_id
+      where p.matchweek_id = ${matchweek.id}
+      order by case p.result when 'win' then 0 when 'pending' then 1 when 'void' then 2 else 3 end, p.submitted_at asc`,
+  ]);
+
+  const summary = summaryRows[0] ?? {
+    total_locks: 0,
+    contributors: 0,
+    correct_locks: 0,
+    settled_locks: 0,
+    followed_calls: 0,
+  };
+
+  return {
+    league: { slug: matchweek.league_slug, name: matchweek.league_name, country: matchweek.country },
+    matchweek: { id: matchweek.id, displayName: matchweek.display_name },
+    fixtures: fixtureRows.map((fixture) => ({
+      id: fixture.id,
+      status: fixture.status,
+      home: fixture.home,
+      homeLogoUrl: fixture.home_logo_url,
+      homeScore: fixture.home_score,
+      away: fixture.away,
+      awayLogoUrl: fixture.away_logo_url,
+      awayScore: fixture.away_score,
+    })),
+    summary: {
+      totalLocks: summary.total_locks,
+      contributors: summary.contributors,
+      correctLocks: summary.correct_locks,
+      settledLocks: summary.settled_locks,
+      followedCalls: summary.followed_calls,
+    },
+    teamVotes: teamVoteRows.map((team) => ({
+      id: team.id,
+      name: team.name,
+      logoUrl: team.logo_url,
+      votes: team.votes,
+      wins: team.wins,
+    })),
+    locks: lockRows.map((lock) => ({
+      id: lock.id,
+      specialist: lock.specialist,
+      initials: lock.specialist.split(/\s+/).map((part) => part[0]).join("").slice(0, 2).toUpperCase(),
+      team: lock.team,
+      teamLogoUrl: lock.team_logo_url,
+      fixture: `${lock.home} vs ${lock.away}`,
+      result: lock.result,
+    })),
+  };
+});
