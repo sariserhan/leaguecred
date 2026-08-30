@@ -59,6 +59,7 @@ export class FootballDataOrgProvider implements FixtureProvider {
 
   async fetchFixtures(input: { leagueExternalId: string; season: string; from: string; to: string }): Promise<FixtureBatch> {
     const url = new URL(`competitions/${input.leagueExternalId}/matches`, `${serverEnv.footballDataBaseUrl}/`);
+    url.searchParams.set("season", input.season);
     url.searchParams.set("dateFrom", input.from);
     url.searchParams.set("dateTo", input.to);
     const response = await fetch(url, {
