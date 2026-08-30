@@ -48,20 +48,128 @@ The supported versions should remain aligned with package.json and the lockfile.
 
 ## Commands
 
-| Command | Purpose |
+Every script in `package.json`, grouped by purpose. Run all of them from the repository root.
+
+### First run
+
+~~~bash
+pnpm install
+cp .env.example .env.local
+pnpm db:up          # start PostgreSQL on port 54329
+pnpm db:migrate     # apply committed migrations
+pnpm db:seed        # idempotent local leagues, fixtures, and specialists
+pnpm dev            # http://localhost:3000
+~~~
+
+### Everyday development
+
+| Command | What it does |
 |---|---|
-| pnpm dev | Starts the local Next.js development server. |
-| pnpm db:up | Starts the development PostgreSQL service. |
-| pnpm db:migrate | Applies committed Drizzle migrations. |
-| pnpm db:seed | Adds idempotent local league and specialist data. |
-| pnpm db:generate | Generates a migration after a schema change. |
-| pnpm fixtures:sync | Synchronizes recent results and the next 14 days from the free fixture sources. |
-| pnpm settle | Settles every eligible pending independent pick. |
-| pnpm admin:grant EMAIL | Grants the admin role; add --revoke to remove it. |
-| pnpm test | Runs deterministic unit tests. |
-| pnpm test:integration | Migrates, seeds, and tests isolated PostgreSQL on port 54330. |
-| pnpm check | Runs lint, typecheck, unit tests, and production build. |
-| pnpm check:full | Runs the standard gate plus PostgreSQL integration tests. |
+| `pnpm dev` | Starts the Next.js development server on port 3000. |
+| `pnpm build` | Produces the production build. Also the last step of `pnpm check`. |
+| `pnpm start` | Serves an existing production build. Run `pnpm build` first. |
+| `pnpm lint` | Runs ESLint across the repository. |
+| `pnpm typecheck` | Runs `tsc --noEmit` in strict mode. |
+
+Serving a production build on another port, which is the reliable way to check real
+HTTP status codes and server-side errors:
+
+~~~bash
+pnpm build
+BETTER_AUTH_URL=http://localhost:3100 pnpm start -p 3100
+~~~
+
+### Database
+
+| Command | What it does |
+|---|---|
+| `pnpm db:up` | Starts the development PostgreSQL container on port 54329. |
+| `pnpm db:down` | Stops the Compose services. |
+| `pnpm db:migrate` | Applies every committed migration in `drizzle/`. |
+| `pnpm db:generate` | Generates a migration after editing `src/db/schema.ts`. |
+| `pnpm db:seed` | Loads idempotent local leagues, fixtures, and specialists. |
+| `pnpm db:seed:catalog` | Loads the 25-competition catalog and team badges. |
+| `pnpm db:reset` | Destroys the volume, then recreates, migrates, and seeds. |
+| `pnpm db:test:up` | Starts the isolated test database on port 54330. |
+| `pnpm db:test:down` | Stops the test database. |
+
+Changing the schema is always two steps, and the generated SQL is reviewed before it is
+committed:
+
+~~~bash
+# 1. edit src/db/schema.ts, then
+pnpm db:generate            # writes drizzle/NNNN_name.sql and its snapshot
+# 2. read the generated SQL, then
+pnpm db:migrate
+~~~
+
+`pnpm db:reset` deletes all local data. It is for a corrupted development database, never
+for anything shared.
+
+### Jobs and operations
+
+| Command | What it does |
+|---|---|
+| `pnpm fixtures:sync` | Syncs recent results and the next 14 days from the free fixture sources. |
+| `pnpm settle` | Settles every eligible pending independent pick. |
+| `pnpm teams:logos` | Backfills missing team badges. |
+| `pnpm admin:grant EMAIL` | Grants the admin role. Add `--revoke` to remove it. |
+
+~~~bash
+pnpm fixtures:sync
+pnpm settle
+
+pnpm admin:grant you@example.com              # promote an existing account
+pnpm admin:grant you@example.com --revoke     # demote back to member
+~~~
+
+The account has to exist before it can be promoted, so sign up in the application first.
+`pnpm admin:grant` is the only way to create the first administrator; there is deliberately
+no in-product promotion path. Email matching is case-insensitive.
+
+The same jobs run over HTTP for a scheduler, authorized with `CRON_SECRET`:
+
+~~~bash
+curl -X POST http://localhost:3000/api/jobs/fixtures \
+  -H "Authorization: Bearer $CRON_SECRET"
+
+curl -X POST http://localhost:3000/api/jobs/settlement \
+  -H "Authorization: Bearer $CRON_SECRET"
+
+# apply a provider score correction after the fixture is re-synchronized
+curl -X PATCH http://localhost:3000/api/jobs/settlement/PICK_ID \
+  -H "Authorization: Bearer $CRON_SECRET" \
+  -H "Content-Type: application/json" \
+  -d '{"reason":"Provider corrected the final score"}'
+~~~
+
+### Testing
+
+| Command | What it does |
+|---|---|
+| `pnpm test` | Runs the deterministic unit tests. |
+| `pnpm test:watch` | Runs Vitest in watch mode. |
+| `pnpm test:integration` | Starts the test database, migrates, seeds, and runs the PostgreSQL tests. |
+
+`pnpm test:integration` manages its own database on port 54330 and hard-codes that URL, so it
+never touches the development data on 54329.
+
+~~~bash
+pnpm test                          # everything except *.integration.test.ts
+pnpm test src/lib/reputation       # a single suite by path fragment
+pnpm test:integration
+~~~
+
+### Quality gates
+
+| Command | What it does |
+|---|---|
+| `pnpm check` | Runs lint, typecheck, unit tests, and the production build. |
+| `pnpm check:full` | Runs `pnpm check` plus the PostgreSQL integration tests. |
+
+`pnpm check` is the gate for a normal change and `pnpm check:full` for anything touching the
+schema, settlement, or a query. Neither one runs the application, so neither can catch a
+runtime fault in code they compile successfully — see Verification below.
 
 ## Environment variables
 
@@ -109,11 +217,50 @@ The active visual system is:
 
 New screens should extend this system and be checked against the existing concepts at desktop and mobile sizes.
 
-## Testing
+## Test coverage
 
-Unit tests cover accuracy, sample-size eligibility, and confidence-adjusted ranking. PostgreSQL integration tests prove lock immutability, followed/independent separation, idempotent correction events, and frozen matchweek eligibility. The integration database is a separate Docker service with temporary storage and a hard-coded test URL.
+Unit tests cover accuracy, sample-size eligibility, confidence-adjusted ranking, record
+summaries, site settings and feature-flag resolution, and timestamp normalization.
 
-Browser QA should cover two accounts: one creates and reloads an independent lock; the second reveals specialists, accepts the attribution warning, follows a pick, reloads, and confirms independent fixtures remain disabled.
+PostgreSQL integration tests prove lock immutability, followed/independent separation,
+idempotent correction events, and frozen matchweek eligibility. The integration database is a
+separate Docker service with temporary storage and a hard-coded test URL, so it never touches
+development data.
+
+Pure logic belongs in `src/lib` so it can be tested without a database. Anything that reaches
+Postgres is proven by an integration test or by running the application, not by a unit test
+with a mocked driver.
+
+## Verification
+
+Lint, typecheck, and build only prove the code compiles. They cannot catch a value whose
+runtime shape differs from its type annotation, and the raw SQL layer is full of those: a
+row type in `sqlClient<Array<{ ... }>>` is a hand-written claim the driver never checks.
+
+A dashboard once rendered completely blank because a timestamp column was annotated `Date`
+while Postgres.js returned a string, and `.toISOString()` threw. Every gate passed. Only
+loading the page found it, which is why `src/lib/timestamps.ts` exists and why any timestamp
+read goes through it.
+
+So anything touching a query, a server action, or a page is also checked by running it:
+
+~~~bash
+pnpm build && BETTER_AUTH_URL=http://localhost:3100 pnpm start -p 3100
+~~~
+
+A production server gives real status codes and logs server-side exceptions that a streamed
+error boundary hides in the browser. Two behaviours to know when reading a response by hand:
+
+- `redirect()` inside a streaming render emits a client-side `<meta http-equiv="refresh">`
+  rather than a 307, so `curl` reports 200 and does not follow it. Check for the meta tag,
+  and confirm the guarded content is genuinely absent from the body.
+- React separates interpolated values with `<!-- -->`, so a fixed-string search for copy that
+  contains an expression fails. Strip the comments first: `sed 's/<!-- -->//g'`.
+
+Browser QA should still cover two accounts: one creates and reloads an independent lock; the
+second reveals specialists, accepts the attribution warning, follows a pick, reloads, and
+confirms independent fixtures remain disabled. For admin work, check both roles: a member
+must get a 404 at `/admin`, and an admin must keep browsing the site while maintenance is on.
 
 ## Operations
 
