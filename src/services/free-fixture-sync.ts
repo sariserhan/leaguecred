@@ -7,11 +7,15 @@ import { synchronizeChampionsLeagueTeams } from "@/services/team-catalog-sync";
 
 export async function synchronizeFreeFixtureSources(now = new Date()) {
   const rosters = await synchronizeCurrentRosters();
+  // ESPN goes first because it covers every league football-data-uk does and
+  // thirteen more, with fuller upcoming fixtures. Whoever records a match first
+  // owns it, so leading with the broader source keeps a real gameweek in one
+  // matchweek; football-data-uk then only adds what ESPN is missing.
+  const espn = await synchronizeFixtures(new EspnFixtureProvider(), now);
   const footballDataUk = await synchronizeFixtures(new FootballDataUkProvider(), now);
   const footballDataOrgTeams = serverEnv.footballDataApiKey
     ? await synchronizeChampionsLeagueTeams()
     : null;
-  const espn = await synchronizeFixtures(new EspnFixtureProvider(), now);
 
   return {
     rosters,

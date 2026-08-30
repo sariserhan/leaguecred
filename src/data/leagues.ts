@@ -562,9 +562,11 @@ export async function getLeagueStandings(slug: string): Promise<{ league: { name
   const rows = await sqlClient<Array<{ team: string; team_slug: string; logo_url: string | null; played: number; wins: number; draws: number; losses: number; goals_for: number; goals_against: number }>>`
     select t.name as team, t.slug as team_slug, t.logo_url,
       count(f.id)::int as played,
-      count(*) filter (where f.winner_team_id = t.id)::int as wins,
-      count(*) filter (where f.winner_team_id is null)::int as draws,
-      count(*) filter (where f.winner_team_id is not null and f.winner_team_id <> t.id)::int as losses,
+      count(f.id) filter (where f.winner_team_id = t.id)::int as wins,
+      -- count(f.id), not count(*): a team with no finished fixture still gets a
+      -- row from the left join, and its null winner_team_id would read as a draw.
+      count(f.id) filter (where f.winner_team_id is null)::int as draws,
+      count(f.id) filter (where f.winner_team_id is not null and f.winner_team_id <> t.id)::int as losses,
       coalesce(sum(case when f.home_team_id = t.id then f.home_score else f.away_score end), 0)::int as goals_for,
       coalesce(sum(case when f.home_team_id = t.id then f.away_score else f.home_score end), 0)::int as goals_against
     from league_team_memberships membership
@@ -574,7 +576,7 @@ export async function getLeagueStandings(slug: string): Promise<{ league: { name
       and f.status = 'finished' and (f.home_team_id = t.id or f.away_team_id = t.id)
     where membership.league_id = ${league.id}
     group by t.id, t.name, t.slug, t.logo_url
-    order by (count(*) filter (where f.winner_team_id = t.id) * 3 + count(*) filter (where f.winner_team_id is null)) desc,
+    order by (count(f.id) filter (where f.winner_team_id = t.id) * 3 + count(f.id) filter (where f.winner_team_id is null)) desc,
       (coalesce(sum(case when f.home_team_id = t.id then f.home_score else f.away_score end), 0) - coalesce(sum(case when f.home_team_id = t.id then f.away_score else f.home_score end), 0)) desc,
       coalesce(sum(case when f.home_team_id = t.id then f.home_score else f.away_score end), 0) desc, t.name`;
 

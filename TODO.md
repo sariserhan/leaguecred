@@ -6,6 +6,10 @@ None.
 
 ## Next
 
+- [ ] Matchweeks are identified by each provider's own round name, so one real
+      gameweek can exist twice with overlapping dates (12 leagues do). A Weekly
+      Lock is per matchweek, so a player could lock twice in one real week. Key
+      a matchweek by league, season and date window instead of round name.
 - [ ] Look at the two clubs the dedupe leaves for review on production: Slavia
       Prague is split across `slavia-prague` (no league) and `sk-slavia-praha`,
       which look like one club but share no evidence the job will act on.

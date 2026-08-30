@@ -126,6 +126,27 @@ async function synchronizeRound(providerName: string, config: LeagueConfig, roun
     }
     if (newFixtures.length === 0) return;
 
+    // A fixture is keyed by (provider, provider_external_id), so the lookup
+    // above only finds this provider's own rows. Several providers cover most
+    // of these leagues, and without this each one records its own copy of every
+    // match — counting twice in the standings — and files it under its own
+    // matchweek, splitting one real gameweek in two. Whoever recorded the match
+    // first keeps it. Resolving this before the matchweek matters: a round that
+    // is already fully covered must not leave an empty matchweek behind.
+    const creatable: Array<{ fixture: ProviderFixture; homeId: string; awayId: string }> = [];
+    for (const fixture of newFixtures) {
+      const homeId = await resolveTeam(sql, providerName, fixture.home, config);
+      const awayId = await resolveTeam(sql, providerName, fixture.away, config);
+      const [alreadyRecorded] = await sql<Array<{ id: string }>>`
+        select id from fixtures
+        where league_id = ${config.id} and season_id = ${config.season_id}
+          and home_team_id = ${homeId} and away_team_id = ${awayId}
+          and date(kickoff_at) = date(${fixture.kickoffAt}::timestamptz)
+        limit 1`;
+      if (!alreadyRecorded) creatable.push({ fixture, homeId, awayId });
+    }
+    if (creatable.length === 0) return;
+
     let [matchweek] = await sql<Array<{ id: string; status: string; has_participation: boolean }>>`
       select mw.id, mw.status, exists(select 1 from matchweek_participation mp where mp.matchweek_id = mw.id) as has_participation
       from matchweeks mw where mw.league_id = ${config.id} and mw.provider_round_name = ${round} for update`;
@@ -140,9 +161,7 @@ async function synchronizeRound(providerName: string, config: LeagueConfig, roun
     if (frozen) return;
     await sql`update matchweeks set start_at = ${startAt}, lock_at = ${startAt}, end_at = ${endAt}, updated_at = now() where id = ${matchweek.id}`;
 
-    for (const fixture of newFixtures) {
-      const homeId = await resolveTeam(sql, providerName, fixture.home, config);
-      const awayId = await resolveTeam(sql, providerName, fixture.away, config);
+    for (const { fixture, homeId, awayId } of creatable) {
       const winnerId = fixture.winnerExternalId === fixture.home.externalId ? homeId : fixture.winnerExternalId === fixture.away.externalId ? awayId : null;
       await sql`insert into fixtures (provider, provider_external_id, league_id, season_id, matchweek_id, home_team_id, away_team_id, kickoff_at, status, home_score, away_score, winner_team_id, last_synced_at)
         values (${providerName}, ${fixture.externalId}, ${config.id}, ${config.season_id}, ${matchweek.id}, ${homeId}, ${awayId}, ${fixture.kickoffAt}, ${fixture.status}, ${fixture.homeScore}, ${fixture.awayScore}, ${winnerId}, now())
