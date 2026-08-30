@@ -184,7 +184,7 @@ Copy `.env.example` to `.env.local`. The application uses:
 - `FOOTBALL_DATA_BASE_URL`: football-data.org endpoint override
 - `CRON_SECRET`: bearer secret for protected job routes
 - `RESEND_API_KEY`: Resend credential for verification and password-reset email
-- `RESEND_FROM_EMAIL`: sender identity, for example `LeagueCred <no-reply@yourdomain>`
+- `RESEND_FROM_EMAIL`: optional override for every sender identity, for use while the domain is unverified
 
 Never prefix these secrets with `NEXT_PUBLIC_`, commit real values, or reuse development credentials in production.
 
@@ -277,6 +277,33 @@ must get a 404 at `/admin`, and an admin must keep browsing the site while maint
 - `/admin` controls maintenance mode, the site banner, and feature flags. Every change applies to all visitors on their next request.
 - Maintenance mode redirects members and signed-out visitors to `/maintenance`. Admins keep browsing the real site, otherwise maintenance could only be switched off from the database.
 - Feature flags are defined in `src/lib/site-settings.ts` and stored in `feature_flags`. A flag with no stored row falls back to the default in its definition, so a fresh database needs no seeding.
+
+### Email
+
+Every message the product sends is built in `src/lib/email-templates.ts` and goes out through
+`sendEmail` in `src/lib/email.ts`, which is the only place that talks to Resend. Templates
+share one shell, so a new message inherits the branding, the responsive scaffolding, and the
+width the others use. Two tests enforce that: all messages must reduce to an identical tag
+skeleton, and their rendered sizes must stay within ten percent.
+
+Senders are chosen per message in `src/lib/email-senders.ts`, so the address itself says what
+arrived:
+
+| Message | From |
+|---|---|
+| Password reset | `no-reply@leaguecred.com` |
+| Address verification | `welcome@leaguecred.com` |
+| Lock reminder | `notification@leaguecred.com` |
+
+Every message sets `Reply-To: support@leaguecred.com`, so a reply from someone who ignores
+"no-reply" still reaches a person.
+
+These addresses only work once `leaguecred.com` is verified at
+https://resend.com/domains. Until then Resend rejects them with a 403 and `RESEND_FROM_EMAIL`
+overrides every identity, which is the way to keep mail working in the meantime.
+
+Anything user-controlled that reaches an email body — a display name above all — must pass
+through `escapeHtml`. These templates concatenate strings with no framework escaping for them.
 
 ### Account recovery
 

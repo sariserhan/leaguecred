@@ -2,6 +2,7 @@ import { describe, expect, it } from "vitest";
 
 import {
   EMAIL_WIDTH,
+  lockReminderEmail,
   passwordResetEmail,
   verificationEmail,
 } from "@/lib/email-templates";
@@ -9,7 +10,16 @@ import {
 const url = "https://leaguecred.test/api/auth/reset-password/abc123?callbackURL=%2Fauth%2Freset-password";
 const reset = passwordResetEmail({ name: "Aylin", url });
 const verify = verificationEmail({ name: "Efe", url });
-const every = [reset, verify];
+const remind = lockReminderEmail({
+  name: "Deniz",
+  leagueName: "Süper Lig",
+  matchweekName: "Matchweek 6",
+  lockAt: "Saturday, 12:00 UTC",
+  url,
+});
+// Every message the product sends. Adding one here without adding it to the
+// shell is what the structural assertions below are for.
+const every = [reset, verify, remind];
 
 describe("content", () => {
   it("carries the action link in both the text and html parts", () => {
@@ -81,15 +91,16 @@ describe("layout", () => {
     expect(verify.html).toContain("Confirm your address so your record stays recoverable.");
   });
 
-  it("builds both messages from an identical tag skeleton", () => {
+  it("builds every message from an identical tag skeleton", () => {
     const skeleton = (html: string) =>
       html.replace(/>[^<]*</g, "><").replace(/https?:\/\/[^"]+/g, "URL");
-    expect(skeleton(reset.html)).toBe(skeleton(verify.html));
+    const shapes = new Set(every.map((message) => skeleton(message.html)));
+    expect(shapes.size).toBe(1);
   });
 
-  it("keeps the rendered messages within a similar height of each other", () => {
-    const [shorter, longer] = [reset.html.length, verify.html.length].sort((a, b) => a - b);
-    expect(longer! / shorter!).toBeLessThan(1.1);
+  it("keeps every rendered message within a similar height of the others", () => {
+    const sizes = every.map((message) => message.html.length).sort((a, b) => a - b);
+    expect(sizes.at(-1)! / sizes[0]!).toBeLessThan(1.1);
   });
 });
 
@@ -115,5 +126,42 @@ describe("injection", () => {
 
   it("leaves the plain-text part unescaped, since it is not markup", () => {
     expect(passwordResetEmail({ name: hostile, url }).text).toContain(hostile);
+  });
+});
+
+describe("lock reminder", () => {
+  it("keeps the subject the reminder job already sent", () => {
+    expect(remind.subject).toBe("Your Süper Lig Weekly Lock closes Saturday, 12:00 UTC");
+  });
+
+  it("names the league and matchweek being missed", () => {
+    expect(remind.text).toContain("Süper Lig · Matchweek 6");
+    expect(remind.html).toContain("Matchweek 6");
+  });
+
+  it("escapes a hostile display name like the other messages", () => {
+    const hostile = lockReminderEmail({
+      name: '<img src=x onerror="alert(1)">',
+      leagueName: "Süper Lig",
+      matchweekName: "Matchweek 6",
+      lockAt: "Saturday",
+      url,
+    });
+    expect(hostile.html).not.toContain("<img src=x");
+    expect(hostile.html).toContain("&lt;img src=x");
+  });
+});
+
+describe("sender identity", () => {
+  it("sends each kind of message from the address that describes it", () => {
+    expect(reset.from).toBe("LeagueCred <no-reply@leaguecred.com>");
+    expect(verify.from).toBe("LeagueCred <welcome@leaguecred.com>");
+    expect(remind.from).toBe("LeagueCred <notification@leaguecred.com>");
+  });
+
+  it("gives every message a sender on the product domain", () => {
+    for (const message of every) {
+      expect(message.from).toContain("@leaguecred.com");
+    }
   });
 });

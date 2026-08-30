@@ -1,26 +1,24 @@
-import { Resend } from "resend";
-import { escapeHtml } from "@/lib/escape-html";
-
 import { sqlClient } from "@/db";
-import { requireResendApiKey, serverEnv } from "@/lib/env";
+import { sendEmail } from "@/lib/email";
+import { lockReminderEmail } from "@/lib/email-templates";
+import { serverEnv } from "@/lib/env";
 
 export type EmailSender = (input: {
   to: string;
   subject: string;
   html: string;
+  from?: string;
   idempotencyKey: string;
 }) => Promise<void>;
 
-function defaultSender(): EmailSender {
-  const resend = new Resend(requireResendApiKey());
-  return async ({ to, subject, html, idempotencyKey }) => {
-    const { error } = await resend.emails.send(
-      { from: serverEnv.resendFromEmail, to: [to], subject, html },
-      { idempotencyKey },
-    );
-    if (error) throw new Error(error.message);
-  };
-}
+/**
+ * Goes through the shared transport, then raises on failure so the caller's
+ * per-candidate catch skips the lock_reminders row and the reminder is retried.
+ */
+const defaultSender: EmailSender = async ({ to, subject, html, from, idempotencyKey }) => {
+  const result = await sendEmail(to, { subject, html, from }, { idempotencyKey });
+  if (!result.delivered) throw new Error(`Resend did not deliver the reminder: ${result.reason}`);
+};
 
 type ReminderCandidate = {
   user_id: string;
@@ -37,7 +35,7 @@ type ReminderCandidate = {
 // been followed there; a fresh signup with zero history gets no reminders.
 export async function sendLockReminders(options: { hoursBeforeLock?: number; send?: EmailSender } = {}) {
   const hoursBeforeLock = options.hoursBeforeLock ?? 24;
-  const send = options.send ?? defaultSender();
+  const send = options.send ?? defaultSender;
 
   const candidates = await sqlClient<ReminderCandidate[]>`
     select distinct u.id as user_id, u.email, u.name, mw.id as matchweek_id, mw.display_name,
@@ -70,12 +68,18 @@ export async function sendLockReminders(options: { hoursBeforeLock?: number; sen
     }).format(new Date(candidate.lock_at));
 
     try {
+      const message = lockReminderEmail({
+        name: candidate.name,
+        leagueName: candidate.league_name,
+        matchweekName: candidate.display_name,
+        lockAt,
+        url: `${serverEnv.betterAuthUrl}/leagues/${encodeURIComponent(candidate.league_slug)}`,
+      });
       await send({
         to: candidate.email,
-        subject: `Your ${candidate.league_name} Weekly Lock closes ${lockAt}`,
-        html: `<p>Hi ${escapeHtml(candidate.name)},</p>` +
-          `<p>You have not made your independent Weekly Lock for ${escapeHtml(candidate.league_name)} · ${escapeHtml(candidate.display_name)}. Locks close ${lockAt}.</p>` +
-          `<p><a href="${serverEnv.betterAuthUrl}/leagues/${encodeURIComponent(candidate.league_slug)}">Make your pick</a></p>`,
+        subject: message.subject,
+        html: message.html,
+        from: message.from,
         idempotencyKey: `lock-reminder/${candidate.user_id}/${candidate.matchweek_id}`,
       });
       await sqlClient`

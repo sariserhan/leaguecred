@@ -8,6 +8,7 @@
  * in globals.css, every rule is inlined, and the layout is a centred table.
  */
 
+import { emailSenders } from "@/lib/email-senders";
 import { escapeHtml } from "@/lib/escape-html";
 
 const token = {
@@ -30,6 +31,8 @@ export type EmailMessage = {
   subject: string;
   text: string;
   html: string;
+  /** Which identity this kind of message goes out as. */
+  from: string;
 };
 
 type LayoutInput = {
@@ -123,6 +126,7 @@ export function passwordResetEmail(input: { name: string; url: string }): EmailM
 
   return {
     subject: "Reset your LeagueCred password",
+    from: emailSenders.transactional,
     text:
       `${greeting}use this link to choose a new LeagueCred password:\n\n${input.url}\n\n` +
       "The link expires in one hour and can only be used once. " +
@@ -148,6 +152,7 @@ export function verificationEmail(input: { name: string; url: string }): EmailMe
 
   return {
     subject: "Confirm your LeagueCred address",
+    from: emailSenders.welcome,
     text:
       `${greeting}confirm your LeagueCred address with this link:\n\n${input.url}\n\n` +
       "A verified address is the only way back into your account, and a Weekly Lock record cannot be rebuilt.",
@@ -159,6 +164,40 @@ export function verificationEmail(input: { name: string; url: string }): EmailMe
       actionLabel: "Confirm address",
       footnote:
         "If you did not create a LeagueCred account you can ignore this message and nothing else happens.",
+    }),
+  };
+}
+
+export function lockReminderEmail(input: {
+  name: string;
+  leagueName: string;
+  matchweekName: string;
+  lockAt: string;
+  url: string;
+}): EmailMessage {
+  const greeting = input.name ? `${input.name}, ` : "";
+  const htmlGreeting = input.name ? `${escapeHtml(input.name)}, ` : "";
+  const where = `${input.leagueName} · ${input.matchweekName}`;
+  const htmlWhere = `${escapeHtml(input.leagueName)} · ${escapeHtml(input.matchweekName)}`;
+  const closes = escapeHtml(input.lockAt);
+
+  return {
+    subject: `Your ${input.leagueName} Weekly Lock closes ${input.lockAt}`,
+    from: emailSenders.notification,
+    text:
+      `${greeting}you have not made your independent Weekly Lock for ${where}. ` +
+      `Locks close ${input.lockAt}.\n\n${input.url}\n\n` +
+      "One call, locked for good. Miss the deadline and the matchweek simply passes.",
+    html: layout({
+      preheader: `Locks close ${input.lockAt}. One independent call.`,
+      heading: "Your lock closes soon",
+      body:
+        `${htmlGreeting}you have not made your independent Weekly Lock for ${htmlWhere}. ` +
+        `Locks close ${closes}.`,
+      actionUrl: input.url,
+      actionLabel: "Make your pick",
+      footnote:
+        "One call, locked for good. Miss the deadline and the matchweek simply passes; nothing is deducted.",
     }),
   };
 }
