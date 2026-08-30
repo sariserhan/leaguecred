@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useTransition } from "react";
+import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { LockKeyholeIcon } from "lucide-react";
 
@@ -44,7 +45,7 @@ export function AuthForm() {
     startTransition(async () => {
       const response =
         mode === "sign-up"
-          ? await authClient.signUp.email({ email, password, name })
+          ? await authClient.signUp.email({ email, password, name, callbackURL: "/auth/verify-email" })
           : await authClient.signIn.email({ email, password });
 
       if (response.error) {
@@ -107,6 +108,14 @@ export function AuthForm() {
                 <p className="text-sm text-muted-foreground">Use at least 10 characters.</p>
               ) : null}
               {error ? <FieldError>{error}</FieldError> : null}
+              {mode === "sign-in" ? (
+                <Link
+                  href="/auth/forgot-password"
+                  className="text-sm font-semibold underline underline-offset-4"
+                >
+                  Forgot your password?
+                </Link>
+              ) : null}
             </Field>
 
             <Button type="submit" size="lg" disabled={pending}>

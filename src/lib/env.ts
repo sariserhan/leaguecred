@@ -11,6 +11,8 @@ export const serverEnv = {
   footballDataBaseUrl:
     process.env.FOOTBALL_DATA_BASE_URL ?? "https://api.football-data.org/v4",
   cronSecret: process.env.CRON_SECRET,
+  resendApiKey: process.env.RESEND_API_KEY,
+  emailFrom: process.env.EMAIL_FROM ?? "LeagueCred <onboarding@resend.dev>",
 };
 
 export function requireBetterAuthSecret() {

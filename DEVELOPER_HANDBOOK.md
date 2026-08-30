@@ -183,6 +183,8 @@ Copy `.env.example` to `.env.local`. The application uses:
 - `FOOTBALL_DATA_API_KEY`: free football-data.org token for Champions League fixtures
 - `FOOTBALL_DATA_BASE_URL`: football-data.org endpoint override
 - `CRON_SECRET`: bearer secret for protected job routes
+- `RESEND_API_KEY`: Resend credential for verification and password-reset email
+- `EMAIL_FROM`: sender identity, for example `LeagueCred <no-reply@yourdomain>`
 
 Never prefix these secrets with `NEXT_PUBLIC_`, commit real values, or reuse development credentials in production.
 
@@ -275,6 +277,27 @@ must get a 404 at `/admin`, and an admin must keep browsing the site while maint
 - `/admin` controls maintenance mode, the site banner, and feature flags. Every change applies to all visitors on their next request.
 - Maintenance mode redirects members and signed-out visitors to `/maintenance`. Admins keep browsing the real site, otherwise maintenance could only be switched off from the database.
 - Feature flags are defined in `src/lib/site-settings.ts` and stored in `feature_flags`. A flag with no stored row falls back to the default in its definition, so a fresh database needs no seeding.
+
+### Account recovery
+
+Verification and password-reset mail go through Resend over its HTTP API; there is no SDK
+dependency. `sendEmail` never throws, because Better Auth calls it while creating an account
+and a mail outage must not turn into a failed sign-up.
+
+Without `RESEND_API_KEY` the behaviour depends on the environment. Outside production the
+message is written to the server log, including the link, so the whole flow can be exercised
+locally with no provider at all. In production the failure is logged as an error and nothing
+is sent, which means **account recovery is unavailable until the key is set**.
+
+Sign-in is deliberately not gated on a verified address (`requireEmailVerification: false`).
+A Weekly Lock record is permanent and cannot be rebuilt, so locking someone out of an account
+they can still prove they own does more damage than an unverified address does. Verification
+exists to keep the account recoverable, not to police entry. Flip the flag only once mail
+delivery is known to be reliable.
+
+Reset links last one hour and are single use. The request endpoint answers with the same
+message whether or not the address has an account, so it cannot be used to discover who has
+registered.
 
 ## Operational constraints
 
