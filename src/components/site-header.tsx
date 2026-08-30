@@ -10,6 +10,8 @@ import { Dialog, DialogClose, DialogContent, DialogDescription, DialogHeader, Di
 import { DropdownMenu, DropdownMenuContent, DropdownMenuGroup, DropdownMenuItem, DropdownMenuLabel, DropdownMenuSeparator, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
 import { authClient } from "@/lib/auth-client";
 import { cn } from "@/lib/utils";
+import { NotificationCenter } from "@/components/notification-center";
+import type { AppNotification, NotificationPreferences } from "@/data/notifications";
 
 const navItems = [
   { href: "/leagues", label: "Leagues", icon: TrophyIcon },
@@ -17,7 +19,7 @@ const navItems = [
   { href: "/#how-it-works", label: "How it works", icon: CircleUserRoundIcon },
 ] as const;
 
-export function SiteHeader({ isAdmin = false }: { isAdmin?: boolean }) {
+export function SiteHeader({ isAdmin = false, notificationCenter }: { isAdmin?: boolean; notificationCenter: { items: AppNotification[]; preferences: NotificationPreferences } | null }) {
   const pathname = usePathname();
   const router = useRouter();
   const { data: session, isPending } = authClient.useSession();
@@ -60,7 +62,7 @@ export function SiteHeader({ isAdmin = false }: { isAdmin?: boolean }) {
           })}
         </nav>
 
-        {session ? (
+        <div className="flex items-center gap-1">{session && notificationCenter ? <NotificationCenter initialItems={notificationCenter.items} initialPreferences={notificationCenter.preferences} /> : null}{session ? (
           <DropdownMenu>
             <DropdownMenuTrigger render={<Button variant="outline" size="icon" aria-label={`Open account menu for ${session.user.name}`} />}><Avatar className="size-8"><AvatarFallback>{initials}</AvatarFallback></Avatar></DropdownMenuTrigger>
             <DropdownMenuContent align="end" className="w-56 rounded-none p-2">
@@ -75,7 +77,7 @@ export function SiteHeader({ isAdmin = false }: { isAdmin?: boolean }) {
               <DropdownMenuGroup><DropdownMenuItem onClick={signOut} className="rounded-none px-2 py-2.5"><LogOutIcon />Sign out</DropdownMenuItem></DropdownMenuGroup>
             </DropdownMenuContent>
           </DropdownMenu>
-        ) : <Link href="/auth" aria-disabled={isPending} className={buttonVariants({ variant: "outline", size: "lg" })}>Sign in</Link>}
+        ) : <Link href="/auth" aria-disabled={isPending} className={buttonVariants({ variant: "outline", size: "lg" })}>Sign in</Link>}</div>
       </div>
     </header>
   );
