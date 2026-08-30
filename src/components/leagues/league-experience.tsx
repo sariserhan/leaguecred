@@ -55,7 +55,13 @@ function TeamMark({ code, logoUrl }: { code: string; logoUrl: string | null }) {
   );
 }
 
-export function LeagueExperience({ data }: { data: LeagueExperienceData }) {
+export function LeagueExperience({
+  data,
+  leaderboardEnabled,
+}: {
+  data: LeagueExperienceData;
+  leaderboardEnabled: boolean;
+}) {
   const router = useRouter();
   const [mode, setMode] = useState<ParticipationMode>(data.viewer.mode === "follow" ? "follow" : "prove");
   const [selection, setSelection] = useState<Selection | null>(null);
@@ -200,12 +206,12 @@ export function LeagueExperience({ data }: { data: LeagueExperienceData }) {
                       const awaySelected = selection?.teamId === fixture.awayTeamId;
                       const disabled = mode === "follow" || Boolean(lockedTeam) || interactionLocked;
                       return (
-                        <div key={fixture.id} className={cn("grid gap-3 p-3 sm:grid-cols-[1fr_auto_1fr] sm:items-center", homeSelected || awaySelected ? "bg-primary/10" : "bg-background")}>
-                          <button type="button" disabled={disabled} onClick={() => setSelection({ fixtureId: fixture.id, teamId: fixture.homeTeamId, teamName: fixture.home })} className="flex items-center gap-3 text-left font-semibold disabled:cursor-not-allowed disabled:opacity-60" aria-pressed={homeSelected}>
+                        <div key={fixture.id} className="grid gap-3 bg-background p-3 sm:grid-cols-[1fr_auto_1fr] sm:items-center">
+                          <button type="button" disabled={disabled} onClick={() => setSelection({ fixtureId: fixture.id, teamId: fixture.homeTeamId, teamName: fixture.home })} className={cn("flex items-center gap-3 rounded-sm px-2 py-2 text-left font-semibold transition-colors focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ring disabled:cursor-not-allowed disabled:opacity-60", homeSelected ? "bg-primary text-primary-foreground" : "hover:bg-muted")} aria-pressed={homeSelected}>
                             <TeamMark code={fixture.homeCode} logoUrl={fixture.homeLogoUrl} />{fixture.home}
                           </button>
                           <span className="text-center text-sm text-muted-foreground">{fixture.kickoff}</span>
-                          <button type="button" disabled={disabled} onClick={() => setSelection({ fixtureId: fixture.id, teamId: fixture.awayTeamId, teamName: fixture.away })} className="flex items-center justify-end gap-3 text-right font-semibold disabled:cursor-not-allowed disabled:opacity-60" aria-pressed={awaySelected}>
+                          <button type="button" disabled={disabled} onClick={() => setSelection({ fixtureId: fixture.id, teamId: fixture.awayTeamId, teamName: fixture.away })} className={cn("flex items-center justify-end gap-3 rounded-sm px-2 py-2 text-right font-semibold transition-colors focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ring disabled:cursor-not-allowed disabled:opacity-60", awaySelected ? "bg-primary text-primary-foreground" : "hover:bg-muted")} aria-pressed={awaySelected}>
                             {fixture.away}<TeamMark code={fixture.awayCode} logoUrl={fixture.awayLogoUrl} />
                           </button>
                         </div>
@@ -253,9 +259,9 @@ export function LeagueExperience({ data }: { data: LeagueExperienceData }) {
           </Card>
         </div>
 
-        <section className="mt-7 grid gap-7 lg:grid-cols-2">
+        <section className={leaderboardEnabled ? "mt-7 grid gap-7 lg:grid-cols-2" : "mt-7 grid gap-7"}>
           <Card><CardHeader><CardTitle className="font-heading text-2xl font-bold uppercase">Your {data.league.name} record</CardTitle><CardDescription>Only settled independent Weekly Locks count here.</CardDescription></CardHeader><CardContent className="grid grid-cols-3 gap-3"><div><strong className="block text-2xl">{data.viewer.wins}</strong><span className="text-sm text-muted-foreground">Wins</span></div><div><strong className="block text-2xl">{data.viewer.losses}</strong><span className="text-sm text-muted-foreground">Losses</span></div><div><strong className="block text-2xl">{decisions}</strong><span className="text-sm text-muted-foreground">Decisions</span></div></CardContent></Card>
-          <LeagueLeaderboard leagueName={data.league.name} entries={data.leaderboard} />
+          {leaderboardEnabled ? <LeagueLeaderboard leagueName={data.league.name} entries={data.leaderboard} /> : null}
         </section>
       </div>
 
