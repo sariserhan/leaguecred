@@ -68,6 +68,7 @@ const aliases: Record<string, string> = {
   aldiriyah: "diriyah",
   alustenau: "austrialustenau",
   amedspor: "amed",
+  amedsfk: "amed",
   erzurumbb: "erzurumspor",
   rizespor: "caykurrizespor",
   atleticomg: "atleticomineiro",
