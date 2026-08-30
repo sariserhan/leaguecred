@@ -4,14 +4,17 @@ import { cache } from "react";
 
 import { sqlClient } from "@/db";
 import { MINIMUM_SETTLED_PICKS_FOR_RANK } from "@/lib/reputation";
+import { toIsoTimestamp } from "@/lib/timestamps";
 
 export type SpecialistProfileData = {
-  specialist: { id: string; name: string; initials: string; followers: number };
+  specialist: { id: string; name: string; initials: string; followers: number; memberSince: string };
   totals: { wins: number; losses: number; settledPicks: number; bestWinStreak: number };
   leagues: Array<{
     id: string; slug: string; name: string; wins: number; losses: number; settledPicks: number;
     currentWinStreak: number; confidenceAdjustedAccuracy: number; followedByViewer: boolean;
     tier: string; leagueFollowers: number; seasonRank: number | null;
+    /** Following is only offered where the record already clears the rank threshold. */
+    followable: boolean;
   }>;
   /** Spec section 22 keeps leagues known and leagues followed visibly apart. */
   followedLeagues: Array<{
@@ -33,15 +36,13 @@ export const getSpecialistProfile = cache(async function getSpecialistProfile(
   specialistId: string,
   viewerId?: string,
 ): Promise<SpecialistProfileData | null> {
-  const [specialist] = await sqlClient<Array<{ id: string; name: string; followers: number }>>`
-    select u.id, u.name,
+  const [specialist] = await sqlClient<Array<{
+    id: string; name: string; followers: number; created_at: Date | string;
+  }>>`
+    select u.id, u.name, u.created_at,
       (select count(*)::int from league_follows lf where lf.specialist_user_id = u.id) as followers
     from "user" u
     where u.id = ${specialistId}
-      and exists(
-        select 1 from user_league_records r
-        where r.user_id = u.id and r.settled_picks >= ${MINIMUM_SETTLED_PICKS_FOR_RANK}
-      )
     limit 1`;
   if (!specialist) return null;
 
@@ -74,7 +75,7 @@ export const getSpecialistProfile = cache(async function getSpecialistProfile(
         ) ranked
         where ranked.user_id = r.user_id
       ) season_rank on true
-      where r.user_id = ${specialist.id} and r.settled_picks >= ${MINIMUM_SETTLED_PICKS_FOR_RANK}
+      where r.user_id = ${specialist.id} and r.settled_picks > 0
       order by r.confidence_adjusted_accuracy desc nulls last, r.settled_picks desc, l.name
       limit 12`,
     sqlClient<Array<{ id: string; league_name: string; league_slug: string; team: string; result: "win" | "loss" | "void"; home: string; away: string; submitted_at: Date }>>`
@@ -125,6 +126,7 @@ export const getSpecialistProfile = cache(async function getSpecialistProfile(
       name: specialist.name,
       initials: specialist.name.split(/\s+/).map((part) => part[0]).join("").slice(0, 2).toUpperCase(),
       followers: specialist.followers,
+      memberSince: toIsoTimestamp(specialist.created_at),
     },
     totals,
     leagues: leagueRows.map((league) => ({
@@ -133,6 +135,7 @@ export const getSpecialistProfile = cache(async function getSpecialistProfile(
       confidenceAdjustedAccuracy: Number(league.confidence_adjusted_accuracy), followedByViewer: league.followed_by_viewer,
       tier: league.tier, leagueFollowers: league.league_followers,
       seasonRank: league.season_rank === null ? null : Number(league.season_rank),
+      followable: league.settled_picks >= MINIMUM_SETTLED_PICKS_FOR_RANK,
     })),
     followedLeagues: followedLeagueRows.map((league) => ({
       id: league.id, slug: league.slug, name: league.name,

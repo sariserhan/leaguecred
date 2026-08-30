@@ -71,7 +71,7 @@ export function SiteHeader({ isAdmin = false }: { isAdmin?: boolean }) {
           ) : null}
           {session ? (
             <>
-              <Link href={`/u/${session.user.id}`} className={buttonVariants({ variant: "ghost", size: "lg" })}>
+              <Link href={`/specialists/${session.user.id}`} className={buttonVariants({ variant: "ghost", size: "lg" })}>
                 My profile
               </Link>
               <Button variant="outline" size="lg" onClick={signOut}>
