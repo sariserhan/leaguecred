@@ -27,7 +27,18 @@ export type TeamFixture = {
   opponentScore: number | null;
 };
 
-type FixtureRow = Omit<TeamFixture, "kickoff"> & { kickoff_at: Date };
+type FixtureRow = {
+  id: string;
+  league_name: string;
+  league_slug: string;
+  opponent: string;
+  opponent_logo_url: string | null;
+  home: boolean;
+  kickoff_at: Date;
+  status: FixtureStatus;
+  team_score: number | null;
+  opponent_score: number | null;
+};
 
 export const getTeamProfile = cache(async function getTeamProfile(teamPath: string): Promise<TeamProfileData | null> {
   const teamId = teamIdFromPath(teamPath);
@@ -91,7 +102,18 @@ export const getTeamProfile = cache(async function getTeamProfile(teamPath: stri
   ]);
 
   const record = recordRows[0] ?? { played: 0, wins: 0, draws: 0, losses: 0, goals_for: 0, goals_against: 0 };
-  const mapFixture = (fixture: FixtureRow): TeamFixture => ({ ...fixture, kickoff: new Date(fixture.kickoff_at).toISOString() });
+  const mapFixture = (fixture: FixtureRow): TeamFixture => ({
+    id: fixture.id,
+    leagueName: fixture.league_name,
+    leagueSlug: fixture.league_slug,
+    opponent: fixture.opponent,
+    opponentLogoUrl: fixture.opponent_logo_url,
+    home: fixture.home,
+    kickoff: new Date(fixture.kickoff_at).toISOString(),
+    status: fixture.status,
+    teamScore: fixture.team_score,
+    opponentScore: fixture.opponent_score,
+  });
   return {
     team: { id: team.id, name: team.name, shortName: team.short_name, logoUrl: team.logo_url, country: team.country },
     leagues: leagueRows,
