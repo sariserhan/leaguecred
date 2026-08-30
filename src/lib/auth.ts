@@ -4,6 +4,7 @@ import { nextCookies } from "better-auth/next-js";
 
 import { db } from "@/db";
 import * as schema from "@/db/schema";
+import { resolveTrustedOrigins } from "@/lib/auth-origins";
 import { sendEmail } from "@/lib/email";
 import { passwordResetEmail, verificationEmail } from "@/lib/email-templates";
 import { requireBetterAuthSecret, serverEnv } from "@/lib/env";
@@ -11,6 +12,13 @@ import { requireBetterAuthSecret, serverEnv } from "@/lib/env";
 export const auth = betterAuth({
   appName: "LeagueCred",
   baseURL: serverEnv.betterAuthUrl,
+  // The apex redirects to www, so the browser origin will not always match
+  // baseURL exactly. Preview deployments have their own host again.
+  trustedOrigins: resolveTrustedOrigins({
+    baseUrl: serverEnv.betterAuthUrl,
+    vercelUrl: process.env.VERCEL_URL,
+    vercelProductionUrl: process.env.VERCEL_PROJECT_PRODUCTION_URL,
+  }),
   secret: requireBetterAuthSecret(),
   database: drizzleAdapter(db, {
     provider: "pg",

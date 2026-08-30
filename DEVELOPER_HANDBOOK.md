@@ -86,6 +86,7 @@ BETTER_AUTH_URL=http://localhost:3100 pnpm start -p 3100
 | `pnpm db:up` | Starts the development PostgreSQL container on port 54329. |
 | `pnpm db:down` | Stops the Compose services. |
 | `pnpm db:migrate` | Applies every committed migration in `drizzle/`. |
+| `pnpm db:migrate:deploy` | The deploy-time migration, with its production and configured-database guards. |
 | `pnpm db:generate` | Generates a migration after editing `src/db/schema.ts`. |
 | `pnpm db:seed` | Loads idempotent local leagues, fixtures, and specialists. |
 | `pnpm db:seed:catalog` | Loads the 25-competition catalog and team badges. |
@@ -283,7 +284,17 @@ must get a 404 at `/admin`, and an admin must keep browsing the site while maint
 - After participation or status change freezes a matchweek, provider sync may update scores/statuses but not add eligible fixtures or move kickoffs.
 - Corrections require the provider fixture to be synchronized first, followed by `PATCH /api/jobs/settlement/:pickId` with a non-empty JSON `reason`.
 - Correction events are append-only. Never edit or delete settlement history directly.
-- Use a managed PostgreSQL service in production and run `pnpm db:migrate` during deployment.
+- Use a managed PostgreSQL service in production. Migrations run themselves during deployment:
+  Vercel prefers the `vercel-build` script, which applies committed migrations and only then
+  builds. Shipping a column and shipping the code that needs it are no longer two separate acts
+  someone has to remember to pair, and a failed migration fails the deploy rather than putting
+  code live against a schema that cannot serve it.
+- Only a production build migrates. `DATABASE_URL` is scoped to Preview as well as Production
+  and both point at the same database, so without that guard a preview of an unmerged branch
+  would apply its schema to production first. A build with no database configured skips quietly,
+  which is why a local `pnpm build` and `pnpm check` never touch one.
+- `pnpm db:migrate:deploy` is the same step, for running by hand. `DATABASE_URL_UNPOOLED` is
+  preferred when set, since a connection pooler is the wrong place for DDL.
 - Bootstrap the first administrator with `pnpm admin:grant you@example.com` after the account exists. There is deliberately no in-product way to promote an account.
 - `/admin` controls maintenance mode, the site banner, and feature flags. Every change applies to all visitors on their next request.
 - Maintenance mode redirects members and signed-out visitors to `/maintenance`. Admins keep browsing the real site, otherwise maintenance could only be switched off from the database.
