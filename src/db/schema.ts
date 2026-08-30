@@ -401,6 +401,16 @@ export const appSettings = pgTable("app_settings", {
   check("app_settings_singleton_check", sql`${table.id} = 'global'`),
 ]);
 
+export const lockReminders = pgTable("lock_reminders", {
+  id: uuid("id").defaultRandom().primaryKey(),
+  userId: text("user_id").notNull().references(() => user.id, { onDelete: "cascade" }),
+  matchweekId: uuid("matchweek_id").notNull().references(() => matchweeks.id, { onDelete: "cascade" }),
+  sentAt: timestamp("sent_at", { withTimezone: true }).defaultNow().notNull(),
+}, (table) => [
+  uniqueIndex("lock_reminders_user_matchweek_unique").on(table.userId, table.matchweekId),
+  index("lock_reminders_matchweek_id_idx").on(table.matchweekId),
+]);
+
 export const featureFlags = pgTable("feature_flags", {
   key: text("key").primaryKey(),
   label: text("label").notNull(),
