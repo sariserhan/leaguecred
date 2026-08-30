@@ -13,7 +13,7 @@ const steps = [
   {
     title: "Give your surest call",
     description:
-      "Choose the one team you are closest to certain will win from the league you truly know.",
+      "Not 10 guesses and six wins. Give one team you believe will win with near-total confidence.",
     icon: ClipboardPenLineIcon,
   },
   {
@@ -36,12 +36,12 @@ export default function HomePage() {
       <section className="page-shell grid min-h-[650px] items-center gap-12 py-16 lg:grid-cols-[0.82fr_1.18fr] lg:py-8">
         <div className="flex flex-col items-start gap-8">
           <h1 className="display-title max-w-[760px] normal-case">
-            Bring your surest winner. Find theirs.
+            Not 10 guesses. One near-certain winner.
           </h1>
           <p className="max-w-xl text-lg leading-8 text-muted-foreground sm:text-xl">
-            This is not a place for casual “maybe this team wins” picks. Give one
-            team you are almost certain will win from the league you know best,
-            then receive a proven specialist&apos;s surest call from a league you do not.
+            We are not asking which teams might win across a list of games. Give us
+            one team you believe will win with near-total confidence from the league
+            you know best—then receive someone else&apos;s strongest call from theirs.
           </p>
           <div className="flex flex-col gap-3 sm:flex-row">
             <Link
@@ -73,10 +73,10 @@ export default function HomePage() {
       <section id="how-it-works" className="border-y bg-secondary">
         <div className="page-shell grid gap-10 py-14 lg:grid-cols-[0.75fr_1.25fr] lg:py-16">
           <div className="flex flex-col gap-4">
-            <h2 className="section-title">Not a guess. An exchange of real league knowledge.</h2>
+            <h2 className="section-title">One near-certain winner—not six correct guesses.</h2>
             <p className="max-w-md leading-7 text-muted-foreground">
-              You bring one near-certain winner from your league each week. In return,
-              you can follow someone whose record proves they know theirs.
+              LeagueCred rewards the person who can name one team they are almost sure
+              will win, week after week—not someone who throws out ten picks and gets six right.
             </p>
           </div>
           <ol className="grid gap-8 md:grid-cols-3">
