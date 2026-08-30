@@ -128,6 +128,23 @@ export type DatabaseFixture = {
   kickoff: string;
 };
 
+export type PastMatchweek = {
+  id: string;
+  displayName: string;
+  fixtures: Array<{
+    id: string;
+    home: string;
+    homeCode: string;
+    homeLogoUrl: string | null;
+    homeScore: number | null;
+    away: string;
+    awayCode: string;
+    awayLogoUrl: string | null;
+    awayScore: number | null;
+    status: "finished" | "cancelled" | "abandoned" | "postponed" | "suspended" | "unknown";
+  }>;
+};
+
 export type DatabaseSpecialist = {
   id: string;
   name: string;
@@ -154,6 +171,7 @@ export type LeagueExperienceData = {
   league: { id: string; slug: string; name: string; shortName: string; country: string; countryCode: string };
   matchweek: { id: string; seasonId: string; displayName: string; lockAt: string; status: MatchweekRow["status"] };
   fixtures: DatabaseFixture[];
+  pastMatchweeks: PastMatchweek[];
   specialists: DatabaseSpecialist[];
   leaderboard: {
     currentSeason: LeagueLeaderboardEntry[];
@@ -198,7 +216,7 @@ export async function getLeagueExperience(slug: string, userId?: string): Promis
   if (!matchweek) return null;
 
   const viewerId = userId ?? "";
-  const [fixtureRows, specialistRows, participationRows, pickRows, recordRows, followedRows, currentSeasonLeaderboardRows, careerLeaderboardRows] = await Promise.all([
+  const [fixtureRows, pastFixtureRows, specialistRows, participationRows, pickRows, recordRows, followedRows, currentSeasonLeaderboardRows, careerLeaderboardRows] = await Promise.all([
     sqlClient<Array<{ id: string; kickoff_at: Date; home_id: string; home: string; home_code: string; home_logo_url: string | null; away_id: string; away: string; away_code: string; away_logo_url: string | null }>>`
       select f.id, f.kickoff_at, h.id as home_id, h.name as home, h.short_name as home_code, h.logo_url as home_logo_url,
         a.id as away_id, a.name as away, a.short_name as away_code, a.logo_url as away_logo_url
@@ -207,6 +225,26 @@ export async function getLeagueExperience(slug: string, userId?: string): Promis
         and f.kickoff_at >= now()
         and f.status = 'scheduled'
       order by f.kickoff_at`,
+    sqlClient<Array<{ matchweek_id: string; display_name: string; kickoff_at: Date; id: string; status: PastMatchweek["fixtures"][number]["status"]; home: string; home_code: string; home_logo_url: string | null; home_score: number | null; away: string; away_code: string; away_logo_url: string | null; away_score: number | null }>>`
+      with recent_matchweeks as (
+        select mw.id
+        from matchweeks mw
+        where mw.league_id = ${league.id}
+          and mw.season_id = ${matchweek.season_id}
+          and exists(select 1 from fixtures f where f.matchweek_id = mw.id and f.kickoff_at < now())
+          and not exists(select 1 from fixtures f where f.matchweek_id = mw.id and f.kickoff_at >= now())
+        order by mw.start_at desc
+        limit 8
+      )
+      select mw.id as matchweek_id, mw.display_name, f.kickoff_at, f.id, f.status,
+        h.name as home, h.short_name as home_code, h.logo_url as home_logo_url, f.home_score,
+        a.name as away, a.short_name as away_code, a.logo_url as away_logo_url, f.away_score
+      from matchweeks mw
+      join fixtures f on f.matchweek_id = mw.id
+      join teams h on h.id = f.home_team_id
+      join teams a on a.id = f.away_team_id
+      where mw.id in (select id from recent_matchweeks)
+      order by mw.start_at desc, f.kickoff_at`,
     sqlClient<Array<{ id: string; name: string; wins: number; losses: number; settled_picks: number; followers: number; lock: string; source_pick_id: string }>>`
       select u.id, u.name, r.wins, r.losses, r.settled_picks,
         (select count(*)::int from league_follows lf where lf.specialist_user_id = u.id and lf.league_id = ${league.id}) as followers,
@@ -246,6 +284,27 @@ export async function getLeagueExperience(slug: string, userId?: string): Promis
   const participation = participationRows[0];
   const record = recordRows[0];
   const lockedByTime = matchweek.status !== "upcoming" || new Date(matchweek.lock_at) <= new Date();
+  const pastMatchweeks = new Map<string, PastMatchweek>();
+  for (const fixture of pastFixtureRows) {
+    const matchweekHistory = pastMatchweeks.get(fixture.matchweek_id) ?? {
+      id: fixture.matchweek_id,
+      displayName: fixture.display_name,
+      fixtures: [],
+    };
+    matchweekHistory.fixtures.push({
+      id: fixture.id,
+      home: fixture.home,
+      homeCode: fixture.home_code,
+      homeLogoUrl: fixture.home_logo_url,
+      homeScore: fixture.home_score,
+      away: fixture.away,
+      awayCode: fixture.away_code,
+      awayLogoUrl: fixture.away_logo_url,
+      awayScore: fixture.away_score,
+      status: fixture.status,
+    });
+    pastMatchweeks.set(fixture.matchweek_id, matchweekHistory);
+  }
 
   return {
     league: { id: league.id, slug: league.slug, name: league.name, shortName: league.short_name, country: league.country, countryCode: league.country_code },
@@ -256,6 +315,7 @@ export async function getLeagueExperience(slug: string, userId?: string): Promis
       kickoffDate: new Intl.DateTimeFormat("en", { weekday: "long", month: "long", day: "numeric", timeZone: "UTC" }).format(new Date(fixture.kickoff_at)),
       kickoff: new Intl.DateTimeFormat("en", { hour: "2-digit", minute: "2-digit", timeZone: "UTC", timeZoneName: "short" }).format(new Date(fixture.kickoff_at)),
     })),
+    pastMatchweeks: [...pastMatchweeks.values()],
     specialists: specialistRows.map((specialist) => ({
       id: specialist.id,
       name: specialist.name,

@@ -39,7 +39,7 @@ import {
 import { Spinner } from "@/components/ui/spinner";
 import { ToggleGroup, ToggleGroupItem } from "@/components/ui/toggle-group";
 import { LeagueLeaderboard } from "@/components/leagues/league-leaderboard";
-import type { LeagueExperienceData } from "@/data/leagues";
+import type { LeagueExperienceData, PastMatchweek } from "@/data/leagues";
 import { cn } from "@/lib/utils";
 
 type ParticipationMode = "prove" | "follow";
@@ -52,6 +52,56 @@ function TeamMark({ code, logoUrl }: { code: string; logoUrl: string | null }) {
         <Image src={logoUrl} alt="" width={40} height={40} className="size-10 object-contain" />
       ) : code}
     </span>
+  );
+}
+
+function PastMatchweekHistory({ matchweeks }: { matchweeks: PastMatchweek[] }) {
+  if (matchweeks.length === 0) return null;
+
+  return (
+    <section className="mt-7 border" aria-labelledby="history-heading">
+      <div className="border-b px-5 py-4">
+        <h2 id="history-heading" className="font-heading text-2xl font-bold uppercase">
+          Previous weeks & results
+        </h2>
+        <p className="mt-1 text-sm text-muted-foreground">
+          Completed weeks are read-only and never accept a Weekly Lock.
+        </p>
+      </div>
+      <div className="divide-y">
+        {matchweeks.map((matchweek, index) => (
+          <details key={matchweek.id} open={index === 0} className="group">
+            <summary className="flex cursor-pointer list-none items-center justify-between gap-3 px-5 py-4 font-semibold marker:content-none hover:bg-muted">
+              <span>{matchweek.displayName}</span>
+              <span className="text-sm text-muted-foreground group-open:hidden">Show results</span>
+              <span className="hidden text-sm text-muted-foreground group-open:inline">Hide results</span>
+            </summary>
+            <div className="divide-y border-t">
+              {matchweek.fixtures.map((fixture) => {
+                const homeWon = fixture.homeScore !== null && fixture.awayScore !== null && fixture.homeScore > fixture.awayScore;
+                const awayWon = fixture.homeScore !== null && fixture.awayScore !== null && fixture.awayScore > fixture.homeScore;
+                const score = fixture.homeScore === null || fixture.awayScore === null
+                  ? fixture.status === "cancelled" || fixture.status === "abandoned" ? "Void" : "—"
+                  : `${fixture.homeScore}–${fixture.awayScore}`;
+                return (
+                  <div key={fixture.id} className="grid gap-2 px-4 py-3 sm:grid-cols-[1fr_auto_1fr] sm:items-center">
+                    <span className={cn("flex items-center gap-3 font-semibold", homeWon && "text-primary")}>
+                      <TeamMark code={fixture.homeCode} logoUrl={fixture.homeLogoUrl} />
+                      {fixture.home}
+                    </span>
+                    <strong className="text-center font-heading text-2xl">{score}</strong>
+                    <span className={cn("flex items-center justify-end gap-3 text-right font-semibold", awayWon && "text-primary")}>
+                      {fixture.away}
+                      <TeamMark code={fixture.awayCode} logoUrl={fixture.awayLogoUrl} />
+                    </span>
+                  </div>
+                );
+              })}
+            </div>
+          </details>
+        ))}
+      </div>
+    </section>
   );
 }
 
@@ -194,7 +244,8 @@ export function LeagueExperience({
         </ToggleGroup>
 
         <div className="mt-6 grid gap-7 xl:grid-cols-[1fr_390px]">
-          <section className="border" aria-labelledby="fixtures-heading">
+          <div className="space-y-7">
+            <section className="border" aria-labelledby="fixtures-heading">
             <div className="border-b px-5 py-4"><h2 id="fixtures-heading" className="font-heading text-2xl font-bold uppercase">Select the team you believe will win</h2></div>
             <div>
               {[...fixturesByDate].map(([date, fixtures]) => (
@@ -232,7 +283,10 @@ export function LeagueExperience({
                 <div className="flex min-h-11 items-center justify-center gap-2 text-sm text-muted-foreground"><UsersRoundIcon aria-hidden="true" className="size-5" />Follow mode selected — choose a specialist call</div>
               )}
             </div>
-          </section>
+            </section>
+
+            <PastMatchweekHistory matchweeks={data.pastMatchweeks} />
+          </div>
 
           <Card id="specialists" className="rounded-sm">
             <CardHeader><CardTitle className="font-heading text-3xl font-bold uppercase">Proven {data.league.name} specialists</CardTitle><CardDescription>Accuracy always includes the independent sample behind it.</CardDescription></CardHeader>

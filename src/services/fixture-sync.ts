@@ -12,6 +12,7 @@ type LeagueConfig = {
   country_id: string;
   provider_season: string;
   season_id: string;
+  season_start_date: string;
   source_external_id: string;
 };
 
@@ -25,7 +26,8 @@ export async function synchronizeFixtures(provider: FixtureProvider, now = new D
   let requestCount = 0;
   try {
     const availableConfigs = await sqlClient<Omit<LeagueConfig, "source_external_id">[]>`
-      select l.id, l.slug, l.provider, l.provider_external_id, l.country_id, s.provider_season, s.id as season_id
+      select l.id, l.slug, l.provider, l.provider_external_id, l.country_id, s.provider_season, s.id as season_id,
+        s.start_date as season_start_date
       from leagues l join seasons s on s.league_id = l.id and s.is_current = true
       where l.enabled = true order by l.priority`;
     const sourceIds = provider.competitions
@@ -37,9 +39,8 @@ export async function synchronizeFixtures(provider: FixtureProvider, now = new D
         ...config,
         source_external_id: sourceIds?.get(config.slug) ?? config.provider_external_id,
       }));
-    const from = new Date(now); from.setUTCDate(from.getUTCDate() - 7);
-    // Store enough of the schedule for competitions whose next round is more than two weeks away.
-    // The league page still renders only its immediate upcoming matchweek.
+    // Keep completed fixtures from the current season for the read-only matchweek history.
+    // The league page still renders only its immediate upcoming matchweek as selectable.
     const to = new Date(now); to.setUTCDate(to.getUTCDate() + 90);
 
     // Complete external requests concurrently and before opening write transactions.
@@ -48,15 +49,15 @@ export async function synchronizeFixtures(provider: FixtureProvider, now = new D
       batch: await provider.fetchFixtures({
         leagueExternalId: config.source_external_id,
         season: config.provider_season,
-        from: isoDate(from),
+        from: config.season_start_date,
         to: isoDate(to),
       }),
     })));
     requestCount = fetched.reduce((total, entry) => total + entry.batch.requestCount, 0);
 
     for (const { config, batch } of fetched) {
-      // Persist recent results and only the immediate next matchweek. This keeps the
-      // scheduled job bounded even when a provider returns an entire season.
+      // Persist completed current-season results and only the immediate next upcoming
+      // matchweek. This bounds schedule writes while preserving the result history.
       const nextFixture = batch.fixtures
         .filter((fixture) => fixture.status === "scheduled" && Date.parse(fixture.kickoffAt) >= now.getTime())
         .toSorted((left, right) => Date.parse(left.kickoffAt) - Date.parse(right.kickoffAt))[0];
