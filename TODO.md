@@ -6,11 +6,9 @@ None.
 
 ## Next
 
-- [ ] Run `pnpm teams:dedupe --apply` against each database to merge the clubs
-      catalogued twice (48 on the dev catalog; the job re-counts each run, so
-      read its dry run rather than trusting a number here). It should leave
-      Barcelona SC and Liverpool of Montevideo alone — those really are
-      separate clubs, and are the check that the safety rule still holds.
+- [ ] Look at the two clubs the dedupe leaves for review on production: Slavia
+      Prague is split across `slavia-prague` (no league) and `sk-slavia-praha`,
+      which look like one club but share no evidence the job will act on.
 - [ ] Rotate the Neon database password and update Vercel and .env.local
 
 ## Blocked
@@ -65,3 +63,5 @@ None.
 - [x] Stop continental competitions creating a second row for a club, and a bogus country with it
 - [x] Add an audit trail for admin setting and flag changes
 - [x] Reconcile the two branches' migrations so both reach production in order
+- [x] Merge the clubs catalogued twice, on dev and production
+- [x] Refuse to run migrations that the database can no longer reach
