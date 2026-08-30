@@ -80,10 +80,10 @@ export function ProductPreview() {
             Leagues I follow
           </h2>
           <PreviewRow
-            code="CPL"
-            title="Canadian Premier League"
-            meta="Following Liam"
-            lock="Liam's lock: Forge FC"
+            code="LMX"
+            title="Liga MX"
+            meta="Following Diego"
+            lock="Diego's lock: Monterrey"
           />
           <div className="h-16 border border-border bg-muted" aria-hidden="true" />
         </section>

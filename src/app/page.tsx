@@ -1,9 +1,11 @@
 import Link from "next/link";
 import {
-  ArrowDownIcon,
   ArrowRightIcon,
   ChartNoAxesColumnIncreasingIcon,
   ClipboardPenLineIcon,
+  EyeOffIcon,
+  LockKeyholeIcon,
+  ScrollTextIcon,
   ShieldCheckIcon,
   UsersRoundIcon,
 } from "lucide-react";
@@ -48,6 +50,51 @@ const knowledgeExchange = [
   {
     title: "A Galatasaray fan knows Galatasaray.",
     description: "They understand the squad, the atmosphere, and what the next match means for their team.",
+  },
+] as const;
+
+const trustRules = [
+  {
+    title: "One call per league, each week",
+    description:
+      "A single Weekly Lock in every league you know. There is no volume to hide behind and no quiet second guess.",
+    icon: LockKeyholeIcon,
+  },
+  {
+    title: "Locked the moment you submit",
+    description:
+      "A Weekly Lock cannot be edited, withdrawn, or deleted once the fixture turns against it. The record is permanent.",
+    icon: ShieldCheckIcon,
+  },
+  {
+    title: "Reading the others costs you the week",
+    description:
+      "Reveal the specialist calls for a matchweek and you give up your own independent record for it. Nobody passes a borrowed call off as their own.",
+    icon: EyeOffIcon,
+  },
+] as const;
+
+const returnedCalls = [
+  {
+    league: "Serie A",
+    specialist: "Marco",
+    record: "71.4% · 25–10",
+    call: "Atalanta",
+    fixture: "vs Lecce",
+  },
+  {
+    league: "La Liga",
+    specialist: "Elena",
+    record: "68.2% · 15–7",
+    call: "Real Sociedad",
+    fixture: "vs Getafe",
+  },
+  {
+    league: "Liga MX",
+    specialist: "Diego",
+    record: "69.6% · 16–7",
+    call: "Monterrey",
+    fixture: "vs Necaxa",
   },
 ] as const;
 
@@ -144,37 +191,50 @@ export default function HomePage() {
           </div>
 
           <div className="flex flex-col justify-center bg-background p-7 sm:p-10 lg:p-12">
-            <h2 className="section-title max-w-lg">Exchange your strongest call. Build the week together.</h2>
+            <h2 className="section-title max-w-lg">What makes a call worth trusting.</h2>
             <p className="mt-5 max-w-xl leading-7 text-muted-foreground">
-              Everyone gives one team they believe will win with near-total confidence
-              from the league or club they truly understand. In return, everyone gets
-              the same kind of trusted call from the others.
+              Depth only counts once it is put on the record. Three rules keep every call
+              in the exchange honest, and they hold for everyone.
             </p>
 
-            <div className="mt-8 space-y-2">
-              {knowledgeExchange.map((member, index) => (
-                <div key={member.title}>
-                  <div className="flex items-center gap-4 border p-4">
-                    <span className="flex size-10 shrink-0 items-center justify-center rounded-full bg-foreground text-primary">
-                      <UsersRoundIcon aria-hidden="true" className="size-5" />
-                    </span>
-                    <span className="font-semibold">{member.title.replace(".", "")} call</span>
-                  </div>
-                  {index < knowledgeExchange.length - 1 ? <ArrowDownIcon aria-hidden="true" className="mx-auto my-1 size-5 text-primary" /> : null}
-                </div>
-              ))}
-            </div>
+            <ol className="mt-8 divide-y border-y">
+              {trustRules.map((rule) => {
+                const Icon = rule.icon;
+                return (
+                  <li key={rule.title} className="flex items-start gap-4 py-5">
+                    <Icon
+                      aria-hidden="true"
+                      className="mt-1 size-5 shrink-0 text-primary"
+                      strokeWidth={1.5}
+                    />
+                    <div>
+                      <h3 className="font-semibold">{rule.title}</h3>
+                      <p className="mt-1 text-sm leading-6 text-muted-foreground">
+                        {rule.description}
+                      </p>
+                    </div>
+                  </li>
+                );
+              })}
+            </ol>
 
             <div className="mt-8 border">
               <div className="flex items-center gap-3 bg-primary px-5 py-4 text-primary-foreground">
-                <ShieldCheckIcon aria-hidden="true" className="size-6" />
-                <h3 className="font-heading text-xl font-bold uppercase">One community slip. Built from real league knowledge.</h3>
+                <ScrollTextIcon aria-hidden="true" className="size-6" />
+                <h3 className="font-heading text-xl font-bold uppercase">Your week, back from the specialists</h3>
               </div>
               <div className="divide-y">
-                {knowledgeExchange.map((member) => (
-                  <div key={member.title} className="flex items-center justify-between gap-4 px-5 py-4">
-                    <span className="font-semibold">{member.title.replace(".", "")}</span>
-                    <span className="text-sm text-muted-foreground">One almost-sure winner</span>
+                {returnedCalls.map((entry) => (
+                  <div
+                    key={entry.league}
+                    className="grid grid-cols-[1fr_auto] items-baseline gap-x-4 gap-y-1 px-5 py-4"
+                  >
+                    <span className="font-semibold">{entry.league}</span>
+                    <span className="font-heading text-lg font-bold uppercase">{entry.call}</span>
+                    <span className="text-sm text-muted-foreground">
+                      {entry.specialist} · {entry.record}
+                    </span>
+                    <span className="text-sm text-muted-foreground">{entry.fixture}</span>
                   </div>
                 ))}
               </div>
