@@ -38,7 +38,7 @@ function LeagueRow({ league, intent, authenticated }: { league: League; intent: 
       </strong>
       <span className="flex items-center gap-2 text-sm text-muted-foreground"><UsersRoundIcon aria-hidden="true" className="size-4 shrink-0" />{league.specialistCount} ranked specialist{league.specialistCount === 1 ? "" : "s"}</span>
       <span className="text-sm"><PersonalStatus league={league} authenticated={authenticated} /></span>
-      <div className="flex flex-col gap-2 sm:flex-row md:flex-col xl:flex-row">
+      <div className="flex justify-end gap-2 sm:flex-row md:flex-col xl:flex-row">
         {league.available !== false ? (
           <Link href={`/leagues/${league.slug}`} className="inline-flex min-h-11 items-center justify-center gap-2 border border-foreground px-4 text-sm font-semibold transition-colors hover:bg-foreground hover:text-background md:min-h-10">{action}<ArrowRightIcon aria-hidden="true" className="size-4" /></Link>
         ) : <span className="inline-flex min-h-11 items-center justify-center border px-4 text-sm font-semibold text-muted-foreground md:min-h-10">Coming soon</span>}
