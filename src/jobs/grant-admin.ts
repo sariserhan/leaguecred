@@ -1,5 +1,6 @@
 import { sqlClient } from "@/db";
 import type { UserRole } from "@/db/schema";
+import { describeDatabaseTarget } from "@/lib/env";
 
 /**
  * Bootstraps the first administrator, and revokes one when needed. There is
@@ -17,6 +18,10 @@ async function main() {
   }
 
   const role: UserRole = revoke ? "member" : "admin";
+
+  // Granting admin against the wrong database is a silent, confusing failure,
+  // so say which one is about to be changed.
+  console.info(`Target database: ${describeDatabaseTarget()}`);
 
   try {
     const rows = await sqlClient<Array<{ id: string; email: string; role: UserRole }>>`
