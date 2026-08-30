@@ -15,7 +15,7 @@ import { Input } from "@/components/ui/input";
 import { ToggleGroup, ToggleGroupItem } from "@/components/ui/toggle-group";
 import type { League, Region } from "@/lib/league-data";
 
-const regions = ["All", "Europe", "Americas", "Asia"] as const;
+const regions = ["All", "Europe", "Americas", "Asia", "Africa", "Oceania"] as const;
 type RegionFilter = (typeof regions)[number];
 
 export function LeagueExplorer({ leagues }: { leagues: League[] }) {
@@ -76,7 +76,7 @@ export function LeagueExplorer({ leagues }: { leagues: League[] }) {
         </div>
 
         <h2 id="popular-leagues-heading" className="font-heading text-3xl font-bold uppercase">
-          Popular leagues
+          Top-flight leagues
         </h2>
 
         <div className="mt-3 border-y">
@@ -93,12 +93,21 @@ export function LeagueExplorer({ leagues }: { leagues: League[] }) {
               {filteredLeagues.map((league) => (
                 <li
                   key={league.slug}
-                  className="grid gap-4 border-b px-4 py-5 transition-colors last:border-b-0 hover:bg-muted/70 md:grid-cols-[1fr_1.4fr_1.5fr_1.4fr_auto] md:items-center md:gap-5"
+                  className="grid gap-4 border-b px-4 py-5 transition-colors [contain-intrinsic-size:0_81px] [content-visibility:auto] last:border-b-0 hover:bg-muted/70 md:grid-cols-[1fr_1.4fr_1.5fr_1.4fr_auto] md:items-center md:gap-5"
                 >
                   <span className="flex items-center gap-3">
-                    <span className="text-2xl" aria-hidden="true">
-                      {league.flag}
-                    </span>
+                    {league.flagUrl ? (
+                      <Image
+                        src={league.flagUrl}
+                        alt=""
+                        width={28}
+                        height={20}
+                        unoptimized
+                        className="h-5 w-7 rounded-[2px] object-cover"
+                      />
+                    ) : (
+                      <span className="text-2xl" aria-hidden="true">{league.flag}</span>
+                    )}
                     <span>{league.country}</span>
                   </span>
                   <strong className="flex items-center gap-3">
@@ -123,13 +132,19 @@ export function LeagueExplorer({ leagues }: { leagues: League[] }) {
                     <CircleDotIcon aria-hidden="true" className="size-4 text-primary" />
                     {league.status}
                   </span>
-                  <Link
-                    href={"/leagues/" + league.slug}
-                    className="inline-flex h-10 items-center justify-center gap-2 border border-foreground px-4 text-sm font-semibold transition-colors hover:bg-foreground hover:text-background"
-                  >
-                    {league.action}
-                    <ArrowRightIcon aria-hidden="true" className="size-4" />
-                  </Link>
+                  {league.available === false ? (
+                    <span className="inline-flex h-10 items-center justify-center border px-4 text-sm font-semibold text-muted-foreground">
+                      Cataloged
+                    </span>
+                  ) : (
+                    <Link
+                      href={"/leagues/" + league.slug}
+                      className="inline-flex h-10 items-center justify-center gap-2 border border-foreground px-4 text-sm font-semibold transition-colors hover:bg-foreground hover:text-background"
+                    >
+                      {league.action}
+                      <ArrowRightIcon aria-hidden="true" className="size-4" />
+                    </Link>
+                  )}
                 </li>
               ))}
             </ul>

@@ -1,10 +1,11 @@
-export type Region = "Europe" | "Americas" | "Asia";
+export type Region = "Europe" | "Americas" | "Asia" | "Africa" | "Oceania";
 
 export type League = {
   slug: string;
   country: string;
   countryCode: string;
   flag: string;
+  flagUrl?: string | null;
   logoUrl?: string | null;
   name: string;
   shortName: string;
@@ -12,6 +13,7 @@ export type League = {
   specialistCount: number;
   status: string;
   action: string;
+  available?: boolean;
 };
 
 export type Fixture = {

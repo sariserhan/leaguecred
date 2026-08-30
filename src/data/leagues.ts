@@ -13,6 +13,7 @@ type DirectoryRow = {
   slug: string;
   country: string;
   country_code: string;
+  flag_url: string | null;
   name: string;
   short_name: string;
   logo_url: string | null;
@@ -21,14 +22,16 @@ type DirectoryRow = {
   wins: number | null;
   losses: number | null;
   followed_count: number;
+  has_experience: boolean;
 };
 
 export async function getLeagueDirectory(userId?: string): Promise<League[]> {
   const currentUserId = userId ?? "";
   const rows = await sqlClient<DirectoryRow[]>`
-    select l.slug, c.name as country, c.code as country_code, l.name, l.short_name, l.logo_url, l.region,
+    select l.slug, c.name as country, c.code as country_code, c.flag_url, l.name, l.short_name, l.logo_url, l.region,
       (select count(*)::int from user_league_records r where r.league_id = l.id and r.settled_picks >= 10) as specialist_count,
       own.wins, own.losses,
+      exists(select 1 from matchweeks mw where mw.league_id = l.id) as has_experience,
       (select count(*)::int from league_follows f where f.follower_user_id = ${currentUserId} and f.league_id = l.id) as followed_count
     from leagues l
     join countries c on c.id = l.country_id
@@ -49,6 +52,7 @@ export async function getLeagueDirectory(userId?: string): Promise<League[]> {
       country: row.country,
       countryCode: row.country_code,
       flag: flags[row.country_code] ?? "⚽",
+      flagUrl: row.flag_url,
       logoUrl: row.logo_url,
       name: row.name,
       shortName: row.short_name,
@@ -56,6 +60,7 @@ export async function getLeagueDirectory(userId?: string): Promise<League[]> {
       specialistCount: row.specialist_count,
       status,
       action: row.slug === "super-lig" ? "Open league" : "Explore league",
+      available: row.has_experience,
     };
   });
 }

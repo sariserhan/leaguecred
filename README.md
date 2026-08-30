@@ -50,7 +50,7 @@ pnpm fixtures:sync
 pnpm settle
 ~~~
 
-The catalog seed idempotently loads the prioritized 2026 domestic league directory and API-Football league logos. Fixture synchronization requires `API_FOOTBALL_KEY`; it also upserts team names and logos from each returned fixture. API-Football's free plan does not expose current-season bulk team membership, so do not treat an older season's `/teams` response as the current roster.
+The catalog seed idempotently loads one current senior men's top-flight league for each of 168 API-Football countries, including country flags, league logos, and provider season metadata. It excludes cups, second divisions, reserve/youth competitions, and women's leagues. Fixture synchronization requires `API_FOOTBALL_KEY`; it also upserts team names and logos from each returned fixture. API-Football's free plan does not expose current-season bulk team membership, so do not treat an older season's `/teams` response as the current roster.
 
 HTTP schedulers can call `POST /api/jobs/fixtures` and `POST /api/jobs/settlement` with `Authorization: Bearer $CRON_SECRET`.
 
