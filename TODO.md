@@ -6,8 +6,7 @@ None.
 
 ## Next
 
-- [ ] Add production hosting and managed PostgreSQL
-- [ ] Let an admin promote another admin from the dashboard
+None.
 
 ## Blocked
 
@@ -47,3 +46,4 @@ None.
 - [x] Add lock-reminder emails for an unmade Weekly Lock
 - [x] Add notifications when a followed specialist locks
 - [x] Add an audit trail for admin setting and flag changes
+- [x] Add production hosting and managed PostgreSQL
