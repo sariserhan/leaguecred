@@ -16,6 +16,6 @@ export async function saveLeaguePreferences(input: z.infer<typeof preferencesSch
     await sql`delete from user_league_preferences where user_id = ${session.user.id}`;
     for (const choice of choices) await sql`insert into user_league_preferences (user_id, league_id, kind) select ${session.user.id}, id, ${choice.kind}::league_preference_kind from leagues where slug = ${choice.slug} and enabled = true`;
   });
-  revalidatePath("/leagues"); revalidatePath(`/specialists/${session.user.id}`); revalidatePath("/onboarding");
+  revalidatePath("/leagues"); revalidatePath(`/specialists/${session.user.id}`); revalidatePath("/onboarding"); revalidatePath("/network");
   return { ok: true as const };
 }
