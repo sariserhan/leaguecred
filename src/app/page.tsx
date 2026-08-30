@@ -142,7 +142,7 @@ export default async function HomePage() {
 
         <div className="relative">
           <div
-            className="pointer-events-none absolute inset-x-[-8%] top-1/2 -z-10 hidden -translate-y-1/2 text-foreground/15 lg:block"
+            className="pointer-events-none absolute inset-x-[-8%] top-1/2 -z-10 hidden -translate-y-1/2 opacity-25 lg:block"
             aria-hidden="true"
           >
             <PitchBackdrop className="w-full" />
