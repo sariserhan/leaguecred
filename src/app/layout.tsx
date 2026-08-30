@@ -6,6 +6,8 @@ import { SiteHeader } from "@/components/site-header";
 import { SiteFooter } from "@/components/site-footer";
 import { viewerIsAdmin } from "@/lib/admin";
 import { getLeagueNavOptions } from "@/data/teams";
+import { getSession } from "@/lib/auth-session";
+import { getNotificationCenter } from "@/data/notifications";
 
 import "./globals.css";
 
@@ -31,7 +33,12 @@ export const metadata: Metadata = {
 };
 
 export default async function RootLayout({ children }: LayoutProps<"/">) {
-  const [isAdmin, leagues] = await Promise.all([viewerIsAdmin(), getLeagueNavOptions()]);
+  const [isAdmin, session, leagues] = await Promise.all([
+    viewerIsAdmin(),
+    getSession(),
+    getLeagueNavOptions(),
+  ]);
+  const notificationCenter = session ? await getNotificationCenter(session.user.id) : null;
 
   return (
     <html
@@ -41,7 +48,7 @@ export default async function RootLayout({ children }: LayoutProps<"/">) {
     >
       <body suppressHydrationWarning className="flex min-h-screen flex-col bg-background text-foreground">
         <SiteBanner />
-        <SiteHeader isAdmin={isAdmin} leagues={leagues} />
+        <SiteHeader isAdmin={isAdmin} leagues={leagues} notificationCenter={notificationCenter} />
         <main className="flex-1">{children}</main>
         <SiteFooter />
       </body>

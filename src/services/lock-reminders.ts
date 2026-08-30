@@ -70,6 +70,10 @@ export async function sendLockReminders(options: { hoursBeforeLock?: number; sen
     }).format(new Date(candidate.lock_at));
 
     try {
+      await sqlClient`insert into notifications(user_id,kind,title,body,href,dedupe_key)
+        select ${candidate.user_id},'lock_deadline',${`${candidate.league_name} Weekly Lock due`},${`${candidate.display_name} closes ${lockAt}.`},${`/leagues/${candidate.league_slug}`},${`lock-deadline/${candidate.matchweek_id}`}
+        where coalesce((select lock_deadlines from notification_preferences where user_id=${candidate.user_id}),true)
+        on conflict(user_id,dedupe_key) do nothing`;
       const message = lockReminderEmail({
         name: candidate.name,
         leagueName: candidate.league_name,

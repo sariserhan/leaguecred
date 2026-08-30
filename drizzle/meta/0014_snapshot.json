@@ -1,6 +1,6 @@
 {
-  "id": "6841868e-c8b8-47f5-ab13-5ea32923b1d6",
-  "prevId": "e9564747-3049-40fb-af09-e7257b541ec4",
+  "id": "394d5703-55ee-4a88-9fef-0e47626c805f",
+  "prevId": "6841868e-c8b8-47f5-ab13-5ea32923b1d6",
   "version": "7",
   "dialect": "postgresql",
   "tables": {
@@ -530,6 +530,13 @@
           "type": "text",
           "primaryKey": false,
           "notNull": false
+        },
+        "is_region": {
+          "name": "is_region",
+          "type": "boolean",
+          "primaryKey": false,
+          "notNull": true,
+          "default": false
         },
         "created_at": {
           "name": "created_at",
@@ -3512,6 +3519,12 @@
           "primaryKey": false,
           "notNull": true
         },
+        "slug": {
+          "name": "slug",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
         "short_name": {
           "name": "short_name",
           "type": "text",
@@ -3627,7 +3640,15 @@
         }
       },
       "compositePrimaryKeys": {},
-      "uniqueConstraints": {},
+      "uniqueConstraints": {
+        "teams_slug_unique": {
+          "name": "teams_slug_unique",
+          "nullsNotDistinct": false,
+          "columns": [
+            "slug"
+          ]
+        }
+      },
       "policies": {},
       "checkConstraints": {},
       "isRLSEnabled": false

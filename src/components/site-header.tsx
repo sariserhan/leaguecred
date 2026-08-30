@@ -24,6 +24,8 @@ import { authClient } from "@/lib/auth-client";
 import { cn } from "@/lib/utils";
 import { loadLeagueTeams } from "@/app/actions";
 import type { LeagueNavOption, TeamNavTeam } from "@/data/teams";
+import { NotificationCenter } from "@/components/notification-center";
+import type { AppNotification, NotificationPreferences } from "@/data/notifications";
 
 const navItems = [
   { href: "/leagues", label: "Leagues", icon: TrophyIcon },
@@ -34,9 +36,11 @@ const navItems = [
 export function SiteHeader({
   isAdmin = false,
   leagues,
+  notificationCenter,
 }: {
   isAdmin?: boolean;
   leagues: LeagueNavOption[];
+  notificationCenter: { items: AppNotification[]; preferences: NotificationPreferences } | null;
 }) {
   const pathname = usePathname();
   const router = useRouter();
@@ -161,7 +165,7 @@ export function SiteHeader({
           </Menu.Root>
         </nav>
 
-        {session ? (
+        <div className="flex items-center gap-1">{session && notificationCenter ? <NotificationCenter initialItems={notificationCenter.items} initialPreferences={notificationCenter.preferences} /> : null}{session ? (
           <DropdownMenu>
             <DropdownMenuTrigger render={<Button variant="outline" size="icon" aria-label={`Open account menu for ${session.user.name}`} />}><Avatar className="size-8"><AvatarFallback>{initials}</AvatarFallback></Avatar></DropdownMenuTrigger>
             <DropdownMenuContent align="end" className="w-56 rounded-none p-2">
@@ -176,7 +180,7 @@ export function SiteHeader({
               <DropdownMenuGroup><DropdownMenuItem onClick={signOut} className="rounded-none px-2 py-2.5"><LogOutIcon />Sign out</DropdownMenuItem></DropdownMenuGroup>
             </DropdownMenuContent>
           </DropdownMenu>
-        ) : <Link href="/auth" aria-disabled={isPending} className={buttonVariants({ variant: "outline", size: "lg" })}>Sign in</Link>}
+        ) : <Link href="/auth" aria-disabled={isPending} className={buttonVariants({ variant: "outline", size: "lg" })}>Sign in</Link>}</div>
       </div>
     </header>
   );

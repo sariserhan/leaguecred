@@ -40,6 +40,7 @@ export const adminAuditActionEnum = pgEnum("admin_audit_action", [
   "site_settings_updated", "feature_flag_toggled",
 ]);
 export const leaguePreferenceKindEnum = pgEnum("league_preference_kind", ["know", "help"]);
+export const notificationKindEnum = pgEnum("notification_kind", ["lock_deadline", "specialist_lock", "pick_result", "followed_result", "specialist_recommendation"]);
 
 // Better Auth core tables. Property names intentionally match its Drizzle adapter.
 export const user = pgTable("user", {
@@ -316,6 +317,32 @@ export const userLeaguePreferences = pgTable("user_league_preferences", {
   index("user_league_preferences_league_idx").on(table.leagueId),
 ]);
 
+export const notifications = pgTable("notifications", {
+  id: uuid("id").defaultRandom().primaryKey(),
+  userId: text("user_id").notNull().references(() => user.id, { onDelete: "cascade" }),
+  kind: notificationKindEnum("kind").notNull(),
+  title: text("title").notNull(),
+  body: text("body").notNull(),
+  href: text("href").notNull(),
+  dedupeKey: text("dedupe_key").notNull(),
+  readAt: timestamp("read_at", { withTimezone: true }),
+  createdAt,
+}, (table) => [
+  uniqueIndex("notifications_user_dedupe_unique").on(table.userId, table.dedupeKey),
+  index("notifications_user_created_idx").on(table.userId, table.createdAt),
+  index("notifications_user_unread_idx").on(table.userId, table.readAt).where(sql`${table.readAt} is null`),
+]);
+
+export const notificationPreferences = pgTable("notification_preferences", {
+  userId: text("user_id").primaryKey().references(() => user.id, { onDelete: "cascade" }),
+  lockDeadlines: boolean("lock_deadlines").default(true).notNull(),
+  specialistLocks: boolean("specialist_locks").default(true).notNull(),
+  pickResults: boolean("pick_results").default(true).notNull(),
+  followedResults: boolean("followed_results").default(true).notNull(),
+  createdAt,
+  updatedAt,
+});
+
 export const followedPicks = pgTable("followed_picks", {
   id: uuid("id").defaultRandom().primaryKey(),
   followerUserId: text("follower_user_id").notNull().references(() => user.id, { onDelete: "cascade" }),
@@ -473,3 +500,4 @@ export type UserRole = (typeof userRoleEnum.enumValues)[number];
 export type BannerTone = (typeof bannerToneEnum.enumValues)[number];
 export type AdminAuditAction = (typeof adminAuditActionEnum.enumValues)[number];
 export type LeaguePreferenceKind = (typeof leaguePreferenceKindEnum.enumValues)[number];
+export type NotificationKind = (typeof notificationKindEnum.enumValues)[number];

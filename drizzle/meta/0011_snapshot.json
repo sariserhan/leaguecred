@@ -1,6 +1,6 @@
 {
-  "id": "6841868e-c8b8-47f5-ab13-5ea32923b1d6",
-  "prevId": "e9564747-3049-40fb-af09-e7257b541ec4",
+  "id": "e9564747-3049-40fb-af09-e7257b541ec4",
+  "prevId": "f5205c81-32d5-4710-ac47-74d08f3f92d7",
   "version": "7",
   "dialect": "postgresql",
   "tables": {
@@ -4389,8 +4389,7 @@
         "lock_deadline",
         "specialist_lock",
         "pick_result",
-        "followed_result",
-        "specialist_recommendation"
+        "followed_result"
       ]
     },
     "public.participation_mode": {

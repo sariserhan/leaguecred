@@ -14,10 +14,10 @@ import { cn } from "@/lib/utils";
 const sorts = ["Confidence-adjusted", "Accuracy", "Evidence", "Followers"] as const;
 type Sort = (typeof sorts)[number];
 
-export function SpecialistDirectory({ specialists }: { specialists: SpecialistDirectoryEntry[] }) {
+export function SpecialistDirectory({ specialists, initialLeague }: { specialists: SpecialistDirectoryEntry[]; initialLeague?: string }) {
   const [query, setQuery] = useState("");
   const deferredQuery = useDeferredValue(query);
-  const [league, setLeague] = useState("All leagues");
+  const [league, setLeague] = useState(() => initialLeague && specialists.some((entry) => entry.leagueName === initialLeague) ? initialLeague : "All leagues");
   const [sort, setSort] = useState<Sort>("Confidence-adjusted");
   const [filtersOpen, setFiltersOpen] = useState(false);
   const [compareOpen, setCompareOpen] = useState(false);

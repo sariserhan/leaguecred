@@ -118,8 +118,26 @@ async function applyResult(
     update followed_picks
     set result = ${result}, settled_at = now()
     where source_pick_id = ${pick.id}`;
+  const resultLabel = result === "win" ? "Correct" : result === "loss" ? "Missed" : "Void";
+  await sql`insert into notifications(user_id,kind,title,body,href,dedupe_key)
+    select p.user_id,'pick_result',${`Weekly Lock: ${resultLabel}`},l.name || ' · ' || t.name,'/slip',${`pick-result/${pick.id}`}
+    from picks p join leagues l on l.id=p.league_id join teams t on t.id=p.selected_team_id
+    where p.id=${pick.id} and coalesce((select pick_results from notification_preferences where user_id=p.user_id),true)
+    on conflict(user_id,dedupe_key) do update set title=excluded.title,body=excluded.body,read_at=null,created_at=now()`;
+  await sql`insert into notifications(user_id,kind,title,body,href,dedupe_key)
+    select fp.follower_user_id,'followed_result',${`Followed call: ${resultLabel}`},l.name || ' · ' || t.name,'/slip',${`followed-result/${pick.id}`}
+    from followed_picks fp join leagues l on l.id=fp.league_id join picks p on p.id=fp.source_pick_id join teams t on t.id=p.selected_team_id
+    where fp.source_pick_id=${pick.id} and coalesce((select followed_results from notification_preferences where user_id=fp.follower_user_id),true)
+    on conflict(user_id,dedupe_key) do update set title=excluded.title,body=excluded.body,read_at=null,created_at=now()`;
   await rebuildRecord(sql, pick.user_id, pick.league_id, null);
   await rebuildRecord(sql, pick.user_id, pick.league_id, pick.season_id);
+  await sql`insert into notifications(user_id,kind,title,body,href,dedupe_key)
+    select pref.user_id,'specialist_recommendation','New top specialist in ' || l.name,u.name || ' now leads the proven records.',
+      '/specialists/' || u.id,'specialist-recommendation/' || l.id || '/' || u.id
+    from user_league_preferences pref join leagues l on l.id=pref.league_id join "user" u on u.id=${pick.user_id}
+    where pref.league_id=${pick.league_id} and pref.kind='help' and pref.user_id<>${pick.user_id}
+      and ${pick.user_id}=(select r.user_id from user_league_records r where r.league_id=${pick.league_id} and r.settled_picks>=10 order by r.confidence_adjusted_accuracy desc nulls last,r.settled_picks desc,r.last_settled_at asc limit 1)
+    on conflict(user_id,dedupe_key) do nothing`;
 }
 
 async function rebuildRecord(
