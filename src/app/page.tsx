@@ -10,6 +10,7 @@ import {
   UsersRoundIcon,
 } from "lucide-react";
 
+import { PitchBackdrop } from "@/components/home/pitch-backdrop";
 import { ProductPreview } from "@/components/home/product-preview";
 import { ParticipationPaths, RecordAndQuestions } from "@/components/home/product-explainer";
 import { buttonVariants } from "@/components/ui/button";
@@ -141,9 +142,11 @@ export default async function HomePage() {
 
         <div className="relative">
           <div
-            className="pitch-mark absolute -inset-6 -z-10 hidden h-44 lg:block"
+            className="pointer-events-none absolute inset-x-[-8%] top-1/2 -z-10 hidden -translate-y-1/2 text-foreground/15 lg:block"
             aria-hidden="true"
-          />
+          >
+            <PitchBackdrop className="w-full" />
+          </div>
           <ProductPreview />
         </div>
       </section>

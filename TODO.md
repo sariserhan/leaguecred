@@ -56,3 +56,4 @@ None.
 - [x] Lead the homepage with the exchange instead of the one-pick rule
 - [x] Explain the exchange with named clubs across four countries
 - [x] Give the hero one primary action and one credible accuracy range
+- [x] Draw the hero pitch to real dimensions instead of a bordered box
