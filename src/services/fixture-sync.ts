@@ -37,7 +37,7 @@ export async function synchronizeFixtures(provider: FixtureProvider, now = new D
         source_external_id: sourceIds?.get(config.slug) ?? config.provider_external_id,
       }));
     const from = new Date(now); from.setUTCDate(from.getUTCDate() - 7);
-    const to = new Date(now); to.setUTCDate(to.getUTCDate() + (provider.lookaheadDays ?? 14));
+    const to = new Date(now); to.setUTCDate(to.getUTCDate() + 14);
 
     for (const config of configs) {
       const batch = await provider.fetchFixtures({ leagueExternalId: config.source_external_id, season: config.provider_season, from: isoDate(from), to: isoDate(to) });

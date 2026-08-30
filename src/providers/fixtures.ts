@@ -22,6 +22,5 @@ export type FixtureProviderCompetition = {
 export interface FixtureProvider {
   readonly name: string;
   readonly competitions?: readonly FixtureProviderCompetition[];
-  readonly lookaheadDays?: number;
   fetchFixtures(input: { leagueExternalId: string; season: string; from: string; to: string }): Promise<FixtureBatch>;
 }
