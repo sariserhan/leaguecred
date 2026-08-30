@@ -54,3 +54,4 @@ None.
 - [x] Apply database migrations during deployment
 - [x] Trust the apex and www hosts as authentication origins
 - [x] Lead the homepage with the exchange instead of the one-pick rule
+- [x] Explain the exchange with named clubs across four countries

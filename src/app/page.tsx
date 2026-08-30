@@ -45,6 +45,22 @@ const knowledgeExchange = [
     title: "I know Serie A.",
     description: "I have the same depth in Italy, so my one call gives you knowledge you would not get from a table alone.",
   },
+  {
+    title: "A Galatasaray fan knows a derby week.",
+    description: "A derby is not a Tuesday in February. You can feel which one the squad has been pointing at, and the table records neither.",
+  },
+  {
+    title: "An Ajax fan knows the academy.",
+    description: "You can see which teenager is about to start weeks before a league table has any reason to mention them.",
+  },
+  {
+    title: "A Flamengo fan knows the Maracanã.",
+    description: "You know what a full house takes out of a visiting side, and which visitors have never handled it.",
+  },
+  {
+    title: "A Celtic fan knows the fixture list.",
+    description: "You know which week is being saved for Europe, and which one the manager intends to win by three.",
+  },
 ] as const;
 
 const trustRules = [
@@ -103,7 +119,7 @@ export default async function HomePage() {
             You know one league. Someone else knows the rest.
           </h1>
           <p className="max-w-xl text-lg leading-8 text-muted-foreground sm:text-xl">
-            Give one call from the league you actually watch—the Süper Lig, say. Get one
+            Give the one match you are sure of—the week you know Galatasaray win. Get one
             back from someone who watches La Liga every week. One call each, every week,
             permanently on the record.
           </p>
@@ -186,6 +202,11 @@ export default async function HomePage() {
                 </li>
               ))}
             </ol>
+            <p className="mt-8 max-w-xl leading-7 text-background/75">
+              A Weekly Lock is one fixture, so it can be your own club&apos;s match—the week you
+              are sure they win. The record it builds belongs to that club&apos;s league, which is
+              where someone looking for a specialist will find you.
+            </p>
           </div>
 
           <div className="flex flex-col justify-center bg-background p-7 sm:p-10 lg:p-12">
