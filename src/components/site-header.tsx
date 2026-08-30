@@ -70,9 +70,14 @@ export function SiteHeader({ isAdmin = false }: { isAdmin?: boolean }) {
             </Link>
           ) : null}
           {session ? (
-            <Button variant="outline" size="lg" onClick={signOut}>
-              Sign out · {session.user.name.split(" ")[0]}
-            </Button>
+            <>
+              <Link href={`/u/${session.user.id}`} className={buttonVariants({ variant: "ghost", size: "lg" })}>
+                My profile
+              </Link>
+              <Button variant="outline" size="lg" onClick={signOut}>
+                Sign out · {session.user.name.split(" ")[0]}
+              </Button>
+            </>
           ) : (
             <Link
               href="/auth"

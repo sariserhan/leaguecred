@@ -37,8 +37,28 @@ export function LeagueLeaderboard({
         </ToggleGroup>
 
         {leaderboard.length > 0 ? (
-          <div className="mt-5 overflow-x-auto border-y">
-            <table className="w-full min-w-[760px] text-left text-sm">
+          <>
+            <ol className="mt-5 divide-y border-y sm:hidden">
+              {leaderboard.map((entry, index) => (
+                <li key={entry.id} className="grid grid-cols-[auto_minmax(0,1fr)_auto] items-center gap-x-3 gap-y-1 px-3 py-4">
+                  <span className="row-span-2 font-heading text-2xl font-bold text-muted-foreground">{index + 1}</span>
+                  <strong className="min-w-0 truncate">{entry.name}</strong>
+                  <strong className="text-primary tabular-nums">
+                    {entry.settledPicks > 0
+                      ? ((entry.wins / entry.settledPicks) * 100).toFixed(1)
+                      : "0.0"}%
+                  </strong>
+                  <span className="text-xs text-muted-foreground">
+                    {entry.wins}–{entry.losses} · {entry.settledPicks} locks
+                  </span>
+                  <span className="text-xs tabular-nums text-muted-foreground">
+                    Adj. {(entry.confidenceAdjustedAccuracy * 100).toFixed(1)}% · {entry.currentWinStreak}W
+                  </span>
+                </li>
+              ))}
+            </ol>
+            <div className="mt-5 hidden overflow-x-auto border-y sm:block">
+              <table className="w-full min-w-[760px] text-left text-sm">
               <thead className="border-b bg-muted text-xs font-semibold tracking-[0.08em] text-muted-foreground uppercase">
                 <tr><th className="px-3 py-3">Rank</th><th className="px-3 py-3">Specialist</th><th className="px-3 py-3">Accuracy</th><th className="px-3 py-3">Record</th><th className="px-3 py-3">Evidence</th><th className="px-3 py-3">Confidence-adjusted</th><th className="px-3 py-3">Streak</th></tr>
               </thead>
@@ -59,8 +79,9 @@ export function LeagueLeaderboard({
                   </tr>
                 ))}
               </tbody>
-            </table>
-          </div>
+              </table>
+            </div>
+          </>
         ) : (
           <div className="mt-5 border bg-muted p-6">
             <TrophyIcon aria-hidden="true" className="size-8 text-primary" />

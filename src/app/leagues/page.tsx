@@ -31,7 +31,7 @@ export default async function LeaguesPage() {
         </p>
       </header>
 
-      <LeagueExplorer leagues={leagues} />
+      <LeagueExplorer leagues={leagues} authenticated={Boolean(session)} />
 
       <section className="mt-14 border-t pt-8">
         <h2 className="section-title">Specialists worth following</h2>

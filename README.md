@@ -51,6 +51,7 @@ The integration command uses the isolated `postgres-test` Docker service on port
 pnpm db:seed:catalog
 pnpm fixtures:sync
 pnpm settle
+pnpm remind
 pnpm admin:grant you@example.com
 ~~~
 
@@ -60,7 +61,9 @@ The catalog seed idempotently loads the 25 competitions currently supported by t
 
 Fixture synchronization uses Football-Data.co.uk's published CSV files for the 12 supported domestic fixture feeds and their recent final results. The files are parsed in memory and discarded; Neon stores normalized fixtures, scores, provider aliases, and sync-run metadata. Champions League fixtures and delayed results come from football-data.org when `FOOTBALL_DATA_API_KEY` is configured. API-Football remains available for catalog metadata but is no longer the default fixture source.
 
-HTTP schedulers can call `POST /api/jobs/fixtures` and `POST /api/jobs/settlement` with `Authorization: Bearer $CRON_SECRET`.
+HTTP schedulers can call `POST /api/jobs/fixtures`, `POST /api/jobs/settlement`, and `POST /api/jobs/reminders` with `Authorization: Bearer $CRON_SECRET`.
+
+`pnpm remind` emails anyone who has ever locked, followed, or been followed in a league about an upcoming matchweek closing within 24 hours, if they have not yet made this week's independent Weekly Lock. Each user is reminded at most once per matchweek (tracked in `lock_reminders`). Sending requires `RESEND_API_KEY`; `RESEND_FROM_EMAIL` defaults to Resend's unverified-domain test sender, which only delivers to Resend's own test addresses, so set a verified sender before relying on this in production.
 
 To apply a provider score correction after settlement, first synchronize the corrected fixture and then call:
 

@@ -11,6 +11,7 @@ import {
 } from "lucide-react";
 
 import { ProductPreview } from "@/components/home/product-preview";
+import { ParticipationPaths, RecordAndQuestions } from "@/components/home/product-explainer";
 import { buttonVariants } from "@/components/ui/button";
 import { enforceMaintenanceGate } from "@/lib/maintenance";
 
@@ -43,14 +44,6 @@ const knowledgeExchange = [
   {
     title: "I know Serie A.",
     description: "I have the same depth in Italy, so my one call gives you knowledge you would not get from a table alone.",
-  },
-  {
-    title: "A Chelsea fan knows Chelsea.",
-    description: "They follow every press conference, lineup change, and reaction around the club better than an outsider can.",
-  },
-  {
-    title: "A Galatasaray fan knows Galatasaray.",
-    description: "They understand the squad, the atmosphere, and what the next match means for their team.",
   },
 ] as const;
 
@@ -172,6 +165,8 @@ export default async function HomePage() {
         </div>
       </section>
 
+      <ParticipationPaths />
+
       <section className="page-shell py-14 sm:py-20">
         <div className="grid overflow-hidden border lg:grid-cols-2">
           <div className="bg-foreground p-7 text-background sm:p-10 lg:p-12">
@@ -249,6 +244,8 @@ export default async function HomePage() {
           </div>
         </div>
       </section>
+
+      <RecordAndQuestions />
     </>
   );
 }

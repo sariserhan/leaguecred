@@ -184,7 +184,7 @@ Copy `.env.example` to `.env.local`. The application uses:
 - `FOOTBALL_DATA_BASE_URL`: football-data.org endpoint override
 - `CRON_SECRET`: bearer secret for protected job routes
 - `RESEND_API_KEY`: Resend credential for verification and password-reset email
-- `EMAIL_FROM`: sender identity, for example `LeagueCred <no-reply@yourdomain>`
+- `RESEND_FROM_EMAIL`: sender identity, for example `LeagueCred <no-reply@yourdomain>`
 
 Never prefix these secrets with `NEXT_PUBLIC_`, commit real values, or reuse development credentials in production.
 

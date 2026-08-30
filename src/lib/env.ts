@@ -12,7 +12,7 @@ export const serverEnv = {
     process.env.FOOTBALL_DATA_BASE_URL ?? "https://api.football-data.org/v4",
   cronSecret: process.env.CRON_SECRET,
   resendApiKey: process.env.RESEND_API_KEY,
-  emailFrom: process.env.EMAIL_FROM ?? "LeagueCred <onboarding@resend.dev>",
+  resendFromEmail: process.env.RESEND_FROM_EMAIL ?? "LeagueCred <onboarding@resend.dev>",
 };
 
 export function requireBetterAuthSecret() {
@@ -41,4 +41,12 @@ export function requireFootballDataApiKey() {
   }
 
   return serverEnv.footballDataApiKey;
+}
+
+export function requireResendApiKey() {
+  if (!serverEnv.resendApiKey) {
+    throw new Error("RESEND_API_KEY is required to send lock reminder emails.");
+  }
+
+  return serverEnv.resendApiKey;
 }

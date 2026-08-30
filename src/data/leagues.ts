@@ -28,6 +28,7 @@ type DirectoryRow = {
   followed_count: number;
   has_experience: boolean;
   has_team_catalog: boolean;
+  lock_due: boolean;
 };
 
 export async function getLeagueDirectory(userId?: string): Promise<League[]> {
@@ -42,7 +43,15 @@ export async function getLeagueDirectory(userId?: string): Promise<League[]> {
         join seasons cs on cs.id = ltm.season_id and cs.is_current = true
         where ltm.league_id = l.id
       ) as has_team_catalog,
-      (select count(*)::int from league_follows f where f.follower_user_id = ${currentUserId} and f.league_id = l.id) as followed_count
+      (select count(*)::int from league_follows f where f.follower_user_id = ${currentUserId} and f.league_id = l.id) as followed_count,
+      exists(
+        select 1 from matchweeks mw
+        where mw.league_id = l.id and mw.status = 'upcoming'
+          and not exists(
+            select 1 from matchweek_participation mp
+            where mp.matchweek_id = mw.id and mp.user_id = ${currentUserId} and mp.mode = 'independent'
+          )
+      ) as lock_due
     from leagues l
     join countries c on c.id = l.country_id
     left join user_league_records own on own.league_id = l.id and own.user_id = ${currentUserId}
@@ -71,6 +80,9 @@ export async function getLeagueDirectory(userId?: string): Promise<League[]> {
       status,
       action: row.has_experience ? "Open league" : "View teams",
       available: row.has_experience || row.has_team_catalog,
+      hasRecord: decisions > 0,
+      isFollowed: row.followed_count > 0,
+      lockDue: row.lock_due,
     };
   });
 }

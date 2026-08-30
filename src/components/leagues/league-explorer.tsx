@@ -18,7 +18,7 @@ import type { League, Region } from "@/lib/league-data";
 const regions = ["All", "Europe", "Americas", "Asia", "Africa", "Oceania"] as const;
 type RegionFilter = (typeof regions)[number];
 
-export function LeagueExplorer({ leagues }: { leagues: League[] }) {
+export function LeagueExplorer({ leagues, authenticated }: { leagues: League[]; authenticated: boolean }) {
   const [query, setQuery] = useState("");
   const [region, setRegion] = useState<RegionFilter>("All");
 
@@ -36,6 +36,15 @@ export function LeagueExplorer({ leagues }: { leagues: League[] }) {
       return matchesRegion && matchesQuery;
     });
   }, [leagues, query, region]);
+
+  const networkStats = useMemo(
+    () => ({
+      known: authenticated ? leagues.filter((league) => league.hasRecord).length : 0,
+      followed: authenticated ? leagues.filter((league) => league.isFollowed).length : 0,
+      locksDue: authenticated ? leagues.filter((league) => league.lockDue).length : 0,
+    }),
+    [leagues, authenticated],
+  );
 
   return (
     <div className="grid gap-10 lg:grid-cols-[1fr_300px]">
@@ -169,21 +178,21 @@ export function LeagueExplorer({ leagues }: { leagues: League[] }) {
               <CircleDotIcon aria-hidden="true" className="size-5 text-primary" />
               Leagues I know
             </dt>
-            <dd className="font-bold">2</dd>
+            <dd className="font-bold">{networkStats.known}</dd>
           </div>
           <div className="flex items-center justify-between gap-4 border-b py-6">
             <dt className="flex items-center gap-3">
               <UsersRoundIcon aria-hidden="true" className="size-5" />
               Leagues I follow
             </dt>
-            <dd className="font-bold">3</dd>
+            <dd className="font-bold">{networkStats.followed}</dd>
           </div>
           <div className="flex items-center justify-between gap-4 py-6">
             <dt className="flex items-center gap-3">
               <LockKeyholeIcon aria-hidden="true" className="size-5" />
               Independent locks due
             </dt>
-            <dd className="font-bold">1</dd>
+            <dd className="font-bold">{networkStats.locksDue}</dd>
           </div>
         </dl>
       </aside>

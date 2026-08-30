@@ -61,7 +61,7 @@ function PastMatchweekHistory({ leagueSlug, matchweeks }: { leagueSlug: string; 
 
   return (
     <section className="mt-7 border" aria-labelledby="history-heading">
-      <div className="border-b px-5 py-4">
+      <div className="border-b px-4 py-4 sm:px-5">
         <h2 id="history-heading" className="font-heading text-2xl font-bold uppercase">
           Previous weeks & results
         </h2>
@@ -72,9 +72,9 @@ function PastMatchweekHistory({ leagueSlug, matchweeks }: { leagueSlug: string; 
       <div className="divide-y">
         {matchweeks.map((matchweek, index) => (
           <details key={matchweek.id} open={index === 0} className="group">
-            <summary className="flex cursor-pointer list-none items-center justify-between gap-3 px-5 py-4 font-semibold marker:content-none hover:bg-muted">
+            <summary className="flex cursor-pointer list-none flex-col items-start justify-between gap-2 px-4 py-4 font-semibold marker:content-none hover:bg-muted sm:flex-row sm:items-center sm:gap-3 sm:px-5">
               <span>{matchweek.displayName}</span>
-              <span className="flex items-center gap-3 text-sm text-muted-foreground">
+              <span className="flex w-full items-center justify-between gap-3 text-sm text-muted-foreground sm:w-auto sm:justify-start">
                 <Link href={`/leagues/${leagueSlug}/weeks/${matchweek.id}`} className="relative z-10 font-semibold text-foreground underline-offset-4 hover:text-primary hover:underline">
                   Week details
                 </Link>
@@ -90,14 +90,14 @@ function PastMatchweekHistory({ leagueSlug, matchweeks }: { leagueSlug: string; 
                   ? fixture.status === "cancelled" || fixture.status === "abandoned" ? "Void" : "—"
                   : `${fixture.homeScore}–${fixture.awayScore}`;
                 return (
-                  <div key={fixture.id} className="grid gap-2 px-4 py-3 sm:grid-cols-[1fr_auto_1fr] sm:items-center">
-                    <span className={cn("flex items-center gap-3 font-semibold", homeWon && "text-primary")}>
+                  <div key={fixture.id} className="grid grid-cols-[minmax(0,1fr)_auto_minmax(0,1fr)] items-center gap-2 px-3 py-4 sm:px-4 sm:py-3">
+                    <span className={cn("flex min-w-0 flex-col items-center gap-2 text-center font-semibold sm:flex-row sm:text-left", homeWon && "text-primary")}>
                       <TeamMark code={fixture.homeCode} logoUrl={fixture.homeLogoUrl} />
-                      {fixture.home}
+                      <span className="min-w-0 break-words">{fixture.home}</span>
                     </span>
                     <strong className="text-center font-heading text-2xl">{score}</strong>
-                    <span className={cn("flex items-center justify-end gap-3 text-right font-semibold", awayWon && "text-primary")}>
-                      {fixture.away}
+                    <span className={cn("flex min-w-0 flex-col-reverse items-center gap-2 text-center font-semibold sm:flex-row sm:justify-end sm:text-right", awayWon && "text-primary")}>
+                      <span className="min-w-0 break-words">{fixture.away}</span>
                       <TeamMark code={fixture.awayCode} logoUrl={fixture.awayLogoUrl} />
                     </span>
                   </div>
@@ -208,11 +208,11 @@ export function LeagueExperience({
   return (
     <>
       <section className="bg-foreground text-background">
-        <div className="page-shell grid min-h-52 lg:grid-cols-[1fr_260px]">
-          <div className="relative flex flex-col justify-center gap-2 overflow-hidden py-10">
+        <div className="page-shell grid lg:min-h-52 lg:grid-cols-[1fr_260px]">
+          <div className="relative flex flex-col justify-center gap-2 overflow-hidden py-7 sm:py-10">
             <div className="pitch-mark absolute inset-y-0 right-0 hidden w-1/2 border-background/20 lg:block" aria-hidden="true" />
             <p className="font-semibold text-primary">{data.league.country}</p>
-            <h1 className="relative font-heading text-6xl font-extrabold tracking-[-0.03em] uppercase sm:text-8xl">
+            <h1 className="relative font-heading text-[clamp(3rem,16vw,4.5rem)] leading-[0.9] font-extrabold tracking-[-0.03em] uppercase sm:text-8xl">
               {data.league.name}
             </h1>
             <div className="relative flex flex-wrap items-center gap-4">
@@ -223,11 +223,11 @@ export function LeagueExperience({
               </span>
             </div>
           </div>
-          <aside className="flex flex-col justify-center border-t border-background/20 py-8 lg:border-t-0 lg:border-l lg:pl-8">
+          <aside className="grid grid-cols-[1fr_auto] items-end gap-x-5 gap-y-1 border-t border-background/20 py-5 lg:flex lg:flex-col lg:items-stretch lg:justify-center lg:border-t-0 lg:border-l lg:py-8 lg:pl-8">
             <span className="text-sm font-semibold">Your record</span>
-            <strong className="font-heading text-6xl leading-none">{accuracy === null ? "—" : `${accuracy.toFixed(1)}%`}</strong>
+            <strong className="row-span-2 font-heading text-5xl leading-none lg:row-auto lg:text-6xl">{accuracy === null ? "—" : `${accuracy.toFixed(1)}%`}</strong>
             <span className="text-lg">{data.viewer.wins}–{data.viewer.losses}</span>
-            <span className="mt-3 flex items-center gap-2 border-t border-background/20 pt-3">
+            <span className="col-span-2 mt-2 flex items-center gap-2 border-t border-background/20 pt-3 lg:mt-3">
               <ShieldCheckIcon aria-hidden="true" className="size-5 text-primary" />
               <span><strong className="block">{data.viewer.tier}</strong><span className="text-sm text-background/70">{decisions} settled picks</span></span>
             </span>
@@ -236,16 +236,16 @@ export function LeagueExperience({
         </div>
       </section>
 
-      <div className="page-shell py-8">
+      <div className="page-shell py-6 sm:py-8">
         {error ? <Alert variant="destructive" className="mb-5"><AlertDescription>{error}</AlertDescription></Alert> : null}
 
-        <ToggleGroup value={[mode]} onValueChange={chooseMode} className="grid w-full gap-4 lg:grid-cols-2" aria-label="Choose how to participate this matchweek">
-          <ToggleGroupItem value="prove" disabled={Boolean(lockedTeam) || data.viewer.mode === "follow" || interactionLocked} className="h-auto min-h-24 w-full justify-start overflow-hidden whitespace-normal border px-5 py-4 text-left">
-            <ShieldCheckIcon aria-hidden="true" className="size-9 text-primary" />
+        <ToggleGroup value={[mode]} onValueChange={chooseMode} className="grid w-full gap-2 sm:gap-4 lg:grid-cols-2" aria-label="Choose how to participate this matchweek">
+          <ToggleGroupItem value="prove" disabled={Boolean(lockedTeam) || data.viewer.mode === "follow" || interactionLocked} className="h-auto min-h-24 w-full justify-start overflow-hidden whitespace-normal border px-4 py-4 text-left sm:px-5">
+            <ShieldCheckIcon aria-hidden="true" className="size-7 shrink-0 text-primary sm:size-9" />
             <span className="min-w-0 flex-1"><strong className="block font-heading text-2xl uppercase">Prove your knowledge</strong><span className="block text-sm font-normal text-muted-foreground">Make your own pick before seeing specialists. This builds your {data.league.name} record.</span></span>
           </ToggleGroupItem>
-          <ToggleGroupItem value="follow" disabled={Boolean(lockedTeam) || data.viewer.mode === "independent" || interactionLocked} className="h-auto min-h-24 w-full justify-start overflow-hidden whitespace-normal border px-5 py-4 text-left">
-            <UsersRoundIcon aria-hidden="true" className="size-9" />
+          <ToggleGroupItem value="follow" disabled={Boolean(lockedTeam) || data.viewer.mode === "independent" || interactionLocked} className="h-auto min-h-24 w-full justify-start overflow-hidden whitespace-normal border px-4 py-4 text-left sm:px-5">
+            <UsersRoundIcon aria-hidden="true" className="size-7 shrink-0 sm:size-9" />
             <span className="min-w-0 flex-1"><strong className="block font-heading text-2xl uppercase">Follow experts</strong><span className="block text-sm font-normal text-muted-foreground">See proven specialist picks. This will not build your independent record.</span></span>
           </ToggleGroupItem>
         </ToggleGroup>
@@ -253,7 +253,7 @@ export function LeagueExperience({
         <div className="mt-6 grid gap-7 xl:grid-cols-[1fr_390px]">
           <div className="space-y-7">
             <section className="border" aria-labelledby="fixtures-heading">
-            <div className="border-b px-5 py-4"><h2 id="fixtures-heading" className="font-heading text-2xl font-bold uppercase">Select the team you believe will win</h2></div>
+            <div className="border-b px-4 py-4 sm:px-5"><h2 id="fixtures-heading" className="font-heading text-2xl leading-none font-bold uppercase">Select the team you believe will win</h2></div>
             <div>
               {[...fixturesByDate].map(([date, fixtures]) => (
                 <section key={date} className="border-b last:border-b-0" aria-label={date}>
@@ -264,13 +264,14 @@ export function LeagueExperience({
                       const awaySelected = selection?.teamId === fixture.awayTeamId;
                       const disabled = mode === "follow" || Boolean(lockedTeam) || interactionLocked;
                       return (
-                        <div key={fixture.id} className="grid gap-3 bg-background p-3 sm:grid-cols-[1fr_auto_1fr] sm:items-center">
-                          <button type="button" disabled={disabled} onClick={() => setSelection({ fixtureId: fixture.id, teamId: fixture.homeTeamId, teamName: fixture.home })} className={cn("flex items-center gap-3 rounded-sm px-2 py-2 text-left font-semibold transition-colors focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ring disabled:cursor-not-allowed disabled:opacity-60", homeSelected ? "bg-primary text-primary-foreground" : "hover:bg-muted")} aria-pressed={homeSelected}>
-                            <TeamMark code={fixture.homeCode} logoUrl={fixture.homeLogoUrl} />{fixture.home}
+                        <div key={fixture.id} className="grid grid-cols-[minmax(0,1fr)_auto_minmax(0,1fr)] items-stretch gap-2 bg-background p-3 sm:items-center sm:gap-3">
+                          <button type="button" disabled={disabled} onClick={() => setSelection({ fixtureId: fixture.id, teamId: fixture.homeTeamId, teamName: fixture.home })} className={cn("col-start-1 row-start-2 flex min-w-0 flex-col items-center justify-center gap-2 rounded-sm px-2 py-3 text-center font-semibold transition-colors focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ring disabled:cursor-not-allowed disabled:opacity-60 sm:row-start-1 sm:flex-row sm:justify-start sm:py-2 sm:text-left", homeSelected ? "bg-primary text-primary-foreground" : "hover:bg-muted")} aria-pressed={homeSelected}>
+                            <TeamMark code={fixture.homeCode} logoUrl={fixture.homeLogoUrl} /><span className="min-w-0 break-words">{fixture.home}</span>
                           </button>
-                          <span className="text-center text-sm text-muted-foreground">{fixture.kickoff}</span>
-                          <button type="button" disabled={disabled} onClick={() => setSelection({ fixtureId: fixture.id, teamId: fixture.awayTeamId, teamName: fixture.away })} className={cn("flex items-center justify-end gap-3 rounded-sm px-2 py-2 text-right font-semibold transition-colors focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ring disabled:cursor-not-allowed disabled:opacity-60", awaySelected ? "bg-primary text-primary-foreground" : "hover:bg-muted")} aria-pressed={awaySelected}>
-                            {fixture.away}<TeamMark code={fixture.awayCode} logoUrl={fixture.awayLogoUrl} />
+                          <span className="col-span-3 row-start-1 text-center text-sm text-muted-foreground sm:col-span-1">{fixture.kickoff}</span>
+                          <span className="col-start-2 row-start-2 self-center font-heading text-sm font-bold text-muted-foreground sm:hidden" aria-hidden="true">VS</span>
+                          <button type="button" disabled={disabled} onClick={() => setSelection({ fixtureId: fixture.id, teamId: fixture.awayTeamId, teamName: fixture.away })} className={cn("col-start-3 row-start-2 flex min-w-0 flex-col items-center justify-center gap-2 rounded-sm px-2 py-3 text-center font-semibold transition-colors focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ring disabled:cursor-not-allowed disabled:opacity-60 sm:row-start-1 sm:flex-row sm:justify-end sm:py-2 sm:text-right", awaySelected ? "bg-primary text-primary-foreground" : "hover:bg-muted")} aria-pressed={awaySelected}>
+                            <span className="order-first sm:order-last"><TeamMark code={fixture.awayCode} logoUrl={fixture.awayLogoUrl} /></span><span className="min-w-0 break-words sm:order-first">{fixture.away}</span>
                           </button>
                         </div>
                       );
@@ -299,17 +300,17 @@ export function LeagueExperience({
             <CardHeader><CardTitle className="font-heading text-3xl font-bold uppercase">Proven {data.league.name} specialists</CardTitle><CardDescription>Accuracy always includes the independent sample behind it.</CardDescription></CardHeader>
             <CardContent className="divide-y border-y px-0">
               {data.specialists.map((specialist) => (
-                <article key={specialist.id} className="grid grid-cols-[auto_1fr_auto] items-center gap-3 px-4 py-4">
+                <article key={specialist.id} className="grid grid-cols-[auto_minmax(0,1fr)] items-center gap-3 px-4 py-4 sm:grid-cols-[auto_1fr_auto]">
                   <Avatar size="lg"><AvatarFallback>{specialist.initials}</AvatarFallback></Avatar>
                   <div className="min-w-0"><h3 className="font-bold"><Link href={`/specialists/${specialist.id}`} className="hover:text-primary hover:underline">{specialist.name}</Link></h3><p className="text-sm"><strong className="text-primary">{specialist.accuracy}%</strong>{" · "}{specialist.record}</p><p className="text-xs text-muted-foreground">{specialist.picks} independent picks</p></div>
                   {picksRevealed ? (
                     mode === "follow" ? (
-                      <Button variant={followedSourcePickId === specialist.sourcePickId ? "secondary" : "outline"} size="sm" disabled={pending || Boolean(followedSourcePickId)} onClick={() => followPick(specialist.sourcePickId)}>
+                      <Button variant={followedSourcePickId === specialist.sourcePickId ? "secondary" : "outline"} size="sm" className="col-start-2 w-full sm:col-start-auto sm:w-auto" disabled={pending || Boolean(followedSourcePickId)} onClick={() => followPick(specialist.sourcePickId)}>
                         {followedSourcePickId === specialist.sourcePickId ? <UserRoundCheckIcon data-icon="inline-start" /> : null}{specialist.lock}
                       </Button>
-                    ) : <Badge variant="outline">{specialist.lock}</Badge>
+                    ) : <Badge variant="outline" className="col-start-2 justify-self-start sm:col-start-auto">{specialist.lock}</Badge>
                   ) : (
-                    <span className="flex items-center gap-2 border px-3 py-2 text-xs text-muted-foreground"><LockKeyholeIcon aria-hidden="true" className="size-4" />Pick hidden</span>
+                    <span className="col-start-2 flex items-center gap-2 border px-3 py-2 text-xs text-muted-foreground sm:col-start-auto"><LockKeyholeIcon aria-hidden="true" className="size-4" />Pick hidden</span>
                   )}
                 </article>
               ))}
