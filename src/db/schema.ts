@@ -411,6 +411,17 @@ export const lockReminders = pgTable("lock_reminders", {
   index("lock_reminders_matchweek_id_idx").on(table.matchweekId),
 ]);
 
+export const specialistLockNotifications = pgTable("specialist_lock_notifications", {
+  id: uuid("id").defaultRandom().primaryKey(),
+  followerUserId: text("follower_user_id").notNull().references(() => user.id, { onDelete: "cascade" }),
+  specialistUserId: text("specialist_user_id").notNull().references(() => user.id, { onDelete: "cascade" }),
+  matchweekId: uuid("matchweek_id").notNull().references(() => matchweeks.id, { onDelete: "cascade" }),
+  sentAt: timestamp("sent_at", { withTimezone: true }).defaultNow().notNull(),
+}, (table) => [
+  uniqueIndex("specialist_lock_notifications_unique").on(table.followerUserId, table.specialistUserId, table.matchweekId),
+  index("specialist_lock_notifications_matchweek_id_idx").on(table.matchweekId),
+]);
+
 export const featureFlags = pgTable("feature_flags", {
   key: text("key").primaryKey(),
   label: text("label").notNull(),

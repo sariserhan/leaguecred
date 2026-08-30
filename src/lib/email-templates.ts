@@ -168,6 +168,41 @@ export function verificationEmail(input: { name: string; url: string }): EmailMe
   };
 }
 
+export function specialistLockedEmail(input: {
+  name: string;
+  specialistName: string;
+  leagueName: string;
+  matchweekName: string;
+  lockAt: string;
+  url: string;
+}): EmailMessage {
+  const greeting = input.name ? `${input.name}, ` : "";
+  const htmlGreeting = input.name ? `${escapeHtml(input.name)}, ` : "";
+  const where = `${input.leagueName} · ${input.matchweekName}`;
+  const htmlWhere = `${escapeHtml(input.leagueName)} · ${escapeHtml(input.matchweekName)}`;
+  const specialist = escapeHtml(input.specialistName);
+  const closes = escapeHtml(input.lockAt);
+
+  return {
+    subject: `${input.specialistName} just locked their ${input.leagueName} call`,
+    from: emailSenders.notification,
+    text:
+      `${greeting}${input.specialistName} just made their independent Weekly Lock for ${where}. ` +
+      `Reveal specialist calls before locks close ${input.lockAt} to see it.\n\n${input.url}\n\n` +
+      "Revealing specialist calls forfeits your own independent record for this matchweek.",
+    html: layout({
+      preheader: "A specialist you follow just locked in. See their call before it closes.",
+      heading: "A specialist just locked in",
+      body:
+        `${htmlGreeting}${specialist} just made their independent Weekly Lock for ${htmlWhere}. ` +
+        `Reveal specialist calls before locks close ${closes} to see it.`,
+      actionUrl: input.url,
+      actionLabel: "See specialist calls",
+      footnote: "Revealing specialist calls forfeits your own independent record for this matchweek.",
+    }),
+  };
+}
+
 export function lockReminderEmail(input: {
   name: string;
   leagueName: string;

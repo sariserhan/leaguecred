@@ -6,7 +6,7 @@ None.
 
 ## Next
 
-- [ ] Add production hosting, managed PostgreSQL, and scheduled jobs
+- [ ] Add production hosting and managed PostgreSQL
 - [ ] Let an admin promote another admin from the dashboard
 - [ ] Add an audit trail for admin setting and flag changes
 
@@ -16,9 +16,7 @@ None.
 
 ## Later
 
-- [ ] Notifications when a followed specialist locks
 - [ ] Additional launch leagues with current provider mappings
-- [ ] Email verification and password recovery delivery
 - [ ] Analytics and abuse monitoring
 
 ## Completed
@@ -42,3 +40,10 @@ None.
 - [x] Add admin-controlled maintenance mode and site banner
 - [x] Add database-backed feature flags for the leaderboard and team catalog
 - [x] Add admin diagnostics for fixture sync runs and settlement corrections
+- [x] Add public specialist profiles
+- [x] Add personal weekly slip
+- [x] Add password reset and email verification
+- [x] Send every email through one shared transport and template system
+- [x] Schedule fixture sync, settlement, and reminders via Vercel Cron
+- [x] Add lock-reminder emails for an unmade Weekly Lock
+- [x] Add notifications when a followed specialist locks

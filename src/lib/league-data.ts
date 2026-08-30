@@ -14,6 +14,8 @@ export type League = {
   status: string;
   action: string;
   available?: boolean;
+  hasExperience: boolean;
+  hasTeamCatalog: boolean;
   hasRecord: boolean;
   isFollowed: boolean;
   lockDue: boolean;

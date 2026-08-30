@@ -3,6 +3,7 @@ import Link from "next/link";
 import { ShieldCheckIcon } from "lucide-react";
 
 import { buttonVariants } from "@/components/ui/button";
+import { getSafeInternalPath } from "@/lib/safe-redirect";
 
 export const metadata: Metadata = {
   title: "Address confirmed",
@@ -13,7 +14,8 @@ export const metadata: Metadata = {
  * Better Auth verifies the token on its own route and redirects here, so this
  * page only reports the outcome.
  */
-export default function VerifyEmailPage() {
+export default async function VerifyEmailPage({ searchParams }: PageProps<"/auth/verify-email">) {
+  const nextPath = getSafeInternalPath((await searchParams).next, "/leagues");
   return (
     <section className="page-shell grid min-h-[calc(100vh-5rem)] place-items-center py-12">
       <div className="flex max-w-xl flex-col items-start gap-6">
@@ -27,8 +29,8 @@ export default function VerifyEmailPage() {
           Your account can now be recovered if you ever lose your password. That matters here: a
           Weekly Lock record is permanent and cannot be rebuilt.
         </p>
-        <Link href="/leagues" className={buttonVariants({ size: "lg" })}>
-          Find your league
+        <Link href={nextPath} className={buttonVariants({ size: "lg" })}>
+          Continue to your league
         </Link>
       </div>
     </section>

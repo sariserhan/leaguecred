@@ -57,6 +57,13 @@
       "when": 1788119682025,
       "tag": "0007_fuzzy_mandrill",
       "breakpoints": true
+    },
+    {
+      "idx": 8,
+      "version": "7",
+      "when": 1788123116808,
+      "tag": "0008_abandoned_dracula",
+      "breakpoints": true
     }
   ]
 }

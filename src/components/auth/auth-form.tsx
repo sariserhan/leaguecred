@@ -3,7 +3,7 @@
 import { useState, useTransition } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { LockKeyholeIcon } from "lucide-react";
+import { ArrowLeftIcon, LockKeyholeIcon } from "lucide-react";
 
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { Button } from "@/components/ui/button";
@@ -23,7 +23,7 @@ import { authClient } from "@/lib/auth-client";
 
 type AuthMode = "sign-in" | "sign-up";
 
-export function AuthForm() {
+export function AuthForm({ nextPath = "/leagues" }: { nextPath?: string }) {
   const router = useRouter();
   const [mode, setMode] = useState<AuthMode>("sign-in");
   const [error, setError] = useState<string | null>(null);
@@ -45,7 +45,7 @@ export function AuthForm() {
     startTransition(async () => {
       const response =
         mode === "sign-up"
-          ? await authClient.signUp.email({ email, password, name, callbackURL: "/auth/verify-email" })
+          ? await authClient.signUp.email({ email, password, name, callbackURL: `/auth/verify-email?next=${encodeURIComponent(nextPath)}` })
           : await authClient.signIn.email({ email, password });
 
       if (response.error) {
@@ -53,19 +53,20 @@ export function AuthForm() {
         return;
       }
 
-      router.push("/leagues/super-lig");
+      router.push(nextPath);
       router.refresh();
     });
   }
 
   return (
-    <Card className="w-full max-w-lg">
+    <div className="w-full max-w-xl lg:justify-self-end">
+    <Card className="w-full rounded-none shadow-none">
       <CardHeader>
         <CardTitle className="font-heading text-4xl font-bold uppercase">
-          Enter LeagueCred
+          Continue to LeagueCred
         </CardTitle>
         <CardDescription>
-          Your identity connects every immutable pick to one permanent league record.
+          Sign in or create the identity that connects every immutable pick to your league record.
         </CardDescription>
       </CardHeader>
       <CardContent>
@@ -77,8 +78,8 @@ export function AuthForm() {
               aria-label="Choose authentication mode"
               className="grid grid-cols-2"
             >
-              <ToggleGroupItem value="sign-in">Sign in</ToggleGroupItem>
-              <ToggleGroupItem value="sign-up">Create account</ToggleGroupItem>
+              <ToggleGroupItem value="sign-in" className="h-11 rounded-none data-[pressed]:bg-primary data-[pressed]:text-primary-foreground">Sign in</ToggleGroupItem>
+              <ToggleGroupItem value="sign-up" className="h-11 rounded-none data-[pressed]:bg-primary data-[pressed]:text-primary-foreground">Create account</ToggleGroupItem>
             </ToggleGroup>
 
             {mode === "sign-up" ? (
@@ -120,7 +121,7 @@ export function AuthForm() {
 
             <Button type="submit" size="lg" disabled={pending}>
               {pending ? <Spinner data-icon="inline-start" /> : <LockKeyholeIcon data-icon="inline-start" />}
-              {mode === "sign-up" ? "Create account" : "Sign in"}
+              {mode === "sign-up" ? "Create account and continue" : "Sign in and continue"}
             </Button>
           </FieldGroup>
         </form>
@@ -135,5 +136,9 @@ export function AuthForm() {
         </Alert>
       </CardFooter>
     </Card>
+    <Link href={nextPath} className="mt-5 inline-flex items-center gap-2 text-sm text-muted-foreground hover:text-foreground">
+      <ArrowLeftIcon className="size-4" /> Continuing to your selected league
+    </Link>
+    </div>
   );
 }

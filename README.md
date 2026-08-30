@@ -52,6 +52,7 @@ pnpm db:seed:catalog
 pnpm fixtures:sync
 pnpm settle
 pnpm remind
+pnpm notify:specialist-locks
 pnpm admin:grant you@example.com
 ~~~
 
@@ -61,9 +62,13 @@ The catalog seed idempotently loads the 25 competitions currently supported by t
 
 Fixture synchronization uses Football-Data.co.uk's published CSV files for the 12 supported domestic fixture feeds and their recent final results. The files are parsed in memory and discarded; Neon stores normalized fixtures, scores, provider aliases, and sync-run metadata. Champions League fixtures and delayed results come from football-data.org when `FOOTBALL_DATA_API_KEY` is configured. API-Football remains available for catalog metadata but is no longer the default fixture source.
 
-Vercel runs two cron jobs: `GET /api/jobs/daily` at 04:00 UTC, which chains fixture synchronization, settlement, and team-logo backfill in that order, and `GET /api/jobs/reminders` at 09:00 UTC. The individual routes `/api/jobs/fixtures`, `/api/jobs/settlement`, `/api/jobs/team-logos`, and `/api/jobs/reminders` remain available for manual runs. All of them accept GET or POST and require `Authorization: Bearer $CRON_SECRET`.
+Vercel runs two cron jobs: `GET /api/jobs/daily` at 04:00 UTC, which chains fixture synchronization, settlement, and team-logo backfill in that order, and `GET /api/jobs/reminders` at 09:00 UTC, which runs the lock-reminder and specialist-lock-notification steps. A Hobby project only gets two cron jobs, so a new kind of scheduled mail is a step added to one of these routes rather than a third cron. The individual routes `/api/jobs/fixtures`, `/api/jobs/settlement`, `/api/jobs/team-logos`, and `/api/jobs/reminders` remain available for manual runs. All of them accept GET or POST and require `Authorization: Bearer $CRON_SECRET`.
 
-`pnpm remind` emails anyone who has ever locked, followed, or been followed in a league about an upcoming matchweek closing within 24 hours, if they have not yet made this week's independent Weekly Lock. Each user is reminded at most once per matchweek (tracked in `lock_reminders`). Sending requires `RESEND_API_KEY`; `RESEND_FROM_EMAIL` defaults to Resend's unverified-domain test sender, which only delivers to Resend's own test addresses, so set a verified sender before relying on this in production.
+`pnpm remind` emails anyone who has ever locked, followed, or been followed in a league about an upcoming matchweek closing within 24 hours, if they have not yet made this week's independent Weekly Lock. Each user is reminded at most once per matchweek (tracked in `lock_reminders`).
+
+`pnpm notify:specialist-locks` emails anyone following a specialist in a league once that specialist makes their independent Weekly Lock for an upcoming matchweek, so a follower knows to reveal specialist calls before it locks. Each follower is notified at most once per specialist per matchweek (tracked in `specialist_lock_notifications`).
+
+Both jobs send through the one shared transport (`src/lib/email.ts`); sending requires `RESEND_API_KEY`, and `RESEND_FROM_EMAIL` defaults to Resend's unverified-domain test sender, which only delivers to Resend's own test addresses, so set a verified sender before relying on either in production.
 
 To apply a provider score correction after settlement, first synchronize the corrected fixture and then call:
 
