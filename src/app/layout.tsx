@@ -39,7 +39,7 @@ export default async function RootLayout({ children }: LayoutProps<"/">) {
       data-scroll-behavior="smooth"
       className={inter.variable + " " + barlowCondensed.variable + " antialiased"}
     >
-      <body className="flex min-h-screen flex-col bg-background text-foreground">
+      <body suppressHydrationWarning className="flex min-h-screen flex-col bg-background text-foreground">
         <SiteBanner />
         <SiteHeader isAdmin={isAdmin} leagues={leagues} />
         <main className="flex-1">{children}</main>
