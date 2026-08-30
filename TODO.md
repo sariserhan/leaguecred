@@ -6,7 +6,7 @@ None.
 
 ## Next
 
-- [ ] Let an admin promote another admin from the dashboard
+None.
 
 ## Blocked
 
