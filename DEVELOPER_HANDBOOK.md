@@ -112,7 +112,7 @@ Browser QA should cover two accounts: one creates and reloads an independent loc
 ## Operations
 
 - Vercel invokes `GET /api/jobs/fixtures` daily at 04:00 UTC; manual schedulers may use GET or POST with `Authorization: Bearer $CRON_SECRET`.
-- Fixture sync fetches recent results plus a 14-day window and records request counts and failures in `api_sync_runs`.
+- Fixture sync fetches recent results plus a 14-day domestic window and a 35-day Champions League window, recording request counts and failures in `api_sync_runs`.
 - Football-Data.co.uk is fetched as one fixture CSV and one in-memory season ZIP for all 12 domestic leagues; raw files are discarded after parsing.
 - After participation or status change freezes a matchweek, provider sync may update scores/statuses but not add eligible fixtures or move kickoffs.
 - Corrections require the provider fixture to be synchronized first, followed by `PATCH /api/jobs/settlement/:pickId` with a non-empty JSON `reason`.

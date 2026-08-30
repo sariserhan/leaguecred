@@ -55,6 +55,7 @@ export function mapFootballDataMatch(match: FootballDataMatch): ProviderFixture 
 export class FootballDataOrgProvider implements FixtureProvider {
   readonly name = "football-data-org";
   readonly competitions = [{ leagueSlug: "uefa-champions-league", externalId: "CL" }] as const;
+  readonly lookaheadDays = 35;
 
   async fetchFixtures(input: { leagueExternalId: string; season: string; from: string; to: string }): Promise<FixtureBatch> {
     const url = new URL(`competitions/${input.leagueExternalId}/matches`, `${serverEnv.footballDataBaseUrl}/`);
