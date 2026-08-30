@@ -1,9 +1,11 @@
-import { ApiFootballProvider } from "@/providers/api-football";
 import { isAuthorizedCronRequest } from "@/lib/cron-auth";
-import { synchronizeFixtures } from "@/services/fixture-sync";
+import { synchronizeFreeFixtureSources } from "@/services/free-fixture-sync";
 
-export async function POST(request: Request) {
+async function synchronize(request: Request) {
   if (!isAuthorizedCronRequest(request)) return Response.json({ error: "Unauthorized" }, { status: 401 });
-  const result = await synchronizeFixtures(new ApiFootballProvider());
+  const result = await synchronizeFreeFixtureSources();
   return Response.json(result);
 }
+
+export const GET = synchronize;
+export const POST = synchronize;

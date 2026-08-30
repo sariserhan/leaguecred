@@ -53,7 +53,7 @@ pnpm settle
 
 The catalog seed idempotently loads the 25 competitions currently supported by the product, including the major European domestic leagues and UEFA competitions, selected leagues in the Americas and Middle East, and Copa Libertadores. It seeds league metadata from API-Football and 290 team records with badges from TheSportsDB. The 298 league/team memberships are deliberately marked partial because TheSportsDB's free league endpoint is capped and cup membership is inferred from a limited event sample; the UI communicates that status rather than presenting the lists as complete rosters.
 
-Fixture synchronization requires `API_FOOTBALL_KEY` and upserts team names and logos from returned fixtures. `FOOTBALL_DATA_API_KEY` is reserved for the football-data.org integration: its registered free tier can provide complete teams, crests, schedules, and delayed results for 10 of our selected competitions, at 10 requests per minute. It cannot cover all 25 competitions on the free plan.
+Fixture synchronization uses Football-Data.co.uk's published CSV files for the 12 supported domestic fixture feeds and their recent final results. The files are parsed in memory and discarded; Neon stores normalized fixtures, scores, provider aliases, and sync-run metadata. Champions League fixtures and delayed results come from football-data.org when `FOOTBALL_DATA_API_KEY` is configured. API-Football remains available for catalog metadata but is no longer the default fixture source.
 
 HTTP schedulers can call `POST /api/jobs/fixtures` and `POST /api/jobs/settlement` with `Authorization: Bearer $CRON_SECRET`.
 

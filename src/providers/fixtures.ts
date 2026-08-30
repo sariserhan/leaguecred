@@ -14,7 +14,13 @@ export type ProviderFixture = {
 
 export type FixtureBatch = { fixtures: ProviderFixture[]; requestCount: number };
 
+export type FixtureProviderCompetition = {
+  leagueSlug: string;
+  externalId: string;
+};
+
 export interface FixtureProvider {
   readonly name: string;
+  readonly competitions?: readonly FixtureProviderCompetition[];
   fetchFixtures(input: { leagueExternalId: string; season: string; from: string; to: string }): Promise<FixtureBatch>;
 }

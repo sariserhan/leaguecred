@@ -7,6 +7,9 @@ export const serverEnv = {
   apiFootballKey: process.env.API_FOOTBALL_KEY,
   apiFootballBaseUrl:
     process.env.API_FOOTBALL_BASE_URL ?? "https://v3.football.api-sports.io",
+  footballDataApiKey: process.env.FOOTBALL_DATA_API_KEY,
+  footballDataBaseUrl:
+    process.env.FOOTBALL_DATA_BASE_URL ?? "https://api.football-data.org/v4",
   cronSecret: process.env.CRON_SECRET,
 };
 
@@ -28,4 +31,12 @@ export function requireApiFootballKey() {
   }
 
   return serverEnv.apiFootballKey;
+}
+
+export function requireFootballDataApiKey() {
+  if (!serverEnv.footballDataApiKey) {
+    throw new Error("FOOTBALL_DATA_API_KEY is required to synchronize Champions League fixtures.");
+  }
+
+  return serverEnv.footballDataApiKey;
 }

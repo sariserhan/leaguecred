@@ -1,11 +1,10 @@
 import { sqlClient } from "@/db";
-import { ApiFootballProvider } from "@/providers/api-football";
-import { synchronizeFixtures } from "@/services/fixture-sync";
+import { synchronizeFreeFixtureSources } from "@/services/free-fixture-sync";
 
 async function main() {
   try {
-    const result = await synchronizeFixtures(new ApiFootballProvider());
-    console.info(`Fixture synchronization completed with ${result.requestCount} provider request(s).`);
+    const result = await synchronizeFreeFixtureSources();
+    console.info("Free fixture synchronization completed.", result.providers);
   } finally {
     await sqlClient.end();
   }

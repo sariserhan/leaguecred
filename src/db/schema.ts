@@ -150,6 +150,19 @@ export const teams = pgTable("teams", {
   index("teams_country_id_idx").on(table.countryId),
 ]);
 
+export const teamProviderAliases = pgTable("team_provider_aliases", {
+  id: uuid("id").defaultRandom().primaryKey(),
+  provider: text("provider").notNull(),
+  providerExternalId: text("provider_external_id").notNull(),
+  teamId: uuid("team_id").notNull().references(() => teams.id, { onDelete: "cascade" }),
+  sourceName: text("source_name").notNull(),
+  createdAt,
+  updatedAt,
+}, (table) => [
+  uniqueIndex("team_provider_aliases_provider_external_unique").on(table.provider, table.providerExternalId),
+  index("team_provider_aliases_team_id_idx").on(table.teamId),
+]);
+
 export const leagueTeamMemberships = pgTable("league_team_memberships", {
   id: uuid("id").defaultRandom().primaryKey(),
   leagueId: uuid("league_id").notNull().references(() => leagues.id, { onDelete: "cascade" }),

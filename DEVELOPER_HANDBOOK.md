@@ -51,7 +51,7 @@ The supported versions should remain aligned with package.json and the lockfile.
 | pnpm db:migrate | Applies committed Drizzle migrations. |
 | pnpm db:seed | Adds idempotent local league and specialist data. |
 | pnpm db:generate | Generates a migration after a schema change. |
-| pnpm fixtures:sync | Synchronizes the next 14 days from API-Football. |
+| pnpm fixtures:sync | Synchronizes recent results and the next 14 days from the free fixture sources. |
 | pnpm settle | Settles every eligible pending independent pick. |
 | pnpm test | Runs deterministic unit tests. |
 | pnpm test:integration | Migrates, seeds, and tests isolated PostgreSQL on port 54330. |
@@ -67,6 +67,8 @@ Copy `.env.example` to `.env.local`. The application uses:
 - `BETTER_AUTH_URL`: canonical application origin
 - `API_FOOTBALL_KEY`: server-only API-Football credential
 - `API_FOOTBALL_BASE_URL`: provider endpoint override
+- `FOOTBALL_DATA_API_KEY`: free football-data.org token for Champions League fixtures
+- `FOOTBALL_DATA_BASE_URL`: football-data.org endpoint override
 - `CRON_SECRET`: bearer secret for protected job routes
 
 Never prefix these secrets with `NEXT_PUBLIC_`, commit real values, or reuse development credentials in production.
@@ -109,9 +111,10 @@ Browser QA should cover two accounts: one creates and reloads an independent loc
 
 ## Operations
 
-- Schedule `POST /api/jobs/fixtures` before `POST /api/jobs/settlement`; send `Authorization: Bearer $CRON_SECRET`.
-- Fixture sync fetches a 14-day window and records request counts and failures in `api_sync_runs`.
-- After participation, lock time, or status change freezes a matchweek, provider sync may update scores/statuses but not add eligible fixtures or move kickoffs.
+- Vercel invokes `GET /api/jobs/fixtures` daily at 04:00 UTC; manual schedulers may use GET or POST with `Authorization: Bearer $CRON_SECRET`.
+- Fixture sync fetches recent results plus a 14-day window and records request counts and failures in `api_sync_runs`.
+- Football-Data.co.uk is fetched as one fixture CSV and one in-memory season ZIP for all 12 domestic leagues; raw files are discarded after parsing.
+- After participation or status change freezes a matchweek, provider sync may update scores/statuses but not add eligible fixtures or move kickoffs.
 - Corrections require the provider fixture to be synchronized first, followed by `PATCH /api/jobs/settlement/:pickId` with a non-empty JSON `reason`.
 - Correction events are append-only. Never edit or delete settlement history directly.
 - Use a managed PostgreSQL service in production and run `pnpm db:migrate` during deployment.
