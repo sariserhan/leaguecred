@@ -109,14 +109,14 @@ export default async function HomePage() {
           </p>
           <div className="flex flex-col gap-3 sm:flex-row">
             <Link
-              href="/leagues/super-lig"
+              href="/leagues?intent=prove"
               className={buttonVariants({ size: "lg" })}
             >
               Prove your league
               <ArrowRightIcon data-icon="inline-end" />
             </Link>
             <Link
-              href="/leagues"
+              href="/leagues?intent=follow"
               className={buttonVariants({ variant: "outline", size: "lg" })}
             >
               Find a specialist

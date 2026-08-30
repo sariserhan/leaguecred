@@ -80,6 +80,8 @@ export async function getLeagueDirectory(userId?: string): Promise<League[]> {
       status,
       action: row.has_experience ? "Open league" : "View teams",
       available: row.has_experience || row.has_team_catalog,
+      hasExperience: row.has_experience,
+      hasTeamCatalog: row.has_team_catalog,
       hasRecord: decisions > 0,
       isFollowed: row.followed_count > 0,
       lockDue: row.lock_due,

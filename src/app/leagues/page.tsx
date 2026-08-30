@@ -13,9 +13,11 @@ export const metadata: Metadata = {
     "Build your record where you have knowledge and follow proven football specialists everywhere else.",
 };
 
-export default async function LeaguesPage() {
+export default async function LeaguesPage({ searchParams }: PageProps<"/leagues">) {
   await enforceMaintenanceGate();
 
+  const requestedIntent = (await searchParams).intent;
+  const intent = requestedIntent === "follow" ? "follow" : "prove";
   const session = await getSession();
   const leagues = await getLeagueDirectory(session?.user.id);
 
@@ -23,22 +25,14 @@ export default async function LeaguesPage() {
     <div className="page-shell py-14 sm:py-20">
       <header className="mb-10 flex max-w-5xl flex-col gap-4">
         <h1 className="font-heading text-[clamp(3.4rem,6vw,6.6rem)] leading-[0.9] font-extrabold tracking-[-0.03em] uppercase">
-          Every league has someone who knows it.
+          Find your league. Choose your path.
         </h1>
         <p className="text-lg text-muted-foreground sm:text-xl">
-          Build your record where you have knowledge. Follow specialists
-          everywhere else.
+          Prove what you know with one Weekly Lock, or follow specialists with a verified record.
         </p>
       </header>
 
-      <LeagueExplorer leagues={leagues} authenticated={Boolean(session)} />
-
-      <section className="mt-14 border-t pt-8">
-        <h2 className="section-title">Specialists worth following</h2>
-        <p className="mt-3 max-w-2xl text-muted-foreground">
-          This list will become personal as your league network grows.
-        </p>
-      </section>
+      <LeagueExplorer leagues={leagues} authenticated={Boolean(session)} initialIntent={intent} />
     </div>
   );
 }

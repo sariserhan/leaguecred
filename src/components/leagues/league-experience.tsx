@@ -144,7 +144,8 @@ export function LeagueExperience({
 
   function requireAuthentication() {
     if (data.viewer.authenticated) return true;
-    router.push("/auth");
+    const destination = `/leagues/${data.league.slug}`;
+    router.push(`/auth?next=${encodeURIComponent(destination)}`);
     return false;
   }
 
