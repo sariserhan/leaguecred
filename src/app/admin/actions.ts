@@ -11,6 +11,8 @@ import {
   normalizeAdminMessage,
 } from "@/lib/site-settings";
 import { setFeatureFlag, updateSiteSettings } from "@/services/site-settings";
+import { synchronizeFixtures } from "@/services/fixture-sync";
+import { EspnFixtureProvider } from "@/providers/espn-fixtures";
 
 export type AdminActionResult = { ok: true } | { ok: false; message: string };
 
@@ -56,6 +58,21 @@ export async function saveSiteSettings(
 
   revalidatePath("/", "layout");
   return { ok: true };
+}
+
+export async function refreshLeagueFixtures(leagueSlug: string): Promise<void> {
+  await requireAdmin();
+  const parsed = z.string().min(1).max(120).regex(/^[a-z0-9-]+/).safeParse(leagueSlug);
+  if (!parsed.success) return;
+  try {
+    await synchronizeFixtures(new EspnFixtureProvider(), new Date(), parsed.data);
+  } catch (error) {
+    console.error("Failed to refresh league fixtures.", error);
+    return;
+  }
+  revalidatePath(`/leagues/${parsed.data}`, "page");
+  revalidatePath(`/leagues/${parsed.data}/standings`, "page");
+  revalidatePath("/", "layout");
 }
 
 export async function toggleFeatureFlag(

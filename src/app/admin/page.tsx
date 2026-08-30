@@ -15,6 +15,8 @@ import { AdminManagementPanels } from "@/components/admin/management-panels";
 import { buttonVariants } from "@/components/ui/button";
 import { requireAdmin } from "@/lib/admin";
 import { getAdminAuditLog } from "@/services/admin-audit-log";
+import { refreshLeagueFixtures } from "@/app/admin/actions";
+import { getLeagueNavOptions } from "@/data/teams";
 import {
   getOperationalSummary,
   getAdminManagementSummary,
@@ -34,7 +36,7 @@ export default async function AdminPage() {
   // Authorization runs before anything is read, so a member never triggers a query.
   const viewer = await requireAdmin();
 
-  const [settings, flags, summary, syncRuns, corrections, auditLog, management] = await Promise.all([
+  const [settings, flags, summary, syncRuns, corrections, auditLog, management, leagues] = await Promise.all([
     getSiteSettings(),
     getFeatureFlags(),
     getOperationalSummary(),
@@ -42,6 +44,7 @@ export default async function AdminPage() {
     getSettlementCorrections(),
     getAdminAuditLog(),
     getAdminManagementSummary(),
+    getLeagueNavOptions(),
   ]);
 
   return (
@@ -68,6 +71,8 @@ export default async function AdminPage() {
       <OperationalSummaryPanel summary={summary} />
 
       <SiteControls settings={settings} />
+
+      <section className="border p-5 sm:p-6"><h2 className="font-heading text-2xl font-bold uppercase">Refresh league data</h2><p className="mt-1 text-sm text-muted-foreground">Refresh one league’s fixtures and standings without touching other competitions.</p><div className="mt-5 grid gap-2 sm:grid-cols-2 lg:grid-cols-3">{leagues.map((league) => <form key={league.slug} action={refreshLeagueFixtures.bind(null, league.slug)}><button type="submit" className="flex w-full items-center justify-between border px-4 py-3 text-left text-sm font-semibold transition-colors hover:bg-muted"><span>{league.name}</span><span className="text-xs text-muted-foreground">Refresh</span></button></form>)}</div></section>
 
       <FeatureFlagControls flags={flags} />
 
