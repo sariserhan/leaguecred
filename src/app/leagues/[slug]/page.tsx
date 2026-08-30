@@ -3,26 +3,20 @@ import { notFound } from "next/navigation";
 
 import { LeagueComingSoon } from "@/components/leagues/league-coming-soon";
 import { LeagueExperience } from "@/components/leagues/league-experience";
-import {
-  getLeagueBySlug,
-  leagues,
-  superLigFixtures,
-  superLigSpecialists,
-} from "@/lib/league-data";
+import { getLeagueDirectory, getLeagueExperience } from "@/data/leagues";
+import { getSession } from "@/lib/auth-session";
+
+export const dynamic = "force-dynamic";
 
 type LeaguePageProps = {
   params: Promise<{ slug: string }>;
 };
 
-export function generateStaticParams() {
-  return leagues.map((league) => ({ slug: league.slug }));
-}
-
 export async function generateMetadata(
   props: LeaguePageProps,
 ): Promise<Metadata> {
   const { slug } = await props.params;
-  const league = getLeagueBySlug(slug);
+  const league = (await getLeagueDirectory()).find((item) => item.slug === slug);
 
   if (!league) {
     return { title: "League not found" };
@@ -39,7 +33,8 @@ export async function generateMetadata(
 
 export default async function LeaguePage(props: LeaguePageProps) {
   const { slug } = await props.params;
-  const league = getLeagueBySlug(slug);
+  const session = await getSession();
+  const league = (await getLeagueDirectory(session?.user.id)).find((item) => item.slug === slug);
 
   if (!league) notFound();
 
@@ -47,10 +42,8 @@ export default async function LeaguePage(props: LeaguePageProps) {
     return <LeagueComingSoon league={league} />;
   }
 
-  return (
-    <LeagueExperience
-      fixtures={superLigFixtures}
-      specialists={superLigSpecialists}
-    />
-  );
+  const experience = await getLeagueExperience(slug, session?.user.id);
+  if (!experience) notFound();
+
+  return <LeagueExperience data={experience} />;
 }

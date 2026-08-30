@@ -6,36 +6,58 @@ Users make one independent highest-confidence Weekly Lock in a domestic league t
 
 ## Current vertical slice
 
-The repository currently contains a polished, responsive frontend prototype with:
+The repository contains a working, responsive Prove-or-Follow application with:
 
-- homepage and product explanation
-- searchable and filterable league discovery
-- dynamic league routes
-- interactive Süper Lig Prove-or-Follow flow
-- independent team selection and lock confirmation
-- specialist-pick reveal and attributed following
-- branded loading, not-found, and error states
-- seeded deterministic data
-- accuracy and Wilson-score tests
+- Better Auth email/password accounts and persistent sessions
+- PostgreSQL and Drizzle-backed leagues, matchweeks, picks, follows, and records
+- one immutable independent Weekly Lock per league and matchweek
+- specialist reveal and attributed follow mode kept outside independent accuracy
+- API-Football behind a provider abstraction with frozen matchweek eligibility
+- idempotent settlement and an append-only correction ledger
+- database constraints, disposable PostgreSQL integration tests, and browser QA
 
-No database, authentication, or football-data provider is connected yet.
+The product intentionally ranks league-specific accuracy and confidence-adjusted accuracy. It does not optimize odds, stake size, or expected profit.
 
 ## Quick start
 
+Requirements: Node.js 24, pnpm 11, and Docker.
+
 ~~~bash
 pnpm install
+cp .env.example .env.local
+pnpm db:up
+pnpm db:migrate
+pnpm db:seed
 pnpm dev
 ~~~
 
-Open http://localhost:3000.
+Open http://localhost:3000 and create an account. The seeded Süper Lig page contains a future matchweek and specialist records for exercising both paths.
 
 ## Quality checks
 
 ~~~bash
-pnpm lint
-pnpm typecheck
-pnpm test
-pnpm build
+pnpm check
+pnpm test:integration
+~~~
+
+The integration command uses the isolated `postgres-test` Docker service on port 54330.
+
+## Operations
+
+~~~bash
+pnpm fixtures:sync
+pnpm settle
+~~~
+
+Fixture synchronization requires `API_FOOTBALL_KEY`. HTTP schedulers can call `POST /api/jobs/fixtures` and `POST /api/jobs/settlement` with `Authorization: Bearer $CRON_SECRET`.
+
+To apply a provider score correction after settlement, first synchronize the corrected fixture and then call:
+
+~~~bash
+curl -X PATCH http://localhost:3000/api/jobs/settlement/PICK_ID \
+  -H "Authorization: Bearer $CRON_SECRET" \
+  -H "Content-Type: application/json" \
+  -d '{"reason":"Provider corrected the final score"}'
 ~~~
 
 See DEVELOPER_HANDBOOK.md for the detailed project workflow and spec.md for product behavior.

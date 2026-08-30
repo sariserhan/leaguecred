@@ -2,19 +2,13 @@
 
 ## In Progress
 
-- [ ] Connect the vertical slice to the real application backend
-  - [ ] Design the Drizzle schema from spec.md
-  - [ ] Add isolated Dockerized PostgreSQL testing
-  - [ ] Implement authentication
-  - [ ] Persist independent and followed participation modes
-  - [ ] Add API-Football provider abstraction
+None.
 
 ## Next
 
-- [ ] Implement immutable Weekly Lock server actions
-- [ ] Implement fixture synchronization and frozen matchweek eligibility
-- [ ] Implement idempotent settlement and correction ledger
-- [ ] Replace seeded specialist records with database queries
+- [ ] Add production hosting, managed PostgreSQL, and scheduled jobs
+- [ ] Add admin diagnostics for fixture sync runs and settlement corrections
+- [ ] Add current-season and career leaderboard views
 
 ## Blocked
 
@@ -23,15 +17,23 @@ None.
 ## Later
 
 - [ ] Notifications when a followed specialist locks
-- [ ] Current-season and career leaderboard views
-- [ ] Additional seeded launch leagues
-- [ ] Analytics and operational admin diagnostics
+- [ ] Additional launch leagues with current provider mappings
+- [ ] Email verification and password recovery delivery
+- [ ] Analytics and abuse monitoring
 
 ## Completed
 
 - [x] Define the league-expertise exchange product model
 - [x] Build the Next.js and shadcn foundation
 - [x] Implement homepage, league discovery, and dynamic league routes
-- [x] Implement the interactive Süper Lig Prove-or-Follow prototype
-- [x] Add responsive loading, not-found, and error states
+- [x] Implement responsive loading, not-found, and error states
 - [x] Add accuracy and confidence-adjusted ranking tests
+- [x] Design and migrate the PostgreSQL/Drizzle schema
+- [x] Add Better Auth email/password authentication
+- [x] Persist independent and followed participation modes
+- [x] Enforce immutable Weekly Locks and irreversible specialist reveal
+- [x] Replace prototype state with database queries and transactions
+- [x] Add API-Football synchronization with frozen matchweek eligibility
+- [x] Add idempotent settlement and an append-only correction ledger
+- [x] Add isolated Dockerized PostgreSQL integration tests
+- [x] Verify the two-user Prove-or-Follow flow in a real browser

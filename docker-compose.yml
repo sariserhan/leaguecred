@@ -1,0 +1,35 @@
+services:
+  postgres:
+    image: postgres:17-alpine
+    environment:
+      POSTGRES_DB: leaguecred
+      POSTGRES_USER: leaguecred
+      POSTGRES_PASSWORD: leaguecred
+    ports:
+      - "54329:5432"
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U leaguecred -d leaguecred"]
+      interval: 2s
+      timeout: 3s
+      retries: 20
+    volumes:
+      - leaguecred_postgres:/var/lib/postgresql/data
+
+  postgres-test:
+    image: postgres:17-alpine
+    environment:
+      POSTGRES_DB: leaguecred_test
+      POSTGRES_USER: leaguecred
+      POSTGRES_PASSWORD: leaguecred
+    ports:
+      - "54330:5432"
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U leaguecred -d leaguecred_test"]
+      interval: 2s
+      timeout: 3s
+      retries: 20
+    tmpfs:
+      - /var/lib/postgresql/data
+
+volumes:
+  leaguecred_postgres:

@@ -8,36 +8,27 @@ The project-specific product source of truth is spec.md. AI_WEB_APP_DEVELOPMENT_
 
 ## Current architecture
 
-The current implementation is a frontend vertical slice:
-
-- Next.js 16 App Router
-- React 19 and TypeScript strict mode
-- Tailwind CSS v4
-- shadcn/ui with Base UI primitives
-- static Server Components by default
-- focused Client Components for search, filtering, and Prove-or-Follow interactions
-- deterministic seeded data in src/lib/league-data.ts
-- domain calculations in src/lib/reputation.ts
-
-Planned backend architecture from the specification:
-
-- PostgreSQL on Neon
-- Drizzle ORM
-- Clerk or equivalent authentication
-- API-Football behind a provider abstraction
-- scheduled synchronization and idempotent settlement jobs
-
-Do not add backend placeholders or fake credentials before that implementation phase begins.
+- Next.js 16 App Router, React 19, and strict TypeScript
+- Tailwind CSS v4 and shadcn/ui with Base UI primitives
+- PostgreSQL accessed through Drizzle ORM and Postgres.js
+- Better Auth email/password authentication with database sessions
+- server actions for lock, reveal, and follow transactions
+- API-Football behind a normalized fixture-provider interface
+- protected fixture-sync and settlement route handlers for schedulers
+- immutable settlement events with a separate active-effect projection
+- static marketing UI and dynamic database-backed league routes
 
 ## Repository structure
 
 ~~~text
-src/app/                    App Router pages and route states
-src/components/ui/          shadcn source components
-src/components/home/        Homepage product UI
-src/components/leagues/     League discovery and league workflow
-src/lib/league-data.ts      Deterministic prototype data
-src/lib/reputation.ts       Accuracy and confidence calculations
+src/app/                    Pages, server actions, auth, and protected job routes
+src/components/             Product UI and shadcn source components
+src/data/                   Database-backed page queries
+src/db/                     Schema, migration runner, seed, and integration tests
+src/providers/              Normalized football provider interface and API-Football
+src/services/               Fixture synchronization and settlement transactions
+src/jobs/                   Command-line job entry points
+drizzle/                    Versioned SQL migrations and metadata
 docs/design/                Accepted visual concepts
 spec.md                     Product and engineering specification
 TODO.md                     Active implementation tasks
@@ -47,6 +38,7 @@ TODO.md                     Active implementation tasks
 
 - Node.js 24
 - pnpm 11
+- Docker with Compose
 
 The supported versions should remain aligned with package.json and the lockfile.
 
@@ -55,25 +47,29 @@ The supported versions should remain aligned with package.json and the lockfile.
 | Command | Purpose |
 |---|---|
 | pnpm dev | Starts the local Next.js development server. |
-| pnpm build | Creates a production build and runs Next.js route validation. |
-| pnpm start | Runs the previously built production application. |
-| pnpm lint | Runs ESLint across the repository. |
-| pnpm typecheck | Runs TypeScript without emitting files. |
-| pnpm test | Runs deterministic Vitest tests once. |
-| pnpm test:watch | Runs Vitest continuously while files change. |
-| pnpm check | Runs lint, typecheck, tests, and the production build. |
+| pnpm db:up | Starts the development PostgreSQL service. |
+| pnpm db:migrate | Applies committed Drizzle migrations. |
+| pnpm db:seed | Adds idempotent local league and specialist data. |
+| pnpm db:generate | Generates a migration after a schema change. |
+| pnpm fixtures:sync | Synchronizes the next 14 days from API-Football. |
+| pnpm settle | Settles every eligible pending independent pick. |
+| pnpm test | Runs deterministic unit tests. |
+| pnpm test:integration | Migrates, seeds, and tests isolated PostgreSQL on port 54330. |
+| pnpm check | Runs lint, typecheck, unit tests, and production build. |
+| pnpm check:full | Runs the standard gate plus PostgreSQL integration tests. |
 
 ## Environment variables
 
-The current frontend prototype requires no environment variables.
+Copy `.env.example` to `.env.local`. The application uses:
 
-When provider, database, or authentication work begins:
+- `DATABASE_URL`: PostgreSQL connection string
+- `BETTER_AUTH_SECRET`: high-entropy session-signing secret
+- `BETTER_AUTH_URL`: canonical application origin
+- `API_FOOTBALL_KEY`: server-only API-Football credential
+- `API_FOOTBALL_BASE_URL`: provider endpoint override
+- `CRON_SECRET`: bearer secret for protected job routes
 
-- add names and safe descriptions to .env.example
-- validate required variables server-side
-- never prefix secrets with NEXT_PUBLIC_
-- keep preview and production credentials separate
-- never commit real values
+Never prefix these secrets with `NEXT_PUBLIC_`, commit real values, or reuse development credentials in production.
 
 ## Development workflow
 
@@ -107,14 +103,24 @@ New screens should extend this system and be checked against the existing concep
 
 ## Testing
 
-Unit tests currently cover accuracy, sample-size eligibility, and confidence-adjusted ranking.
+Unit tests cover accuracy, sample-size eligibility, and confidence-adjusted ranking. PostgreSQL integration tests prove lock immutability, followed/independent separation, idempotent correction events, and frozen matchweek eligibility. The integration database is a separate Docker service with temporary storage and a hard-coded test URL.
 
-When persistence is introduced, integration tests must use an isolated disposable PostgreSQL container. Tests must fail closed rather than connect to development, preview, or production data.
+Browser QA should cover two accounts: one creates and reloads an independent lock; the second reveals specialists, accepts the attribution warning, follows a pick, reloads, and confirms independent fixtures remain disabled.
+
+## Operations
+
+- Schedule `POST /api/jobs/fixtures` before `POST /api/jobs/settlement`; send `Authorization: Bearer $CRON_SECRET`.
+- Fixture sync fetches a 14-day window and records request counts and failures in `api_sync_runs`.
+- After participation, lock time, or status change freezes a matchweek, provider sync may update scores/statuses but not add eligible fixtures or move kickoffs.
+- Corrections require the provider fixture to be synchronized first, followed by `PATCH /api/jobs/settlement/:pickId` with a non-empty JSON `reason`.
+- Correction events are append-only. Never edit or delete settlement history directly.
+- Use a managed PostgreSQL service in production and run `pnpm db:migrate` during deployment.
 
 ## Operational constraints
 
-- Independent and followed picks must never share reputation effects.
-- Viewing specialist picks must block a later independent pick for that league and matchweek.
-- Server time will be authoritative when backend work begins.
-- Pick immutability and settlement corrections require database transactions.
-- Provider data must be synchronized server-side rather than fetched during page requests.
+- Independent and followed picks never share reputation effects.
+- Revealing specialist picks permanently blocks a later independent pick for that matchweek.
+- Server time is authoritative for reveal and lock deadlines.
+- Lock, follow, settlement, and correction state changes run in database transactions.
+- Provider data is synchronized server-side rather than fetched during page requests.
+- No interface or ranking should imply certainty, guaranteed wins, betting odds, or profit optimization.

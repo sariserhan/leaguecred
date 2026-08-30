@@ -1,7 +1,10 @@
 import type { Metadata } from "next";
 
 import { LeagueExplorer } from "@/components/leagues/league-explorer";
-import { leagues } from "@/lib/league-data";
+import { getLeagueDirectory } from "@/data/leagues";
+import { getSession } from "@/lib/auth-session";
+
+export const dynamic = "force-dynamic";
 
 export const metadata: Metadata = {
   title: "Explore leagues",
@@ -9,7 +12,10 @@ export const metadata: Metadata = {
     "Build your record where you have knowledge and follow proven football specialists everywhere else.",
 };
 
-export default function LeaguesPage() {
+export default async function LeaguesPage() {
+  const session = await getSession();
+  const leagues = await getLeagueDirectory(session?.user.id);
+
   return (
     <div className="page-shell py-14 sm:py-20">
       <header className="mb-10 flex max-w-5xl flex-col gap-4">

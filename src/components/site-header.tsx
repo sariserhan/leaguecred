@@ -1,9 +1,10 @@
 "use client";
 
 import Link from "next/link";
-import { usePathname } from "next/navigation";
+import { usePathname, useRouter } from "next/navigation";
 
-import { buttonVariants } from "@/components/ui/button";
+import { Button, buttonVariants } from "@/components/ui/button";
+import { authClient } from "@/lib/auth-client";
 import { cn } from "@/lib/utils";
 
 const navItems = [
@@ -14,6 +15,14 @@ const navItems = [
 
 export function SiteHeader() {
   const pathname = usePathname();
+  const router = useRouter();
+  const { data: session, isPending } = authClient.useSession();
+
+  async function signOut() {
+    await authClient.signOut();
+    router.push("/");
+    router.refresh();
+  }
 
   return (
     <header className="border-b bg-background">
@@ -52,12 +61,19 @@ export function SiteHeader() {
           })}
         </nav>
 
-        <Link
-          href="/leagues"
-          className={buttonVariants({ variant: "outline", size: "lg" })}
-        >
-          Sign in
-        </Link>
+        {session ? (
+          <Button variant="outline" size="lg" onClick={signOut}>
+            Sign out · {session.user.name.split(" ")[0]}
+          </Button>
+        ) : (
+          <Link
+            href="/auth"
+            aria-disabled={isPending}
+            className={buttonVariants({ variant: "outline", size: "lg" })}
+          >
+            Sign in
+          </Link>
+        )}
       </div>
     </header>
   );
