@@ -6,6 +6,52 @@ import { sqlClient } from "@/db";
 import { MINIMUM_SETTLED_PICKS_FOR_RANK } from "@/lib/reputation";
 import { toIsoTimestamp } from "@/lib/timestamps";
 
+export type SpecialistDirectoryEntry = {
+  id: string;
+  name: string;
+  initials: string;
+  leagueId: string;
+  leagueName: string;
+  leagueSlug: string;
+  wins: number;
+  losses: number;
+  settledPicks: number;
+  currentWinStreak: number;
+  confidenceAdjustedAccuracy: number;
+  followers: number;
+};
+
+export async function getSpecialistDirectory(): Promise<SpecialistDirectoryEntry[]> {
+  const rows = await sqlClient<Array<{
+    id: string; name: string; league_id: string; league_name: string; league_slug: string;
+    wins: number; losses: number; settled_picks: number; current_win_streak: number;
+    confidence_adjusted_accuracy: string; followers: number;
+  }>>`
+    select u.id, u.name, strongest.league_id, strongest.league_name, strongest.league_slug,
+      strongest.wins, strongest.losses, strongest.settled_picks, strongest.current_win_streak,
+      strongest.confidence_adjusted_accuracy,
+      (select count(*)::int from league_follows lf where lf.specialist_user_id = u.id) as followers
+    from "user" u
+    join lateral (
+      select r.league_id, l.name as league_name, l.slug as league_slug, r.wins, r.losses,
+        r.settled_picks, r.current_win_streak, r.confidence_adjusted_accuracy
+      from user_league_records r join leagues l on l.id = r.league_id
+      where r.user_id = u.id and r.settled_picks >= ${MINIMUM_SETTLED_PICKS_FOR_RANK}
+      order by r.confidence_adjusted_accuracy desc nulls last, r.settled_picks desc limit 1
+    ) strongest on true
+    order by strongest.confidence_adjusted_accuracy desc nulls last, strongest.settled_picks desc
+    limit 100`;
+
+  return rows.map((row) => ({
+    id: row.id, name: row.name,
+    initials: row.name.split(/\s+/).map((part) => part[0]).join("").slice(0, 2).toUpperCase(),
+    leagueId: row.league_id, leagueName: row.league_name, leagueSlug: row.league_slug,
+    wins: row.wins, losses: row.losses, settledPicks: row.settled_picks,
+    currentWinStreak: row.current_win_streak,
+    confidenceAdjustedAccuracy: Number(row.confidence_adjusted_accuracy), followers: row.followers,
+  }));
+}
+
 export type SpecialistProfileData = {
   specialist: { id: string; name: string; initials: string; followers: number; memberSince: string };
   totals: { wins: number; losses: number; settledPicks: number; bestWinStreak: number };
@@ -29,7 +75,7 @@ export type SpecialistProfileData = {
     id: string; leagueName: string; leagueSlug: string; team: string;
     specialistId: string; specialistName: string; result: "win" | "loss" | "void" | "pending";
   }>;
-  viewer: { authenticated: boolean; isSelf: boolean };
+  viewer: { authenticated: boolean; isSelf: boolean; locksDue: number };
 };
 
 export const getSpecialistProfile = cache(async function getSpecialistProfile(
@@ -47,7 +93,7 @@ export const getSpecialistProfile = cache(async function getSpecialistProfile(
   if (!specialist) return null;
 
   const currentViewerId = viewerId ?? "";
-  const [leagueRows, recentLockRows, followedLeagueRows, followedHistoryRows] = await Promise.all([
+  const [leagueRows, recentLockRows, followedLeagueRows, followedHistoryRows, locksDueRows] = await Promise.all([
     sqlClient<Array<{
       id: string; slug: string; name: string; wins: number; losses: number; settled_picks: number;
       current_win_streak: number; confidence_adjusted_accuracy: string; followed_by_viewer: boolean;
@@ -111,6 +157,10 @@ export const getSpecialistProfile = cache(async function getSpecialistProfile(
       where fp.follower_user_id = ${specialist.id}
       order by fp.followed_at desc
       limit 12`,
+    sqlClient<Array<{ count: number }>>`
+      select count(*)::int as count from matchweeks mw
+      where mw.status = 'upcoming' and mw.lock_at > now()
+        and not exists(select 1 from matchweek_participation mp where mp.matchweek_id = mw.id and mp.user_id = ${specialist.id})`,
   ]);
 
   const totals = leagueRows.reduce((summary, league) => ({
@@ -150,6 +200,6 @@ export const getSpecialistProfile = cache(async function getSpecialistProfile(
       id: entry.id, leagueName: entry.league_name, leagueSlug: entry.league_slug, team: entry.team,
       specialistId: entry.specialist_id, specialistName: entry.specialist_name, result: entry.result,
     })),
-    viewer: { authenticated: Boolean(viewerId), isSelf: viewerId === specialist.id },
+    viewer: { authenticated: Boolean(viewerId), isSelf: viewerId === specialist.id, locksDue: locksDueRows[0]?.count ?? 0 },
   };
 });

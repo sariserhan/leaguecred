@@ -10,7 +10,7 @@ import { cn } from "@/lib/utils";
 
 const navItems = [
   { href: "/leagues", label: "Leagues" },
-  { href: "/leagues/super-lig#specialists", label: "Specialists" },
+  { href: "/specialists", label: "Specialists" },
   { href: "/#how-it-works", label: "How it works" },
 ] as const;
 
@@ -38,11 +38,11 @@ export function SiteHeader({ isAdmin = false }: { isAdmin?: boolean }) {
 
         <nav className="hidden items-center gap-9 text-sm font-semibold md:flex" aria-label="Primary navigation">
           {navItems.map((item) => {
-            const active =
-              item.href === "/leagues"
-                ? pathname === "/leagues"
-                : pathname.startsWith(item.href.split("#")[0]) &&
-                  item.href.includes("specialists");
+            const active = item.href === "/leagues"
+              ? pathname.startsWith("/leagues")
+              : item.href === "/specialists"
+                ? pathname.startsWith("/specialists")
+                : false;
 
             return (
               <Link
@@ -72,7 +72,7 @@ export function SiteHeader({ isAdmin = false }: { isAdmin?: boolean }) {
           {session ? (
             <>
               <Link href={`/specialists/${session.user.id}`} className={buttonVariants({ variant: "ghost", size: "lg" })}>
-                My profile
+                My dashboard
               </Link>
               <Button variant="outline" size="lg" onClick={signOut}>
                 Sign out · {session.user.name.split(" ")[0]}

@@ -17,7 +17,7 @@ import {
   revealSpecialistPicks,
   submitWeeklyLock,
 } from "@/app/leagues/actions";
-import { Alert, AlertDescription } from "@/components/ui/alert";
+import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -127,6 +127,7 @@ export function LeagueExperience({
   const [lockConfirmOpen, setLockConfirmOpen] = useState(false);
   const [followConfirmOpen, setFollowConfirmOpen] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [success, setSuccess] = useState<string | null>(null);
   const [pending, startTransition] = useTransition();
 
   const decisions = data.viewer.wins + data.viewer.losses;
@@ -187,6 +188,7 @@ export function LeagueExperience({
         return;
       }
       setLockedTeam(selection.teamName);
+      setSuccess(`${selection.teamName} is locked. Your pick is hidden until the window closes and will then count toward your independent ${data.league.name} record.`);
       setPicksRevealed(true);
       setLockConfirmOpen(false);
       router.refresh();
@@ -202,6 +204,7 @@ export function LeagueExperience({
         return;
       }
       setFollowedSourcePickId(sourcePickId);
+      setSuccess("Specialist call followed with attribution. It will appear in your followed history and never count toward your independent record.");
       router.refresh();
     });
   }
@@ -239,6 +242,7 @@ export function LeagueExperience({
 
       <div className="page-shell py-6 sm:py-8">
         {error ? <Alert variant="destructive" className="mb-5"><AlertDescription>{error}</AlertDescription></Alert> : null}
+        {success ? <Alert className="mb-5 rounded-none border-primary bg-primary"><CheckIcon /><AlertTitle>Done — your next step is clear</AlertTitle><AlertDescription>{success} <Link href="/slip" className="font-semibold underline">Open your Weekly Slip</Link></AlertDescription></Alert> : null}
 
         <ToggleGroup value={[mode]} onValueChange={chooseMode} className="grid w-full gap-2 sm:gap-4 lg:grid-cols-2" aria-label="Choose how to participate this matchweek">
           <ToggleGroupItem value="prove" disabled={Boolean(lockedTeam) || data.viewer.mode === "follow" || interactionLocked} className="h-auto min-h-24 w-full justify-start overflow-hidden whitespace-normal border px-4 py-4 text-left sm:px-5">
