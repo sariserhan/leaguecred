@@ -301,7 +301,7 @@ export function LeagueExperience({
               {data.specialists.map((specialist) => (
                 <article key={specialist.id} className="grid grid-cols-[auto_minmax(0,1fr)] items-center gap-3 px-4 py-4 sm:grid-cols-[auto_1fr_auto]">
                   <Avatar size="lg"><AvatarFallback>{specialist.initials}</AvatarFallback></Avatar>
-                  <div className="min-w-0"><h3 className="font-bold">{specialist.name}</h3><p className="text-sm"><strong className="text-primary">{specialist.accuracy}%</strong>{" · "}{specialist.record}</p><p className="text-xs text-muted-foreground">{specialist.picks} independent picks</p></div>
+                  <div className="min-w-0"><h3 className="font-bold"><Link href={`/u/${specialist.id}`} className="hover:underline">{specialist.name}</Link></h3><p className="text-sm"><strong className="text-primary">{specialist.accuracy}%</strong>{" · "}{specialist.record}</p><p className="text-xs text-muted-foreground">{specialist.picks} independent picks</p></div>
                   {picksRevealed ? (
                     mode === "follow" ? (
                       <Button variant={followedSourcePickId === specialist.sourcePickId ? "secondary" : "outline"} size="sm" className="col-start-2 w-full sm:col-start-auto sm:w-auto" disabled={pending || Boolean(followedSourcePickId)} onClick={() => followPick(specialist.sourcePickId)}>
