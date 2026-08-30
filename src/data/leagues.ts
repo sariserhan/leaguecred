@@ -553,7 +553,7 @@ export async function getLeagueStandings(slug: string): Promise<{ league: { name
   const [league] = await sqlClient<Array<{ id: string; name: string; slug: string; logo_url: string | null }>>`
     select l.id, l.name, l.slug, l.logo_url
     from leagues l
-    where l.slug =  and l.enabled = true
+    where l.slug = ${slug} and l.enabled = true
     limit 1`;
   if (!league) return null;
 
@@ -568,9 +568,9 @@ export async function getLeagueStandings(slug: string): Promise<{ league: { name
     from league_team_memberships membership
     join seasons s on s.id = membership.season_id and s.is_current = true
     join teams t on t.id = membership.team_id
-    left join fixtures f on f.season_id = s.id and f.league_id = 
+    left join fixtures f on f.season_id = s.id and f.league_id = ${league.id}
       and f.status = 'finished' and (f.home_team_id = t.id or f.away_team_id = t.id)
-    where membership.league_id = 
+    where membership.league_id = ${league.id}
     group by t.id, t.name, t.slug, t.logo_url
     order by (count(*) filter (where f.winner_team_id = t.id) * 3 + count(*) filter (where f.winner_team_id is null)) desc,
       (coalesce(sum(case when f.home_team_id = t.id then f.home_score else f.away_score end), 0) - coalesce(sum(case when f.home_team_id = t.id then f.away_score else f.home_score end), 0)) desc,
