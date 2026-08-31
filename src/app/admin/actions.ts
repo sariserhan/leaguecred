@@ -12,6 +12,14 @@ import {
   featureFlagDefinitions,
   normalizeAdminMessage,
 } from "@/lib/site-settings";
+import {
+  type AssignableFixture,
+  type AssignedLock,
+  assignHistoricalLock,
+  createMember,
+  listAssignableFixtures,
+  listAssignedLocks,
+} from "@/services/member-seeding";
 import { setFeatureFlag, updateSiteSettings } from "@/services/site-settings";
 import { synchronizeFixtures } from "@/services/fixture-sync";
 import { ESPN_FIXTURE_COMPETITIONS, EspnFixtureProvider } from "@/providers/espn-fixtures";
@@ -121,4 +129,63 @@ export async function toggleFeatureFlag(
 
   revalidatePath("/", "layout");
   return { ok: true };
+}
+
+/**
+ * Creating a member, and recording locks for them against matches already
+ * played. Both write records the rest of the product treats as genuine, so both
+ * are admin-only and both leave an audit row naming the admin who did it.
+ */
+export async function createMemberAction(name: string): Promise<AdminActionResult> {
+  const viewer = await requireAdmin();
+
+  try {
+    await createMember({ name, actorUserId: viewer.id });
+  } catch (error) {
+    console.error("Failed to create a member.", error);
+    return { ok: false, message: error instanceof Error ? error.message : "That member could not be created." };
+  }
+
+  revalidatePath("/admin");
+  return { ok: true };
+}
+
+export async function assignLockAction(input: {
+  userId: string;
+  fixtureId: string;
+  selectedTeamId: string;
+}): Promise<AdminActionResult> {
+  const viewer = await requireAdmin();
+
+  try {
+    await assignHistoricalLock({ ...input, actorUserId: viewer.id });
+  } catch (error) {
+    console.error("Failed to assign a lock.", error);
+    // A second lock on a date the member already holds one for trips the unique
+    // index, which is the one failure an admin is likely to cause by hand.
+    const duplicate = error instanceof Error && error.message.includes("picks_user_league_date_unique");
+    return {
+      ok: false,
+      message: duplicate
+        ? "That member already holds a lock in this league on that date."
+        : error instanceof Error ? error.message : "That lock could not be recorded.",
+    };
+  }
+
+  revalidatePath("/admin");
+  revalidatePath("/specialists", "layout");
+  return { ok: true };
+}
+
+export async function loadAssignableFixtures(
+  userId: string,
+  leagueSlug: string,
+): Promise<AssignableFixture[]> {
+  await requireAdmin();
+  return listAssignableFixtures({ userId, leagueSlug });
+}
+
+export async function loadAssignedLocks(userId: string): Promise<AssignedLock[]> {
+  await requireAdmin();
+  return listAssignedLocks(userId);
 }

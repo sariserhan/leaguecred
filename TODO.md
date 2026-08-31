@@ -81,6 +81,7 @@ None.
 - [x] Draw the hero pitch backdrop to real proportions, on grass
 - [x] Replace the drawn hero pitch with a photograph of a real one
 - [x] Drop the square button frame from around the round header avatar
+- [x] Create a member from the admin panel and record their locks on matches already played
 - [x] Answer 404 for a page that does not exist, instead of 200 with a not-found screen
 - [x] Redirect the old /teams/<name>-<id> links to the canonical team slug
 - [x] Keep members-only routes out of the sitemap and the index

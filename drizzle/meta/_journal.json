@@ -169,6 +169,20 @@
       "when": 1788150000000,
       "tag": "0023_global_lock_forum",
       "breakpoints": true
+    },
+    {
+      "idx": 24,
+      "version": "7",
+      "when": 1788151000000,
+      "tag": "0024_admin_backfill",
+      "breakpoints": true
+    },
+    {
+      "idx": 25,
+      "version": "7",
+      "when": 1788152000000,
+      "tag": "0025_admin_seed_audit",
+      "breakpoints": true
     }
   ]
 }

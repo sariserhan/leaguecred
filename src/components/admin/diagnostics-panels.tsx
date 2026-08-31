@@ -13,6 +13,8 @@ import type {
 const auditActionLabel: Record<AdminAuditEntry["action"], string> = {
   site_settings_updated: "Site settings updated",
   feature_flag_toggled: "Feature flag toggled",
+  member_created: "Member created",
+  lock_assigned: "Lock assigned",
 };
 
 const dateTimeFormatter = new Intl.DateTimeFormat("en", {

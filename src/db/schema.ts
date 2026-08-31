@@ -39,7 +39,7 @@ export const syncStatusEnum = pgEnum("sync_status", ["running", "succeeded", "fa
 export const userRoleEnum = pgEnum("user_role", ["member", "admin"]);
 export const bannerToneEnum = pgEnum("banner_tone", ["info", "warning", "critical"]);
 export const adminAuditActionEnum = pgEnum("admin_audit_action", [
-  "site_settings_updated", "feature_flag_toggled",
+  "site_settings_updated", "feature_flag_toggled", "member_created", "lock_assigned",
 ]);
 export const leaguePreferenceKindEnum = pgEnum("league_preference_kind", ["know", "help"]);
 export const notificationKindEnum = pgEnum("notification_kind", ["lock_deadline", "specialist_lock", "pick_result", "followed_result", "specialist_recommendation"]);
