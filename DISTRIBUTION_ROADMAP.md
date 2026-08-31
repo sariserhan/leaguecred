@@ -4,6 +4,23 @@
 
 Bring the first 1,000 people to LeagueCred organically and turn them into a durable football knowledge community.
 
+## Growth UI Implementation Status
+
+Implemented 31 August 2026:
+
+- Club and optional region identity during onboarding
+- Founding Member and one-per-club Founding Captain roles
+- Personal referral links with joined and first-lock activation states
+- Post-lock invitation and Community Challenge actions
+- Public club-versus-club Community Challenge pages derived from real fixtures and records
+- Public seven-day recap with wins and misses shown together
+- League community density, represented-club, and founding empty states
+- Club identity and founding status on specialist profiles
+- Admin join → first lock → return funnel, source performance, and community activation views
+- Public sitemap and navigation entries for challenges and recaps
+
+Visitor counts remain deliberately marked as untracked until a privacy-conscious analytics source is connected. The dashboard never substitutes an invented visit number.
+
 The goal is not 1,000 empty registrations. The success target is:
 
 - 1,000 registered members within 60–90 days

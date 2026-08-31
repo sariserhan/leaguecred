@@ -58,7 +58,7 @@ export async function getSpecialistDirectory(): Promise<SpecialistDirectoryEntry
 }
 
 export type SpecialistProfileData = {
-  specialist: { id:string;name:string;initials:string;followers:number;memberSince:string;bio:string|null;image:string|null;profileTheme:string;featuredLeague:string|null;pinnedMilestone:string|null };
+  specialist: { id:string;name:string;initials:string;followers:number;referrals:number;memberSince:string;bio:string|null;image:string|null;profileTheme:string;featuredLeague:string|null;pinnedMilestone:string|null;teamName:string|null;teamSlug:string|null;communityRole:"member"|"founding_member"|"captain";homeRegion:string|null };
   totals: { wins: number; losses: number; settledPicks: number; bestWinStreak: number };
   leagues: Array<{
     id: string; slug: string; name: string; wins: number; losses: number; settledPicks: number;
@@ -89,11 +89,13 @@ export const getSpecialistProfile = cache(async function getSpecialistProfile(
 ): Promise<SpecialistProfileData | null> {
   const rankThreshold = await getRankThreshold();
   const [specialist] = await sqlClient<Array<{
-    id:string;name:string;followers:number;created_at:Date|string;bio:string|null;image:string|null;profile_theme:string;featured_league:string|null;pinned_milestone:string|null;
+    id:string;name:string;followers:number;referrals:number;created_at:Date|string;bio:string|null;image:string|null;profile_theme:string;featured_league:string|null;pinned_milestone:string|null;team_name:string|null;team_slug:string|null;community_role:"member"|"founding_member"|"captain";home_region:string|null;
   }>>`
     select u.id,u.name,u.created_at,u.bio,u.image,u.profile_theme,u.pinned_milestone,l.name as featured_league,
+      t.name team_name,t.slug team_slug,u.community_role,u.home_region,
       (select count(*)::int from league_follows lf where lf.specialist_user_id = u.id) as followers
-    from "user" u left join leagues l on l.id=u.featured_league_id
+      ,(select count(*)::int from referrals r where r.inviter_user_id=u.id) as referrals
+    from "user" u left join leagues l on l.id=u.featured_league_id left join teams t on t.id=u.primary_team_id
     where u.id = ${specialistId}
     limit 1`;
   if (!specialist) return null;
@@ -186,8 +188,10 @@ export const getSpecialistProfile = cache(async function getSpecialistProfile(
       name: specialist.name,
       initials: specialist.name.split(/\s+/).map((part) => part[0]).join("").slice(0, 2).toUpperCase(),
       followers: specialist.followers,
+      referrals: specialist.referrals,
       memberSince: toIsoTimestamp(specialist.created_at),
       bio:specialist.bio,image:specialist.image,profileTheme:specialist.profile_theme,featuredLeague:specialist.featured_league,pinnedMilestone:specialist.pinned_milestone,
+      teamName:specialist.team_name,teamSlug:specialist.team_slug,communityRole:specialist.community_role,homeRegion:specialist.home_region,
     },
     totals,
     leagues: leagueRows.map((league) => ({

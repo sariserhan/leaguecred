@@ -23,6 +23,8 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
     { url: BASE_URL, changeFrequency: "daily", priority: 1 },
     { url: `${BASE_URL}/leagues`, changeFrequency: "daily", priority: 0.9 },
     { url: `${BASE_URL}/specialists`, changeFrequency: "daily", priority: 0.7 },
+    { url: `${BASE_URL}/challenges`, changeFrequency: "daily", priority: 0.8 },
+    { url: `${BASE_URL}/recaps`, changeFrequency: "daily", priority: 0.7 },
     ...leagues.flatMap((league) => [
       { url: `${BASE_URL}/leagues/${league.slug}`, changeFrequency: "daily" as const, priority: 0.8 },
       { url: `${BASE_URL}/leagues/${league.slug}/standings`, changeFrequency: "daily" as const, priority: 0.6 },

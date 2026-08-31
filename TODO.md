@@ -27,11 +27,12 @@ None.
       but is deliberately unwired (it never added a match ESPN didn't
       already have). Decide whether ESPN-only is acceptable for those
       leagues or a real second source is worth adding for them specifically.
-- [ ] Product/web analytics (deferred; PostHog is the marketplace pick when this is picked up)
+- [ ] Add privacy-conscious visitor analytics. The admin distribution dashboard now measures joins, first locks, returns, referral sources, and community activation, but intentionally displays “Not tracked” for visits until a real analytics source is connected.
 - [ ] Decide whether expertise is scoped to clubs as well as leagues
 
 ## Completed
 
+- [x] Add club identity, founding roles, referral attribution and activation, Community Challenges, public weekly recaps, post-lock invitation prompts, league density states, and admin distribution analytics
 - [x] Design and implement the Tactical Hex Radar brand mark across icon.tsx, apple-icon.tsx, opengraph-image.tsx, web manifest, and site header/footer
 - [x] Add live in-UI notification feedback for followed specialist locks,
       settled results, unread counts, and direct navigation

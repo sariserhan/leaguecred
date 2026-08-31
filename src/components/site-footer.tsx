@@ -8,6 +8,8 @@ const footerGroups = [
     links: [
       { href: "/leagues", label: "Leagues" },
       { href: "/#how-it-works", label: "How it works" },
+      { href: "/challenges", label: "Community challenge" },
+      { href: "/recaps", label: "Weekly recap" },
     ],
   },
   {

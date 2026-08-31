@@ -20,7 +20,7 @@ import {
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
-import { Button } from "@/components/ui/button";
+import { Button, buttonVariants } from "@/components/ui/button";
 import {
   Card,
   CardContent,
@@ -129,6 +129,7 @@ export function LeagueExperience({
   const [picksRevealed, setPicksRevealed] = useState(data.viewer.picksRevealed);
   const [followedSourcePickId, setFollowedSourcePickId] = useState(data.viewer.followedSourcePickId);
   const [lockConfirmOpen, setLockConfirmOpen] = useState(false);
+  const [growthPromptOpen, setGrowthPromptOpen] = useState(false);
   const [decisionReason, setDecisionReason] = useState("");
   const [followConfirmOpen, setFollowConfirmOpen] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -197,6 +198,7 @@ export function LeagueExperience({
       setSuccess(`${selection.teamName} is locked. Your pick is hidden until the window closes and will then count toward your independent ${data.league.name} record.`);
       setPicksRevealed(true);
       setLockConfirmOpen(false);
+      setGrowthPromptOpen(true);
       router.refresh();
     });
   }
@@ -347,6 +349,20 @@ export function LeagueExperience({
 
       <Dialog open={lockConfirmOpen} onOpenChange={setLockConfirmOpen}>
         <DialogContent><DialogHeader><DialogTitle className="font-heading text-3xl font-bold uppercase">Lock {selection?.teamName}?</DialogTitle><DialogDescription>This independent {data.league.name} prediction cannot be changed or deleted. Specialist picks reveal after confirmation.</DialogDescription><div className="space-y-2"><label htmlFor="decision-reason" className="text-sm font-semibold">Why this pick? <span className="font-normal text-muted-foreground">Optional</span></label><textarea id="decision-reason" value={decisionReason} onChange={(event) => setDecisionReason(event.target.value)} maxLength={500} rows={3} placeholder="Add a reason for your decision..." className="w-full resize-y border bg-background px-3 py-2 text-sm outline-none focus-visible:ring-2 focus-visible:ring-ring" disabled={pending} /><p className="text-xs text-muted-foreground">Up to 500 characters.</p></div></DialogHeader><DialogFooter><Button variant="outline" onClick={() => setLockConfirmOpen(false)}>Go back</Button><Button onClick={confirmLock} disabled={pending}>{pending ? <Spinner data-icon="inline-start" /> : <LockKeyholeIcon data-icon="inline-start" />}Confirm Daily Lock</Button></DialogFooter></DialogContent>
+      </Dialog>
+
+      <Dialog open={growthPromptOpen} onOpenChange={setGrowthPromptOpen}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle className="font-heading text-3xl font-bold uppercase">Your call is locked.</DialogTitle>
+            <DialogDescription>You represented what you know. Now invite someone who knows another club or league better than you.</DialogDescription>
+          </DialogHeader>
+          <div className="grid gap-3 sm:grid-cols-2">
+            <Link href="/invite" className={buttonVariants()}><UsersRoundIcon data-icon="inline-start" />Invite a specialist</Link>
+            <Link href="/challenges" className={buttonVariants({ variant: "outline" })}><ShieldCheckIcon data-icon="inline-start" />Open the challenge</Link>
+          </div>
+          <DialogFooter><Button variant="ghost" onClick={() => setGrowthPromptOpen(false)}>Not now</Button><Link href="/slip" className={buttonVariants()}>Open Weekly Slip</Link></DialogFooter>
+        </DialogContent>
       </Dialog>
 
       <Dialog open={followConfirmOpen} onOpenChange={setFollowConfirmOpen}>

@@ -60,11 +60,16 @@ export async function submitDailyLock(fixtureId: string, selectedTeamId: string,
         on conflict (user_id, league_id, matchweek_id) do nothing`;
       await sql`insert into picks (user_id, league_id, season_id, matchweek_id, fixture_id, selected_team_id, decision_reason)
         values (${userId}, ${fixture.league_id}, ${fixture.season_id}, ${fixture.matchweek_id}, ${parsed.data.fixtureId}, ${parsed.data.selectedTeamId}, ${parsed.data.reason || null})`;
+      await sql`update referrals set activated_at=coalesce(activated_at, now()), updated_at=now()
+        where invited_user_id=${userId}`;
       return fixture.slug;
     });
 
     revalidatePath(`/leagues/${slug}`);
     revalidatePath("/leagues");
+    revalidatePath("/invite");
+    revalidatePath("/challenges");
+    revalidatePath("/recaps");
     return { ok: true };
   } catch (error) {
     return actionError(error);

@@ -43,6 +43,7 @@ export const adminAuditActionEnum = pgEnum("admin_audit_action", [
 ]);
 export const leaguePreferenceKindEnum = pgEnum("league_preference_kind", ["know", "help"]);
 export const notificationKindEnum = pgEnum("notification_kind", ["lock_deadline", "specialist_lock", "pick_result", "followed_result", "specialist_recommendation"]);
+export const communityRoleEnum = pgEnum("community_role", ["member", "founding_member", "captain"]);
 
 // Better Auth core tables. Property names intentionally match its Drizzle adapter.
 export const user = pgTable("user", {
@@ -56,11 +57,20 @@ export const user = pgTable("user", {
   featuredLeagueId: uuid("featured_league_id"),
   pinnedMilestone: text("pinned_milestone"),
   username: text("username"),
+  primaryTeamId: uuid("primary_team_id").references((): AnyPgColumn => teams.id, { onDelete: "set null" }),
+  homeRegion: text("home_region"),
+  communityRole: communityRoleEnum("community_role").default("member").notNull(),
+  referralCode: text("referral_code"),
+  referredByUserId: text("referred_by_user_id").references((): AnyPgColumn => user.id, { onDelete: "set null" }),
+  acquisitionSource: text("acquisition_source").default("direct").notNull(),
   role: userRoleEnum("role").default("member").notNull(),
   createdAt,
   updatedAt,
 }, (table) => [
   uniqueIndex("user_username_unique").on(sql`lower(${table.username})`).where(sql`${table.username} is not null`),
+  uniqueIndex("user_referral_code_unique").on(sql`lower(${table.referralCode})`).where(sql`${table.referralCode} is not null`),
+  index("user_primary_team_id_idx").on(table.primaryTeamId),
+  index("user_referred_by_user_id_idx").on(table.referredByUserId),
 ]);
 
 export const session = pgTable("session", {
@@ -354,6 +364,21 @@ export const userLeaguePreferences = pgTable("user_league_preferences", {
   index("user_league_preferences_league_idx").on(table.leagueId),
 ]);
 
+export const referrals = pgTable("referrals", {
+  id: uuid("id").defaultRandom().primaryKey(),
+  inviterUserId: text("inviter_user_id").notNull().references(() => user.id, { onDelete: "cascade" }),
+  invitedUserId: text("invited_user_id").notNull().references(() => user.id, { onDelete: "cascade" }),
+  code: text("code").notNull(),
+  source: text("source").default("member_invite").notNull(),
+  activatedAt: timestamp("activated_at", { withTimezone: true }),
+  createdAt,
+  updatedAt,
+}, (table) => [
+  uniqueIndex("referrals_invited_user_unique").on(table.invitedUserId),
+  index("referrals_inviter_created_idx").on(table.inviterUserId, table.createdAt),
+  index("referrals_activated_at_idx").on(table.activatedAt),
+]);
+
 export const notifications = pgTable("notifications", {
   id: uuid("id").defaultRandom().primaryKey(),
   userId: text("user_id").notNull().references(() => user.id, { onDelete: "cascade" }),
@@ -560,3 +585,4 @@ export type BannerTone = (typeof bannerToneEnum.enumValues)[number];
 export type AdminAuditAction = (typeof adminAuditActionEnum.enumValues)[number];
 export type LeaguePreferenceKind = (typeof leaguePreferenceKindEnum.enumValues)[number];
 export type NotificationKind = (typeof notificationKindEnum.enumValues)[number];
+export type CommunityRole = (typeof communityRoleEnum.enumValues)[number];

@@ -12,6 +12,7 @@ import {
   LogOutIcon,
   MenuIcon,
   ShieldCheckIcon,
+  SwordsIcon,
   Settings2Icon,
   SunIcon,
   TrophyIcon,
@@ -35,7 +36,6 @@ import { HowItWorksDialog } from "@/components/how-it-works-dialog";
 
 const navItems = [
   { href: "/leagues", label: "Leagues", icon: TrophyIcon },
-  { href: "/specialists", label: "Specialists", icon: UsersRoundIcon },
 ] as const;
 
 export function SiteHeader({
@@ -94,7 +94,9 @@ export function SiteHeader({
                     <Icon className="size-5 text-primary" />{label}<ChevronRightIcon className="ml-auto size-5 text-muted-foreground" />
                   </DialogClose>
                 ))}
+                <DialogClose nativeButton={false} render={<Link href="/specialists" className="flex min-h-16 items-center gap-3 px-5 font-semibold hover:bg-muted" />}><UsersRoundIcon className="size-5 text-primary" />Specialists<ChevronRightIcon className="ml-auto size-5 text-muted-foreground" /></DialogClose>
                 <HowItWorksDialog mobile />
+                <DialogClose nativeButton={false} render={<Link href="/challenges" className="flex min-h-16 items-center gap-3 px-5 font-semibold hover:bg-muted" />}><SwordsIcon className="size-5 text-primary" />Community challenge<ChevronRightIcon className="ml-auto size-5 text-muted-foreground" /></DialogClose>
                 {session ? <><DialogClose nativeButton={false} render={<Link href="/network" className="flex min-h-16 items-center gap-3 px-5 font-semibold hover:bg-muted" />}><Settings2Icon className="size-5 text-primary" />My network<ChevronRightIcon className="ml-auto size-5 text-muted-foreground" /></DialogClose><DialogClose nativeButton={false} render={<Link href="/slip" className="flex min-h-16 items-center gap-3 px-5 font-semibold hover:bg-muted" />}><CircleUserRoundIcon className="size-5 text-primary" />Weekly Slip<ChevronRightIcon className="ml-auto size-5 text-muted-foreground" /></DialogClose><DialogClose nativeButton={false} render={<Link href="/settings" className="flex min-h-16 items-center gap-3 px-5 font-semibold hover:bg-muted" />}><Settings2Icon className="size-5 text-primary" />Settings<ChevronRightIcon className="ml-auto size-5 text-muted-foreground" /></DialogClose></> : null}
                 <div className="flex min-h-16 items-center justify-between px-5 font-semibold">
                   <span className="flex items-center gap-3"><SunIcon className="size-5 text-primary" />Theme</span>
@@ -187,10 +189,11 @@ export function SiteHeader({
             </Menu.Portal>
           </Menu.Root>
           <Link href="/specialists" className={cn("relative py-2 transition-colors hover:text-foreground", pathname.startsWith("/specialists") ? "text-foreground" : "text-muted-foreground")}>Specialists{pathname.startsWith("/specialists") ? <span className="absolute inset-x-0 -bottom-[1.58rem] h-0.5 bg-primary" /> : null}</Link>
+          <Link href="/challenges" className={cn("relative py-2 transition-colors hover:text-foreground", pathname.startsWith("/challenges") ? "text-foreground" : "text-muted-foreground")}>Challenge{pathname.startsWith("/challenges") ? <span className="absolute inset-x-0 -bottom-[1.58rem] h-0.5 bg-primary" /> : null}</Link>
           <HowItWorksDialog />
         </nav>
 
-        <div className="flex items-center gap-1.5"><GlobalSearch /><ThemeToggle />{session && notificationCenter ? <NotificationCenter initialItems={notificationCenter.items} initialPreferences={notificationCenter.preferences} /> : null}{session ? (
+        <div className="flex items-center gap-1.5"><GlobalSearch /><ThemeToggle className="hidden sm:inline-flex" />{session && notificationCenter ? <NotificationCenter initialItems={notificationCenter.items} initialPreferences={notificationCenter.preferences} /> : null}{session ? (
           <DropdownMenu>
             <DropdownMenuTrigger render={<Button variant="outline" size="icon" className="cursor-pointer" aria-label={`Open account menu for ${session.user.name}`} />}><Avatar className="size-8"><AvatarFallback>{initials}</AvatarFallback></Avatar></DropdownMenuTrigger>
             <DropdownMenuContent align="end" className="w-56 rounded-none p-2">
@@ -199,6 +202,7 @@ export function SiteHeader({
                 <DropdownMenuItem render={<Link href={`/specialists/${session.user.id}`} />} className="cursor-pointer rounded-none px-2 py-2.5"><CircleUserRoundIcon />My dashboard</DropdownMenuItem>
                 <DropdownMenuItem render={<Link href="/slip" />} className="cursor-pointer rounded-none px-2 py-2.5"><TrophyIcon />Weekly Slip</DropdownMenuItem>
                 <DropdownMenuItem render={<Link href="/network" />} className="cursor-pointer rounded-none px-2 py-2.5"><Settings2Icon />My network</DropdownMenuItem>
+                <DropdownMenuItem render={<Link href="/invite" />} className="cursor-pointer rounded-none px-2 py-2.5"><UsersRoundIcon />Invite supporters</DropdownMenuItem>
                 <DropdownMenuItem render={<Link href="/onboarding" />} className="cursor-pointer rounded-none px-2 py-2.5"><UsersRoundIcon />Set up leagues</DropdownMenuItem>
                 <DropdownMenuItem render={<Link href="/settings" />} className="cursor-pointer rounded-none px-2 py-2.5"><Settings2Icon />Settings</DropdownMenuItem>
                 {isAdmin ? <DropdownMenuItem render={<Link href="/admin" />} className="cursor-pointer rounded-none px-2 py-2.5"><ShieldCheckIcon />Admin</DropdownMenuItem> : null}

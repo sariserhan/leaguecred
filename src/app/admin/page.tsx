@@ -13,6 +13,7 @@ import {
 import { FeatureFlagControls } from "@/components/admin/feature-flag-controls";
 import { SiteControls } from "@/components/admin/site-controls";
 import { AdminManagementPanels } from "@/components/admin/management-panels";
+import { DistributionAnalyticsPanel } from "@/components/admin/distribution-analytics";
 import { buttonVariants } from "@/components/ui/button";
 import { requireAdmin } from "@/lib/admin";
 import { getSharedIpAccounts, getSuspiciousFollows } from "@/services/abuse-signals";
@@ -26,6 +27,7 @@ import {
   getSyncRunDiagnostics,
 } from "@/services/admin-diagnostics";
 import { getFeatureFlags, getSiteSettings } from "@/services/site-settings";
+import { getDistributionAnalytics } from "@/data/distribution";
 
 export const dynamic = "force-dynamic";
 
@@ -49,6 +51,7 @@ export default async function AdminPage() {
     leagues,
     sharedIpClusters,
     suspiciousFollows,
+    distribution,
   ] = await Promise.all([
     getSiteSettings(),
     getFeatureFlags(),
@@ -60,6 +63,7 @@ export default async function AdminPage() {
     getLeagueNavOptions(),
     getSharedIpAccounts(),
     getSuspiciousFollows(),
+    getDistributionAnalytics(),
   ]);
 
   return (
@@ -84,6 +88,8 @@ export default async function AdminPage() {
       </header>
 
       <OperationalSummaryPanel summary={summary} />
+
+      <DistributionAnalyticsPanel data={distribution} />
 
       <SiteControls settings={settings} />
 

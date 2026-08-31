@@ -155,6 +155,13 @@
       "when": 1788148000000,
       "tag": "0021_friendly_matchweek_names",
       "breakpoints": true
+    },
+    {
+      "idx": 22,
+      "version": "7",
+      "when": 1788149000000,
+      "tag": "0022_community_distribution",
+      "breakpoints": true
     }
   ]
 }

@@ -20,6 +20,7 @@ import { Input } from "@/components/ui/input";
 import { Spinner } from "@/components/ui/spinner";
 import { ToggleGroup, ToggleGroupItem } from "@/components/ui/toggle-group";
 import { authClient } from "@/lib/auth-client";
+import { claimPendingReferral } from "@/app/invite/actions";
 
 type AuthMode = "sign-in" | "sign-up";
 
@@ -52,6 +53,8 @@ export function AuthForm({ nextPath = "/leagues" }: { nextPath?: string }) {
         setError(response.error.message ?? "Authentication failed. Please try again.");
         return;
       }
+
+      if (mode === "sign-up") await claimPendingReferral();
 
       router.push(mode === "sign-up" ? "/onboarding" : nextPath);
       router.refresh();

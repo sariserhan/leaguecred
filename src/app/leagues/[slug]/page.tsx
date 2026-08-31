@@ -4,6 +4,7 @@ import { notFound } from "next/navigation";
 import { LeagueComingSoon } from "@/components/leagues/league-coming-soon";
 import { LeagueExperience } from "@/components/leagues/league-experience";
 import { TeamCatalogSection } from "@/components/leagues/team-catalog-section";
+import { LeagueCommunityPulse } from "@/components/leagues/league-community-pulse";
 import { getLeagueDirectory, getLeagueExperience, getLeagueTeamCatalog } from "@/data/leagues";
 import { getSession } from "@/lib/auth-session";
 import { enforceMaintenanceGate } from "@/lib/maintenance";
@@ -13,6 +14,7 @@ import {
   isFeatureEnabled,
 } from "@/lib/site-settings";
 import { getFeatureFlags } from "@/services/site-settings";
+import { getLeagueCommunitySummary } from "@/data/distribution";
 
 export const dynamic = "force-dynamic";
 
@@ -49,10 +51,11 @@ export default async function LeaguePage(props: LeaguePageProps) {
     getSession(),
     getFeatureFlags(),
   ]);
-  const [leagueDirectory, experience, teamCatalog] = await Promise.all([
+  const [leagueDirectory, experience, teamCatalog, community] = await Promise.all([
     getLeagueDirectory(session?.user.id),
     getLeagueExperience(slug, session?.user.id),
     getLeagueTeamCatalog(slug),
+    getLeagueCommunitySummary(slug),
   ]);
   const league = leagueDirectory.find((item) => item.slug === slug);
 
@@ -65,6 +68,7 @@ export default async function LeaguePage(props: LeaguePageProps) {
         data={experience}
         leaderboardEnabled={isFeatureEnabled(flags, LEAGUE_LEADERBOARD_FLAG)}
       />
+      <div className="page-shell pt-8"><LeagueCommunityPulse leagueName={league.name} data={community} /></div>
       {isFeatureEnabled(flags, LEAGUE_TEAM_CATALOG_FLAG) ? (
         <div className="page-shell pb-14 sm:pb-20">
           <TeamCatalogSection teamCatalog={teamCatalog} />
