@@ -18,10 +18,10 @@ function TeamMark({ name, logoUrl }: { name: string; logoUrl: string | null }) {
 
 function FixtureRow({ fixture, teamName, recent }: { fixture: TeamFixture; teamName: string; recent?: boolean }) {
   const date = new Intl.DateTimeFormat("en", { weekday: "short", month: "short", day: "numeric", hour: "2-digit", minute: "2-digit", timeZone: "UTC", timeZoneName: "short" }).format(new Date(fixture.kickoff));
-  const result = fixture.teamScore === null || fixture.opponentScore === null ? "—" : fixture.home ? ` - ` : ` - `;
+  const result = fixture.teamScore === null || fixture.opponentScore === null ? "—" : fixture.home ? String(fixture.teamScore) + " - " + String(fixture.opponentScore) : String(fixture.opponentScore) + " - " + String(fixture.teamScore);
   const won = recent && fixture.teamScore !== null && fixture.opponentScore !== null && fixture.teamScore > fixture.opponentScore;
   const lost = recent && fixture.teamScore !== null && fixture.opponentScore !== null && fixture.teamScore < fixture.opponentScore;
-  return <article className="grid gap-3 border-b px-4 py-4 last:border-b-0 sm:grid-cols-[1fr_auto_auto] sm:items-center"><div className="flex items-center gap-3"><TeamMark name={fixture.opponent} logoUrl={fixture.opponentLogoUrl} /><div><Link href={`/leagues/${fixture.leagueSlug}`} className="font-semibold hover:text-primary">{fixture.home ? ` - ` : ` - `}</Link><p className="text-sm text-muted-foreground">{fixture.home ? "Home" : "Away"} · {fixture.leagueName}</p></div></div><span className="text-sm text-muted-foreground">{date}</span><strong className={cn("font-heading text-3xl", won && "text-primary", lost && "text-destructive")}>{result}</strong></article>;
+  return <article className="grid gap-3 border-b px-4 py-4 last:border-b-0 sm:grid-cols-[1fr_auto_auto] sm:items-center"><div className="flex items-center gap-3"><TeamMark name={fixture.opponent} logoUrl={fixture.opponentLogoUrl} /><div><Link href={`/leagues/${fixture.leagueSlug}`} className="font-semibold hover:text-primary">{fixture.home ? teamName + " - " + fixture.opponent : fixture.opponent + " - " + teamName}</Link><p className="text-sm text-muted-foreground">{fixture.home ? "Home" : "Away"} · {fixture.leagueName}</p></div></div><span className="text-sm text-muted-foreground">{date}</span><strong className={cn("font-heading text-3xl", won && "text-primary", lost && "text-destructive")}>{result}</strong></article>;
 }
 
 export async function generateMetadata(props: TeamPageProps): Promise<Metadata> {
