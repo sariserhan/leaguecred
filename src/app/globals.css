@@ -96,6 +96,10 @@
     @apply bg-background font-sans text-foreground;
   }
 
+  main {
+    animation: route-enter 180ms ease-out both;
+  }
+
   button:not(:disabled),
   [role="button"]:not(:disabled) {
     cursor: pointer;
@@ -111,6 +115,8 @@
     outline-offset: 3px;
   }
 }
+
+@keyframes route-enter { from { opacity: 0; transform: translateY(4px); } to { opacity: 1; transform: none; } }
 
 html[data-dashboard-density="compact"] [data-dashboard-section] section {
   margin-bottom: 1rem;

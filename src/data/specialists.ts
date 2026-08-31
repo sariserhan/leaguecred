@@ -58,7 +58,7 @@ export async function getSpecialistDirectory(): Promise<SpecialistDirectoryEntry
 }
 
 export type SpecialistProfileData = {
-  specialist: { id: string; name: string; initials: string; followers: number; memberSince: string };
+  specialist: { id:string;name:string;initials:string;followers:number;memberSince:string;bio:string|null;image:string|null;profileTheme:string;featuredLeague:string|null;pinnedMilestone:string|null };
   totals: { wins: number; losses: number; settledPicks: number; bestWinStreak: number };
   leagues: Array<{
     id: string; slug: string; name: string; wins: number; losses: number; settledPicks: number;
@@ -89,11 +89,11 @@ export const getSpecialistProfile = cache(async function getSpecialistProfile(
 ): Promise<SpecialistProfileData | null> {
   const rankThreshold = await getRankThreshold();
   const [specialist] = await sqlClient<Array<{
-    id: string; name: string; followers: number; created_at: Date | string;
+    id:string;name:string;followers:number;created_at:Date|string;bio:string|null;image:string|null;profile_theme:string;featured_league:string|null;pinned_milestone:string|null;
   }>>`
-    select u.id, u.name, u.created_at,
+    select u.id,u.name,u.created_at,u.bio,u.image,u.profile_theme,u.pinned_milestone,l.name as featured_league,
       (select count(*)::int from league_follows lf where lf.specialist_user_id = u.id) as followers
-    from "user" u
+    from "user" u left join leagues l on l.id=u.featured_league_id
     where u.id = ${specialistId}
     limit 1`;
   if (!specialist) return null;
@@ -185,6 +185,7 @@ export const getSpecialistProfile = cache(async function getSpecialistProfile(
       initials: specialist.name.split(/\s+/).map((part) => part[0]).join("").slice(0, 2).toUpperCase(),
       followers: specialist.followers,
       memberSince: toIsoTimestamp(specialist.created_at),
+      bio:specialist.bio,image:specialist.image,profileTheme:specialist.profile_theme,featuredLeague:specialist.featured_league,pinnedMilestone:specialist.pinned_milestone,
     },
     totals,
     leagues: leagueRows.map((league) => ({

@@ -19,6 +19,8 @@ test("protected member routes preserve their intended return path", async ({ pag
   }
 });
 
+test("public navigation supports keyboard and landmark access",async({page})=>{await page.goto('/specialists');await expect(page.locator('main')).toHaveCount(1);await page.keyboard.press('Tab');await expect(page.getByRole('link',{name:'Skip to main content'})).toBeFocused();await page.keyboard.press('Control+K');await expect(page.getByRole('dialog',{name:'Command LeagueCred'})).toBeVisible();await page.keyboard.press('Escape');});
+
 test("authenticated dashboard regression", async ({ page }) => {
   test.skip(!process.env.E2E_EMAIL || !process.env.E2E_PASSWORD, "Set E2E_EMAIL and E2E_PASSWORD for authenticated coverage");
   await page.goto("/auth");

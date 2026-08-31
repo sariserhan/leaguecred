@@ -31,6 +31,8 @@ export type NetworkHubData = {
   leagues: NetworkLeague[];
   summary: { known: number; help: number; followed: number; attention: number };
 };
+export type NetworkActivity={id:string;specialistId:string;specialistName:string;league:string;leagueSlug:string;team:string;result:string;occurredAt:string};
+export const getNetworkActivity=cache(async(userId:string)=>{const rows=await sqlClient<Array<{id:string;specialist_id:string;specialist_name:string;league:string;league_slug:string;team:string;result:string;occurred_at:Date|string}>>`select p.id,u.id specialist_id,u.name specialist_name,l.name league,l.slug league_slug,t.name team,p.result,coalesce(p.settled_at,p.submitted_at) occurred_at from league_follows f join picks p on p.user_id=f.specialist_user_id and p.league_id=f.league_id join "user" u on u.id=p.user_id join leagues l on l.id=p.league_id join teams t on t.id=p.selected_team_id where f.follower_user_id=${userId} order by coalesce(p.settled_at,p.submitted_at) desc limit 60`;return rows.map(r=>({id:r.id,specialistId:r.specialist_id,specialistName:r.specialist_name,league:r.league,leagueSlug:r.league_slug,team:r.team,result:r.result,occurredAt:new Date(r.occurred_at).toISOString()}))});
 
 type LeagueRow = { id: string; name: string; slug: string; enabled: boolean; kind: "know" | "help" | null };
 type SpecialistRow = {
