@@ -27,11 +27,22 @@ None.
       but is deliberately unwired (it never added a match ESPN didn't
       already have). Decide whether ESPN-only is acceptable for those
       leagues or a real second source is worth adding for them specifically.
-- [ ] Add privacy-conscious visitor analytics. The admin distribution dashboard now measures joins, first locks, returns, referral sources, and community activation, but intentionally displays “Not tracked” for visits until a real analytics source is connected.
+- [ ] Show the visit count in the admin funnel. Cloudflare Web Analytics now
+      collects visits, but only in Cloudflare's own dashboard; the funnel in
+      `src/data/distribution.ts` still hardcodes `visits: null`, so the UI keeps
+      saying “Not tracked”. Filling it in means calling Cloudflare's GraphQL
+      Analytics API, which needs an account API token held as a real secret —
+      unlike the beacon token, which is public.
+- [ ] Decide whether the Cloudflare beacon and the visitorping script should
+      both stay. They now measure overlapping things, and visitorping loads in
+      development and on preview deploys too, where the beacon deliberately
+      does not.
 - [ ] Decide whether expertise is scoped to clubs as well as leagues
 
 ## Completed
 
+- [x] Add privacy-conscious visitor analytics with a production-only Cloudflare
+      Web Analytics beacon
 - [x] Add club identity, founding roles, referral attribution and activation, Community Challenges, public weekly recaps, post-lock invitation prompts, league density states, and admin distribution analytics
 - [x] Design and implement the Tactical Hex Radar brand mark across icon.tsx, apple-icon.tsx, opengraph-image.tsx, web manifest, and site header/footer
 - [x] Add live in-UI notification feedback for followed specialist locks,

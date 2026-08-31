@@ -96,8 +96,27 @@ export default async function RootLayout({ children }: LayoutProps<"/">) {
             src="https://cdn.visitorping.com/site/vp_RJPP6CJD.js"
             strategy="afterInteractive"
             crossOrigin="anonymous"
+            data-exclude="/admin*"
           />
         </ThemeProvider>
+
+        {/*
+          Cloudflare Web Analytics. The token is a public identifier — it ships
+          in the page source to every visitor — so it lives here rather than in
+          a secret.
+
+          Production only. leaguecred.com is served by Vercel and not proxied
+          through Cloudflare, so nothing is injected for us and this beacon is
+          the whole measurement; loading it in development or on a preview
+          deploy would count our own work as traffic.
+        */}
+        {process.env.VERCEL_ENV === "production" ? (
+          <Script
+            src="https://static.cloudflareinsights.com/beacon.min.js"
+            strategy="afterInteractive"
+            data-cf-beacon='{"token": "803a38ea71064b93b85e6887a1bf736a"}'
+          />
+        ) : null}
       </body>
     </html>
   );
