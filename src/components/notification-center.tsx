@@ -3,7 +3,7 @@
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useCallback, useEffect, useRef, useState, useTransition } from "react";
-import { BellIcon, CheckCheckIcon, RefreshCwIcon, SettingsIcon } from "lucide-react";
+import { BellIcon, CheckCheckIcon, RefreshCwIcon, SettingsIcon, XIcon } from "lucide-react";
 import { markAllNotificationsRead, markNotificationRead, saveNotificationPreferences } from "@/app/notifications/actions";
 import { Button } from "@/components/ui/button";
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from "@/components/ui/dialog";
@@ -12,6 +12,15 @@ import type { AppNotification, NotificationPreferences } from "@/data/notificati
 
 const POLL_INTERVAL_MS = 30_000;
 const preferenceOptions: Array<[keyof NotificationPreferences, string]> = [["lockDeadlines", "Lock deadlines"], ["specialistLocks", "Specialist locks"], ["pickResults", "My results"], ["followedResults", "Followed results"]];
+
+function notificationGroup(item: AppNotification) {
+  const created = new Date(item.createdAt);
+  const today = new Date();
+  if (created.toDateString() === today.toDateString()) return "Today";
+  if (item.kind.includes("result") || item.kind.includes("settled")) return "Results";
+  if (item.kind.includes("specialist")) return "Specialist activity";
+  return "Earlier";
+}
 
 export function NotificationCenter({ initialItems, initialPreferences }: { initialItems: AppNotification[]; initialPreferences: NotificationPreferences }) {
   const router = useRouter();
@@ -67,6 +76,19 @@ export function NotificationCenter({ initialItems, initialPreferences }: { initi
     });
   }
 
+  function dismiss(item: AppNotification) {
+    setItems((current) => current.filter((candidate) => candidate.id !== item.id));
+    startTransition(async () => {
+      try {
+        const result = await markNotificationRead(item.id);
+        if (!result.ok) throw new Error(result.message);
+      } catch (error) {
+        setItems((current) => current.some((candidate) => candidate.id === item.id) ? current : [item, ...current].toSorted((left, right) => Date.parse(right.createdAt) - Date.parse(left.createdAt)));
+        toast.add({ title: "Notification not dismissed", description: error instanceof Error ? error.message : "Try again.", type: "error" });
+      }
+    });
+  }
+
   function toggle(key: keyof NotificationPreferences) {
     const previous = preferences;
     const next = { ...preferences, [key]: !preferences[key] };
@@ -82,7 +104,7 @@ export function NotificationCenter({ initialItems, initialPreferences }: { initi
     <Dialog open={open} onOpenChange={setOpen}>
       <DialogContent className="max-h-[85dvh] max-w-lg overflow-y-auto rounded-none p-0">
         <DialogHeader className="border-b p-5"><div className="flex items-center justify-between gap-3"><DialogTitle className="font-heading text-3xl font-bold uppercase">Notifications</DialogTitle><div className="flex items-center gap-1"><Button variant="ghost" size="icon-sm" onClick={() => void refresh(true)} disabled={pending} aria-label="Refresh notifications"><RefreshCwIcon aria-hidden="true" /></Button><Button variant="ghost" size="icon-sm" onClick={() => setSettings((current) => !current)} aria-label="Notification preferences"><SettingsIcon aria-hidden="true" /></Button></div></div><DialogDescription>Live updates for deadlines, specialist activity, and results.</DialogDescription></DialogHeader>
-        {settings ? <div className="grid gap-1 p-4">{preferenceOptions.map(([key, label]) => <button key={key} type="button" aria-pressed={preferences[key]} onClick={() => toggle(key)} className="flex min-h-11 items-center justify-between border px-4 py-3 text-left font-semibold focus-visible:outline-none focus-visible:ring-3 focus-visible:ring-ring/50"><span>{label}</span><span className={preferences[key] ? "text-primary" : "text-muted-foreground"}>{preferences[key] ? "On" : "Off"}</span></button>)}</div> : <div className="divide-y">{items.length ? items.map((item) => <Link key={item.id} href={item.href} onClick={() => read(item.id)} className={item.readAt ? "block p-4 text-muted-foreground hover:bg-muted focus-visible:outline-none focus-visible:ring-3 focus-visible:ring-ring/50" : "block border-l-4 border-primary p-4 hover:bg-muted focus-visible:outline-none focus-visible:ring-3 focus-visible:ring-ring/50"}><strong className="block text-foreground">{item.title}</strong><span className="mt-1 block text-sm">{item.body}</span><time className="mt-2 block text-xs" dateTime={item.createdAt}>{new Intl.DateTimeFormat("en", { dateStyle: "medium", timeStyle: "short" }).format(new Date(item.createdAt))}</time></Link>) : <p className="p-8 text-center text-muted-foreground">You are all caught up.</p>}</div>}
+        {settings ? <div className="grid gap-1 p-4">{preferenceOptions.map(([key, label]) => <button key={key} type="button" aria-pressed={preferences[key]} onClick={() => toggle(key)} className="flex min-h-11 items-center justify-between border px-4 py-3 text-left font-semibold focus-visible:outline-none focus-visible:ring-3 focus-visible:ring-ring/50"><span>{label}</span><span className={preferences[key] ? "text-primary" : "text-muted-foreground"}>{preferences[key] ? "On" : "Off"}</span></button>)}</div> : items.length ? <div>{["Today", "Results", "Specialist activity", "Earlier"].map((group) => { const grouped = items.filter((item) => notificationGroup(item) === group); return grouped.length ? <section key={group} aria-labelledby={`notifications-${group.replaceAll(" ", "-").toLowerCase()}`}><h3 id={`notifications-${group.replaceAll(" ", "-").toLowerCase()}`} className="border-y bg-muted px-4 py-2 text-xs font-bold tracking-[0.1em] uppercase first:border-t-0">{group}</h3><ul className="divide-y">{grouped.map((item) => <li key={item.id} className={item.readAt ? "grid grid-cols-[1fr_auto] text-muted-foreground" : "grid grid-cols-[1fr_auto] border-l-4 border-primary"}><Link href={item.href} onClick={() => read(item.id)} className="min-w-0 p-4 hover:bg-muted focus-visible:outline-none focus-visible:ring-3 focus-visible:ring-ring/50"><strong className="block text-foreground">{item.title}</strong><span className="mt-1 block text-sm">{item.body}</span><time className="mt-2 block text-xs" dateTime={item.createdAt}>{new Intl.DateTimeFormat("en", { dateStyle: "medium", timeStyle: "short" }).format(new Date(item.createdAt))}</time></Link><Button variant="ghost" size="icon-sm" className="m-2" aria-label={`Dismiss ${item.title}`} onClick={() => dismiss(item)}><XIcon aria-hidden="true" /></Button></li>)}</ul></section> : null; })}</div> : <p className="p-8 text-center text-muted-foreground">You are all caught up.</p>}
         <div className="border-t p-4"><Button variant="outline" className="w-full" disabled={!unread || pending} onClick={readAll}><CheckCheckIcon data-icon="inline-start" />Mark all as read</Button></div>
       </DialogContent>
     </Dialog>

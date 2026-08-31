@@ -7,6 +7,7 @@ import { redirect } from "next/navigation";
 import { Badge } from "@/components/ui/badge";
 import { buttonVariants } from "@/components/ui/button";
 import { LockCountdown } from "@/components/lock-countdown";
+import { LockTimeline } from "@/components/slip/lock-timeline";
 import type { WeeklySlipEntry } from "@/data/weekly-slip";
 import { getWeeklySlip } from "@/data/weekly-slip";
 import { getSession } from "@/lib/auth-session";
@@ -31,7 +32,7 @@ function ResultBadge({ result }: { result: WeeklySlipEntry["result"] }) {
   return <Badge variant={variants[result]}>{labels[result]}</Badge>;
 }
 
-function SlipEntryCard({ entry }: { entry: WeeklySlipEntry }) {
+function SlipEntryCard({ entry, now }: { entry: WeeklySlipEntry; now: string }) {
   const kickoff = new Intl.DateTimeFormat("en", { weekday: "short", month: "short", day: "numeric", hour: "2-digit", minute: "2-digit", timeZone: "UTC", timeZoneName: "short" }).format(new Date(entry.kickoff));
   const score = entry.fixture.homeScore === null || entry.fixture.awayScore === null ? null : `${entry.fixture.homeScore}–${entry.fixture.awayScore}`;
   return (
@@ -42,6 +43,7 @@ function SlipEntryCard({ entry }: { entry: WeeklySlipEntry }) {
         <strong className="mt-1 block text-lg">{entry.selectedTeam.name}</strong>
         <p className="mt-1 text-sm text-muted-foreground">{entry.fixture.home} vs {entry.fixture.away} · {kickoff}</p>
         {entry.specialist ? <p className="mt-1 text-sm text-muted-foreground">Call from <Link href={`/specialists/${entry.specialist.id}`} className="font-semibold text-foreground hover:text-primary hover:underline">{entry.specialist.name}</Link></p> : null}
+        <LockTimeline entry={entry} now={now} />
       </div>
       <div className="flex items-center gap-3 sm:flex-col sm:items-end"><strong className="font-heading text-3xl">{score ?? "—"}</strong><ResultBadge result={entry.result} /></div>
     </article>
@@ -59,14 +61,15 @@ function groupByMatchweek(entries: WeeklySlipEntry[]) {
   return [...groups];
 }
 
-function SlipGroups({ entries, active = false }: { entries: WeeklySlipEntry[]; active?: boolean }) {
-  return <div className="grid gap-6">{groupByMatchweek(entries).map(([label, group]) => <section key={label} className="border" aria-label={label}><header className="flex flex-wrap items-center justify-between gap-3 border-b bg-muted px-4 py-3"><div><h3 className="font-heading text-2xl font-bold uppercase">{label}</h3><p className="text-xs text-muted-foreground">{group.length} call{group.length === 1 ? "" : "s"}</p></div>{active ? <LockCountdown lockAt={group[0].lockAt} compact /> : null}</header><div className="grid gap-px bg-border lg:grid-cols-2">{group.map((entry) => <div key={`${entry.path}:${entry.id}`} className="bg-background"><SlipEntryCard entry={entry} /></div>)}</div></section>)}</div>;
+function SlipGroups({ entries, now, active = false }: { entries: WeeklySlipEntry[]; now: string; active?: boolean }) {
+  return <div className="grid gap-6">{groupByMatchweek(entries).map(([label, group]) => <section key={label} className="border" aria-label={label}><header className="flex flex-wrap items-center justify-between gap-3 border-b bg-muted px-4 py-3"><div><h3 className="font-heading text-2xl font-bold uppercase">{label}</h3><p className="text-xs text-muted-foreground">{group.length} call{group.length === 1 ? "" : "s"}</p></div>{active ? <LockCountdown lockAt={group[0].lockAt} compact /> : null}</header><div className="grid gap-px bg-border lg:grid-cols-2">{group.map((entry) => <div key={`${entry.path}:${entry.id}`} className="bg-background"><SlipEntryCard entry={entry} now={now} /></div>)}</div></section>)}</div>;
 }
 
 export default async function WeeklySlipPage() {
   const session = await getSession();
   if (!session) redirect("/auth");
   const data = await getWeeklySlip(session.user.id);
+  const now = new Date().toISOString();
   const accuracy = data.summary.independentDecisions === 0 ? null : Math.round((data.summary.independentWins / data.summary.independentDecisions) * 100);
 
   return (
@@ -83,12 +86,12 @@ export default async function WeeklySlipPage() {
 
       <section className="mt-7" aria-labelledby="active-heading">
         <div className="mb-4 flex items-end justify-between gap-4"><div><h2 id="active-heading" className="section-title">On your slip</h2><p className="mt-2 text-muted-foreground">These calls are still awaiting their final result.</p></div><LockKeyholeIcon aria-hidden="true" className="size-7 text-primary" /></div>
-        {data.active.length > 0 ? <SlipGroups entries={data.active} active /> : <div className="border p-8 text-center"><CheckIcon aria-hidden="true" className="mx-auto size-7 text-primary" /><h3 className="mt-3 font-heading text-3xl font-bold uppercase">Your slip is clear</h3><p className="mx-auto mt-2 max-w-lg text-muted-foreground">Pick one team from the league you truly know, or follow a proven specialist from another league.</p><Link href="/leagues" className={cn(buttonVariants({ size: "lg" }), "mt-5")}><ArrowRightIcon data-icon="inline-start" />Explore leagues</Link></div>}
+        {data.active.length > 0 ? <SlipGroups entries={data.active} now={now} active /> : <div className="border p-8 text-center"><CheckIcon aria-hidden="true" className="mx-auto size-7 text-primary" /><h3 className="mt-3 font-heading text-3xl font-bold uppercase">Your slip is clear</h3><p className="mx-auto mt-2 max-w-lg text-muted-foreground">Pick one team from the league you truly know, or follow a proven specialist from another league.</p><Link href="/leagues" className={cn(buttonVariants({ size: "lg" }), "mt-5")}><ArrowRightIcon data-icon="inline-start" />Explore leagues</Link></div>}
       </section>
 
       <section className="mt-10" aria-labelledby="completed-heading">
         <div className="mb-4 flex items-end justify-between gap-4"><div><h2 id="completed-heading" className="section-title">Recent results</h2><p className="mt-2 text-muted-foreground">Your latest completed independent locks and followed calls.</p></div><UsersRoundIcon aria-hidden="true" className="size-7 text-primary" /></div>
-        {data.completed.length > 0 ? <SlipGroups entries={data.completed} /> : <p className="border p-6 text-muted-foreground">Completed calls will appear here after their fixtures are settled.</p>}
+        {data.completed.length > 0 ? <SlipGroups entries={data.completed} now={now} /> : <p className="border p-6 text-muted-foreground">Completed calls will appear here after their fixtures are settled.</p>}
       </section>
     </div>
   );

@@ -48,9 +48,10 @@ export default async function RootLayout({ children }: LayoutProps<"/">) {
       className={inter.variable + " " + barlowCondensed.variable + " antialiased"}
     >
       <body suppressHydrationWarning className="flex min-h-screen flex-col bg-background text-foreground">
+        <a href="#main-content" className="sr-only z-[100] bg-foreground px-4 py-3 font-semibold text-background focus:not-sr-only focus:fixed focus:top-2 focus:left-2">Skip to main content</a>
         <SiteBanner />
         <SiteHeader isAdmin={isAdmin} leagues={leagues} notificationCenter={notificationCenter} />
-        <main className="flex-1">{children}</main>
+        <main id="main-content" tabIndex={-1} className="flex-1">{children}</main>
         <SiteFooter />
         <Toaster timeout={4500} />
       </body>

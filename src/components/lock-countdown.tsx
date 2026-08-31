@@ -14,10 +14,11 @@ function remaining(target: string) {
 }
 
 export function LockCountdown({ lockAt, compact = false }: { lockAt: string; compact?: boolean }) {
-  const [time, setTime] = useState(() => remaining(lockAt));
+  const [time, setTime] = useState({ seconds: 1, label: "—" });
   useEffect(() => {
+    const initial = window.setTimeout(() => setTime(remaining(lockAt)), 0);
     const timer = window.setInterval(() => setTime(remaining(lockAt)), 1000);
-    return () => window.clearInterval(timer);
+    return () => { window.clearTimeout(initial); window.clearInterval(timer); };
   }, [lockAt]);
   return <div className={cn("inline-flex items-center gap-2 border border-primary px-3 py-2", compact ? "text-sm" : "min-w-40 justify-center")}><LockKeyholeIcon className="size-4 text-primary" /><span><span className="block text-[10px] font-bold uppercase tracking-wide text-muted-foreground">{time.seconds > 0 ? "Locks in" : "Locked"}</span><strong className={cn("font-heading text-primary tabular-nums", compact ? "text-xl" : "text-3xl")}>{time.label}</strong></span></div>;
 }

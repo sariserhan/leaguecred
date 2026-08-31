@@ -13,6 +13,8 @@ import type { SpecialistProfileData } from "@/data/specialists";
 import { PredictionHistory } from "@/components/specialists/prediction-history";
 import { Recommendations } from "@/components/specialists/recommendations";
 import { ProvisionalProgress } from "@/components/specialists/provisional-progress";
+import { DashboardActivity } from "@/components/specialists/dashboard-activity";
+import { ProfileMilestones } from "@/components/specialists/profile-milestones";
 import type { SpecialistRecommendation } from "@/data/recommendations";
 
 function ResultBadge({ result }: { result: "win" | "loss" | "void" | "pending" }) {
@@ -64,6 +66,8 @@ export function SpecialistProfile({ data, recommendations = [], hasHelpPreferenc
       {data.viewer.isSelf ? <div className="mb-7"><h1 className="font-heading text-[clamp(3.5rem,7vw,6.5rem)] leading-[0.88] font-extrabold uppercase">Your football dashboard.</h1><p className="mt-4 max-w-2xl text-lg text-muted-foreground">Your independent records, followed leagues, and recent calls in one place.</p><div className="mt-6 flex flex-col gap-3 sm:flex-row"><Link href="/leagues?intent=prove" className="inline-flex h-11 items-center justify-center bg-primary px-5 font-semibold">Make a Weekly Lock</Link><Link href="/specialists" className="inline-flex h-11 items-center justify-center bg-foreground px-5 font-semibold text-background">Find specialists</Link></div></div> : null}
       {data.viewer.isSelf ? <section className="mb-7 grid border-y md:grid-cols-3" aria-label="Dashboard priorities"><div className="border-b p-5 md:border-r md:border-b-0"><span className="text-xs font-bold uppercase text-muted-foreground">Needs attention</span><strong className="mt-2 block font-heading text-3xl text-primary">{data.viewer.locksDue} locks due</strong><Link href="/leagues?intent=prove" className="mt-2 inline-block text-sm font-semibold underline">Review leagues</Link></div><div className="border-b p-5 md:border-r md:border-b-0"><span className="text-xs font-bold uppercase text-muted-foreground">Active this week</span><strong className="mt-2 block font-heading text-3xl">Weekly Slip</strong><Link href="/slip" className="mt-2 inline-block text-sm font-semibold underline">Open active calls</Link></div><div className="p-5"><span className="text-xs font-bold uppercase text-muted-foreground">Results</span><strong className="mt-2 block font-heading text-3xl">{data.totals.wins}–{data.totals.losses}</strong><a href="#prediction-history-heading" className="mt-2 inline-block text-sm font-semibold underline">View history</a></div></section> : null}
       {data.viewer.isSelf ? <ProvisionalProgress leagues={data.leagues} /> : null}
+      {data.viewer.isSelf ? <DashboardActivity data={data} /> : null}
+      {data.viewer.isSelf ? <ProfileMilestones data={data} /> : null}
       {data.viewer.isSelf ? <Recommendations recommendations={recommendations} hasHelpPreferences={hasHelpPreferences} /> : null}
       <header className="border-b border-foreground bg-foreground px-5 py-8 text-background sm:px-8 sm:py-10">
         <p className="font-semibold text-primary">{data.viewer.isSelf ? "Your LeagueCred identity" : data.leagues.some((league) => league.followable) ? "Public specialist profile" : "Public profile"}</p>

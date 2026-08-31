@@ -77,7 +77,7 @@ export type SpecialistProfileData = {
   /** Spec section 23: attributed, and never mixed into the independent record. */
   followedHistory: Array<{
     id: string; leagueName: string; leagueSlug: string; team: string;
-    specialistId: string; specialistName: string; result: "win" | "loss" | "void" | "pending";
+    specialistId: string; specialistName: string; result: "win" | "loss" | "void" | "pending"; followedAt: string;
   }>;
   viewer: { authenticated: boolean; isSelf: boolean; locksDue: number };
 };
@@ -149,10 +149,10 @@ export const getSpecialistProfile = cache(async function getSpecialistProfile(
       order by l.name`,
     sqlClient<Array<{
       id: string; league_name: string; league_slug: string; team: string;
-      specialist_id: string; specialist_name: string; result: "win" | "loss" | "void" | "pending";
+      specialist_id: string; specialist_name: string; result: "win" | "loss" | "void" | "pending"; followed_at: Date;
     }>>`
       select fp.id, l.name as league_name, l.slug as league_slug, t.name as team,
-        u.id as specialist_id, u.name as specialist_name, fp.result
+        u.id as specialist_id, u.name as specialist_name, fp.result, fp.followed_at
       from followed_picks fp
       join leagues l on l.id = fp.league_id
       join picks sp on sp.id = fp.source_pick_id
@@ -205,6 +205,7 @@ export const getSpecialistProfile = cache(async function getSpecialistProfile(
     followedHistory: followedHistoryRows.map((entry) => ({
       id: entry.id, leagueName: entry.league_name, leagueSlug: entry.league_slug, team: entry.team,
       specialistId: entry.specialist_id, specialistName: entry.specialist_name, result: entry.result,
+      followedAt: new Date(entry.followed_at).toISOString(),
     })),
     viewer: { authenticated: Boolean(viewerId), isSelf: viewerId === specialist.id, locksDue: locksDueRows[0]?.count ?? 0 },
   };

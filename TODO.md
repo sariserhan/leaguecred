@@ -36,6 +36,8 @@ None.
 
 ## Completed
 
+- [x] Add Weekly Lock timelines, dashboard activity, milestones, record sharing, global search, grouped notifications, and comparison UI
+
 - [x] Add account settings for profile, password, league, network, and notification controls
 - [x] Add founding-season and provisional specialist discovery states
 - [x] Add management views for upcoming fixtures, recent accounts, and provisional records

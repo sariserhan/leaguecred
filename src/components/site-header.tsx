@@ -26,6 +26,7 @@ import { cn } from "@/lib/utils";
 import { loadLeagueTeams } from "@/app/actions";
 import type { LeagueNavOption, TeamNavTeam } from "@/data/teams";
 import { NotificationCenter } from "@/components/notification-center";
+import { GlobalSearch } from "@/components/global-search";
 import type { AppNotification, NotificationPreferences } from "@/data/notifications";
 
 const navItems = [
@@ -166,7 +167,7 @@ export function SiteHeader({
           </Menu.Root>
         </nav>
 
-        <div className="flex items-center gap-1">{session && notificationCenter ? <NotificationCenter initialItems={notificationCenter.items} initialPreferences={notificationCenter.preferences} /> : null}{session ? (
+        <div className="flex items-center gap-1"><GlobalSearch />{session && notificationCenter ? <NotificationCenter initialItems={notificationCenter.items} initialPreferences={notificationCenter.preferences} /> : null}{session ? (
           <DropdownMenu>
             <DropdownMenuTrigger render={<Button variant="outline" size="icon" aria-label={`Open account menu for ${session.user.name}`} />}><Avatar className="size-8"><AvatarFallback>{initials}</AvatarFallback></Avatar></DropdownMenuTrigger>
             <DropdownMenuContent align="end" className="w-56 rounded-none p-2">
