@@ -9,6 +9,8 @@ const footerGroups = [
       { href: "/leagues", label: "Leagues" },
       { href: "/#how-it-works", label: "How it works" },
       { href: "/challenges", label: "Community challenge" },
+      { href: "/live-locks", label: "Global active locks" },
+      { href: "/communities", label: "Communities" },
       { href: "/recaps", label: "Weekly recap" },
     ],
   },

@@ -90,7 +90,7 @@ export default async function RootLayout({ children }: LayoutProps<"/">) {
           <SiteHeader isAdmin={isAdmin} leagues={leagues} notificationCenter={notificationCenter} />
           <main id="main-content" tabIndex={-1} className={session ? "flex-1 pb-16 md:pb-0" : "flex-1"}>{children}</main>
           <SiteFooter />
-          {session ? <MobileMemberNav userId={session.user.id} /> : null}
+          {session ? <MobileMemberNav userId={session.user.id} unread={notificationCenter?.items.filter((item) => !item.readAt).length ?? 0} /> : null}
           <Toaster timeout={4500} />
           <Script
             src="https://cdn.visitorping.com/site/vp_RJPP6CJD.js"

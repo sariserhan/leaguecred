@@ -364,6 +364,33 @@ export const userLeaguePreferences = pgTable("user_league_preferences", {
   index("user_league_preferences_league_idx").on(table.leagueId),
 ]);
 
+export const pickOpinions = pgTable("pick_opinions", {
+  id: uuid("id").defaultRandom().primaryKey(),
+  pickId: uuid("pick_id").notNull().references(() => picks.id, { onDelete: "cascade" }),
+  userId: text("user_id").notNull().references(() => user.id, { onDelete: "cascade" }),
+  parentId: uuid("parent_id").references((): AnyPgColumn => pickOpinions.id, { onDelete: "cascade" }),
+  body: text("body").notNull(),
+  createdAt,
+  updatedAt,
+}, (table) => [
+  index("pick_opinions_pick_created_idx").on(table.pickId, table.createdAt),
+  index("pick_opinions_parent_id_idx").on(table.parentId),
+  index("pick_opinions_user_id_idx").on(table.userId),
+  check("pick_opinions_body_length_check", sql`char_length(${table.body}) between 2 and 500`),
+]);
+
+export const pickOpinionVotes = pgTable("pick_opinion_votes", {
+  opinionId: uuid("opinion_id").notNull().references(() => pickOpinions.id, { onDelete: "cascade" }),
+  userId: text("user_id").notNull().references(() => user.id, { onDelete: "cascade" }),
+  value: integer("value").notNull(),
+  createdAt,
+  updatedAt,
+}, (table) => [
+  primaryKey({ columns: [table.opinionId, table.userId] }),
+  index("pick_opinion_votes_user_id_idx").on(table.userId),
+  check("pick_opinion_votes_value_check", sql`${table.value} in (-1, 1)`),
+]);
+
 export const referrals = pgTable("referrals", {
   id: uuid("id").defaultRandom().primaryKey(),
   inviterUserId: text("inviter_user_id").notNull().references(() => user.id, { onDelete: "cascade" }),

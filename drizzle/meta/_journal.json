@@ -162,6 +162,13 @@
       "when": 1788149000000,
       "tag": "0022_community_distribution",
       "breakpoints": true
+    },
+    {
+      "idx": 23,
+      "version": "7",
+      "when": 1788150000000,
+      "tag": "0023_global_lock_forum",
+      "breakpoints": true
     }
   ]
 }

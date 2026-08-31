@@ -5,10 +5,12 @@ import { ArrowRightIcon, ChartNoAxesColumnIncreasingIcon, ClipboardPenLineIcon, 
 import { ActivityAndStats, FinalCallToAction, LeagueRail, MemberVoices, SpecialistProof } from "@/components/home/home-proof";
 import { InteractiveDemo } from "@/components/home/interactive-demo";
 import { MobileHomeCta } from "@/components/home/mobile-home-cta";
+import { MemberHome } from "@/components/home/member-home";
+import { FirstSessionTour } from "@/components/home/first-session-tour";
 import { HeroBackdrop } from "@/components/home/hero-backdrop";
 import { ParticipationPaths, RecordAndQuestions } from "@/components/home/product-explainer";
 import { buttonVariants } from "@/components/ui/button";
-import { getHomeData } from "@/data/home";
+import { getHomeData, getMemberHome } from "@/data/home";
 import { getSession } from "@/lib/auth-session";
 import { enforceMaintenanceGate } from "@/lib/maintenance";
 import { HOMEPAGE_ACTIVITY_FLAG, isFeatureEnabled } from "@/lib/site-settings";
@@ -31,13 +33,16 @@ const steps = [
 
 export default async function HomePage() {
   await enforceMaintenanceGate();
-  const [session, data, flags] = await Promise.all([getSession(), getHomeData(), getFeatureFlags()]);
+  const sessionPromise = getSession();
+  const memberPromise = sessionPromise.then((current) => current ? getMemberHome(current.user.id) : null);
+  const [session, data, flags, member] = await Promise.all([sessionPromise, getHomeData(), getFeatureFlags(), memberPromise]);
   const showActivity = isFeatureEnabled(flags, HOMEPAGE_ACTIVITY_FLAG);
   const returningHref = session ? "/slip" : "/leagues?intent=prove";
   const returningLabel = session ? "Continue to your Weekly Slip" : "Make today's call";
 
   return (
     <>
+      {session && member ? <><FirstSessionTour /><MemberHome data={member} /></> : null}
       <section className="page-shell grid min-h-[650px] items-center gap-12 py-14 lg:grid-cols-[0.86fr_1.14fr] lg:py-10">
         <div className="flex flex-col items-start gap-7">
           <h1 className="display-title max-w-[760px] normal-case">

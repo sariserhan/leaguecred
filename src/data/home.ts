@@ -38,6 +38,24 @@ export type HomeData = {
   nextDeadline: { league: string; matchweek: string; lockAt: Date } | null;
 };
 
+export type MemberHomeData = {
+  club: { name: string; slug: string; logoUrl: string | null } | null;
+  activeLock: { team: string; opponent: string; league: string; kickoffAt: string } | null;
+  nextDeadline: { league: string; slug: string; lockAt: string } | null;
+  followedSpecialists: number;
+};
+
+export async function getMemberHome(userId: string): Promise<MemberHomeData> {
+  const [clubRows, lockRows, deadlineRows, followRows] = await Promise.all([
+    sqlClient<Array<{ name: string; slug: string; logo_url: string | null }>>`select t.name,t.slug,t.logo_url from "user" u join teams t on t.id=u.primary_team_id where u.id=${userId}`,
+    sqlClient<Array<{ team: string; opponent: string; league: string; kickoff_at: string }>>`select st.name team,case when st.id=f.home_team_id then at.name else ht.name end opponent,l.name league,f.kickoff_at::text from picks p join fixtures f on f.id=p.fixture_id join teams st on st.id=p.selected_team_id join teams ht on ht.id=f.home_team_id join teams at on at.id=f.away_team_id join leagues l on l.id=p.league_id where p.user_id=${userId} and p.result='pending' order by f.kickoff_at limit 1`,
+    sqlClient<Array<{ league: string; slug: string; lock_at: string }>>`select l.name league,l.slug,m.lock_at::text from user_league_preferences pref join leagues l on l.id=pref.league_id join matchweeks m on m.league_id=l.id where pref.user_id=${userId} and pref.kind='know' and m.status='upcoming' and m.lock_at>now() order by m.lock_at limit 1`,
+    sqlClient<Array<{ count: number }>>`select count(*)::int count from league_follows where follower_user_id=${userId}`,
+  ]);
+  const club=clubRows[0],lock=lockRows[0],deadline=deadlineRows[0];
+  return {club:club?{name:club.name,slug:club.slug,logoUrl:club.logo_url}:null,activeLock:lock?{team:lock.team,opponent:lock.opponent,league:lock.league,kickoffAt:lock.kickoff_at}:null,nextDeadline:deadline?{league:deadline.league,slug:deadline.slug,lockAt:deadline.lock_at}:null,followedSpecialists:followRows[0]?.count??0};
+}
+
 export async function getHomeData(): Promise<HomeData> {
   const [statsRows, leagueRows, specialistRows, resultRows, deadlineRows] = await Promise.all([
     sqlClient<Array<{ members: number; leagues: number; settled_locks: number; active_locks: number }>>`

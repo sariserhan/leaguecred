@@ -29,6 +29,8 @@ export const RATE_LIMITS = {
   castFixtureVote: { limit: 30, windowSeconds: 60 },
   addGameDiscussion: { limit: 10, windowSeconds: 60 },
   becomeCommunityCaptain: { limit: 5, windowSeconds: 60 },
+  addPickOpinion: { limit: 12, windowSeconds: 60 },
+  votePickOpinion: { limit: 90, windowSeconds: 60 },
 } as const satisfies Record<string, RateLimitPolicy>;
 
 export type RateLimitedAction = keyof typeof RATE_LIMITS;
