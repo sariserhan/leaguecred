@@ -11,7 +11,14 @@ type Props = { params: Promise<{ slug: string }> };
 
 export async function generateMetadata({ params }: Props): Promise<Metadata> {
   const data = await getLeagueStandings((await params).slug);
-  return data ? { title: `${data.league.name} standings` } : { title: "Standings not found" };
+  if (!data) return { title: "Standings not found" };
+  const description = `Current-season ${data.league.name} table.`;
+  return {
+    title: `${data.league.name} standings`,
+    description,
+    alternates: { canonical: `/leagues/${data.league.slug}/standings` },
+    openGraph: { title: `${data.league.name} standings · LeagueCred`, description, type: "website" },
+  };
 }
 
 export default async function LeagueStandingsPage({ params }: Props) {

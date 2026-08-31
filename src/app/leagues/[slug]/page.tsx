@@ -30,12 +30,14 @@ export async function generateMetadata(
     return { title: "League not found" };
   }
 
+  const description =
+    "Build an independent " + league.name + " record or follow proven league specialists.";
+
   return {
     title: league.name,
-    description:
-      "Build an independent " +
-      league.name +
-      " record or follow proven league specialists.",
+    description,
+    alternates: { canonical: `/leagues/${league.slug}` },
+    openGraph: { title: `${league.name} · LeagueCred`, description, type: "website" },
   };
 }
 
