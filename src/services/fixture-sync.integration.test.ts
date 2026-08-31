@@ -178,11 +178,11 @@ describe("synchronizeFixtures matchweek keying", () => {
     expect(matchweeks).toHaveLength(2);
   });
   // The failure this guards: a fixture whose round belongs to a matchweek that
-  // is already locked or played was dropped in silence. It is never written, so
-  // no later job can recover it and no result for it can ever appear - the
-  // league simply looks as though the provider forgot the match. Counting it is
-  // what makes that visible in the admin panel and the logs.
-  it("counts the fixtures it could not add to a frozen matchweek", async () => {
+  // has already locked was dropped in silence. It was never written, so no
+  // later job could recover it and no result for it could ever appear - the
+  // league simply looked as though the provider forgot the match. It is now
+  // written into the locked week and counted as a late arrival.
+  it("still records a fixture that arrives after its matchweek locked", async () => {
     const suffix = crypto.randomUUID();
     const provider = `test-frozen-${suffix}`;
     const round = `${provider}:Round ${suffix}`;
@@ -205,17 +205,24 @@ describe("synchronizeFixtures matchweek keying", () => {
     });
 
     const opened = await synchronizeFixtures(fakeProvider(provider, { requestCount: 1, fixtures: [first] }));
-    expect(opened).toMatchObject({ created: 1, frozenSkipped: 0 });
+    expect(opened).toMatchObject({ created: 1, lateAdded: 0 });
 
     await sqlClient`
       update matchweeks set status = 'locked' where id = (
         select matchweek_id from fixtures where provider_external_id = ${`test-frozen-a-${suffix}`})`;
 
-    const blocked = await synchronizeFixtures(fakeProvider(provider, { requestCount: 1, fixtures: [first, late] }));
+    const arrived = await synchronizeFixtures(fakeProvider(provider, { requestCount: 1, fixtures: [first, late] }));
 
-    expect(blocked).toMatchObject({ created: 0, frozenSkipped: 1 });
-    const [stored] = await sqlClient<Array<{ id: string }>>`
-      select id from fixtures where provider_external_id = ${`test-frozen-b-${suffix}`}`;
-    expect(stored).toBeUndefined();
+    expect(arrived).toMatchObject({ created: 1, lateAdded: 1 });
+    const [stored] = await sqlClient<Array<{ id: string; matchweek_id: string }>>`
+      select id, matchweek_id from fixtures where provider_external_id = ${`test-frozen-b-${suffix}`}`;
+    expect(stored).toBeDefined();
+
+    // The locked week keeps the deadline it locked on: a late fixture must not
+    // drag lock_at backwards under everyone who already picked against it.
+    const [week] = await sqlClient<Array<{ status: string; lock_at: Date }>>`
+      select status, lock_at from matchweeks where id = ${stored!.matchweek_id}`;
+    expect(week?.status).toBe("locked");
+    expect(new Date(week!.lock_at).toISOString()).toBe(kickoffA);
   });
 });

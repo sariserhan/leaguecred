@@ -16,16 +16,6 @@ None.
 
 ## Blocked
 
-- [ ] Decide what a fixture should do when its round lands on a matchweek that
-      is already locked or played. Today `synchronizeRound` drops it: it is
-      never written, so no later job can recover it and no result for it can
-      appear — a Süper Lig match played on Monday 2026-08-31 (Beşiktaş 6–2
-      Çorum FK) is missing from the site for what looks like this reason. The
-      count is now reported (`frozenSkipped`), so pressing Refresh on the league
-      says so out loud, but the drop itself still stands. Adding it to a locked
-      or settled week is safe — nobody can lock into a closed week — while
-      adding it to an open week somebody has already locked in is the case the
-      freeze exists for.
 
 ## Later
 
@@ -52,6 +42,12 @@ None.
 - [ ] Decide whether expertise is scoped to clubs as well as leagues
 
 ## Completed
+
+- [x] Never lose a played match. A fixture arriving into a week that has already
+      locked or taken picks is now recorded rather than dropped, and a played
+      match in a week that is still open shows its result immediately instead of
+      waiting for the whole week to finish. Süper Lig's Beşiktaş 6–2 Çorum FK on
+      Monday 2026-08-31 was the case that surfaced both.
 
 - [x] Group the admin page into tabs, and report what a result pull found —
       including when it found nothing, which is the usual answer between

@@ -70,10 +70,11 @@ function PastMatchweekHistory({ leagueSlug, matchweeks }: { leagueSlug: string; 
     <section className="mt-7 border" aria-labelledby="history-heading">
       <div className="border-b px-4 py-4 sm:px-5">
         <h2 id="history-heading" className="font-heading text-2xl font-bold uppercase">
-          Previous weeks & results
+          Results so far
         </h2>
         <p className="mt-1 text-sm text-muted-foreground">
-          Completed weeks are read-only and never accept a Daily Lock.
+          Every match already played, newest week first. A week still open shows the matches that
+          have finished; it is read-only here and a Daily Lock is still made above.
         </p>
       </div>
       <div className="divide-y">

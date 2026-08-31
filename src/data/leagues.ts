@@ -324,13 +324,19 @@ export async function getLeagueExperience(slug: string, userId?: string): Promis
       where d.fixture_id in (select id from fixtures where matchweek_id = ${matchweek.id})
       order by d.created_at asc`,
     sqlClient<Array<{ matchweek_id: string; display_name: string; kickoff_at: Date; id: string; status: PastMatchweek["fixtures"][number]["status"]; home: string; home_code: string; home_logo_url: string | null; home_score: number | null; away: string; away_code: string; away_logo_url: string | null; away_score: number | null }>>`
+      -- Any week holding a match that has been played, the current one
+      -- included. A week used to have to be entirely in the past to appear
+      -- here, so a Monday match sitting in a week whose remaining fixtures are
+      -- still to come was shown nowhere at all: the pick list above only
+      -- carries fixtures still to kick off. Only the played fixtures are
+      -- listed, so an open week shows its results so far and nothing it would
+      -- be giving away.
       with recent_matchweeks as (
         select mw.id
         from matchweeks mw
         where mw.league_id = ${league.id}
           and mw.season_id = ${matchweek.season_id}
           and exists(select 1 from fixtures f where f.matchweek_id = mw.id and f.kickoff_at < now())
-          and not exists(select 1 from fixtures f where f.matchweek_id = mw.id and f.kickoff_at >= now())
         order by mw.start_at desc
         limit 8
       )
@@ -341,7 +347,7 @@ export async function getLeagueExperience(slug: string, userId?: string): Promis
       join fixtures f on f.matchweek_id = mw.id
       join teams h on h.id = f.home_team_id
       join teams a on a.id = f.away_team_id
-      where mw.id in (select id from recent_matchweeks)
+      where mw.id in (select id from recent_matchweeks) and f.kickoff_at < now()
       order by mw.start_at desc, f.kickoff_at`,
     sqlClient<Array<{ id: string; name: string; wins: number; losses: number; settled_picks: number; followers: number; lock: string; source_pick_id: string }>>`
       select u.id, u.name, r.wins, r.losses, r.settled_picks,

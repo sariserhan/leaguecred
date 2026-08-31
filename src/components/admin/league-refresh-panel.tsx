@@ -31,11 +31,11 @@ export function LeagueRefreshPanel({ leagues }: { leagues: LeagueNavOption[] }) 
         toast.add({ title: "League not refreshed", description: result.message, type: "error" });
       } else {
         const line = `${result.requests} request${result.requests === 1 ? "" : "s"} · ${result.created} fixture${result.created === 1 ? "" : "s"} added · ${result.updated} updated`
-          // The number worth reading. A skipped fixture is never written at all,
-          // so nothing downstream can recover it and no result for it can appear.
-          + (result.frozenSkipped > 0 ? ` · ${result.frozenSkipped} not added: their matchweek is locked or already played` : "");
-        record(label, line, result.frozenSkipped > 0);
-        toast.add({ title: `${label} refreshed`, description: line, type: result.frozenSkipped > 0 ? "error" : "success" });
+          // Worth surfacing rather than burying: these landed in a week that had
+          // already locked or taken picks, which is allowed but is not routine.
+          + (result.lateAdded > 0 ? ` · ${result.lateAdded} of them into a week already locked or picked in` : "");
+        record(label, line, false);
+        toast.add({ title: `${label} refreshed`, description: line, type: "success" });
         if (result.created > 0 || result.updated > 0) router.refresh();
       }
 

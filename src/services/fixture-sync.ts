@@ -30,7 +30,7 @@ export async function synchronizeFixtures(provider: FixtureProvider, now = new D
   let requestCount = 0;
   let created = 0;
   let updated = 0;
-  let frozenSkipped = 0;
+  let lateAdded = 0;
   try {
     const availableConfigs = await sqlClient<Omit<LeagueConfig, "source_external_id">[]>`
       select l.id, l.slug, l.name, l.provider, l.provider_external_id, l.country_id, l.region,
@@ -79,21 +79,21 @@ export async function synchronizeFixtures(provider: FixtureProvider, now = new D
         const counts = await synchronizeRound(provider.name, config, round, fixtures);
         created += counts.created;
         updated += counts.updated;
-        frozenSkipped += counts.frozenSkipped;
+        lateAdded += counts.lateAdded;
       }
     }
 
     await sqlClient`update api_sync_runs set status = 'succeeded', request_count = ${requestCount}, finished_at = now() where id = ${run.id}`;
-    return { requestCount, leagues: configs.length, created, updated, frozenSkipped };
+    return { requestCount, leagues: configs.length, created, updated, lateAdded };
   } catch (error) {
     await sqlClient`update api_sync_runs set status = 'failed', request_count = ${requestCount}, finished_at = now(), error = ${String(error)} where id = ${run.id}`;
     throw error;
   }
 }
 
-type RoundCounts = { created: number; updated: number; frozenSkipped: number };
+type RoundCounts = { created: number; updated: number; lateAdded: number };
 
-const NO_CHANGES: RoundCounts = { created: 0, updated: 0, frozenSkipped: 0 };
+const NO_CHANGES: RoundCounts = { created: 0, updated: 0, lateAdded: 0 };
 
 async function synchronizeRound(providerName: string, config: LeagueConfig, round: string, incoming: ProviderFixture[]): Promise<RoundCounts> {
   if (incoming.length === 0) return NO_CHANGES;
@@ -140,7 +140,7 @@ async function synchronizeRound(providerName: string, config: LeagueConfig, roun
         where id = ${existing.id}`;
       updated += 1;
     }
-    if (newFixtures.length === 0) return { created, updated, frozenSkipped: 0 };
+    if (newFixtures.length === 0) return { created, updated, lateAdded: 0 };
 
     // A fixture is keyed by (provider, provider_external_id), so the lookup
     // above only finds this provider's own rows. Several providers cover most
@@ -161,7 +161,7 @@ async function synchronizeRound(providerName: string, config: LeagueConfig, roun
         limit 1`;
       if (!alreadyRecorded) creatable.push({ fixture, homeId, awayId });
     }
-    if (creatable.length === 0) return { created, updated, frozenSkipped: 0 };
+    if (creatable.length === 0) return { created, updated, lateAdded: 0 };
 
     let [matchweek] = await sql<Array<{ id: string; status: string; has_participation: boolean }>>`
       select mw.id, mw.status, exists(select 1 from matchweek_participation mp where mp.matchweek_id = mw.id) as has_participation
@@ -208,18 +208,24 @@ async function synchronizeRound(providerName: string, config: LeagueConfig, roun
         returning id, status, false as has_participation`;
     }
     if (!matchweek) throw new Error("Could not upsert matchweek.");
+
+    // A week is frozen once it has locked, settled, or taken anyone's pick.
+    // These fixtures are still written to it. Dropping them - which is what
+    // used to happen here - left the match nowhere at all: not in the schedule,
+    // not in the results, and beyond the reach of every later job, so the
+    // league looked as though the provider had forgotten a match that was
+    // played. A late arrival in a week people are already in is a real cost,
+    // but it is a smaller one than losing the match, and it is counted so an
+    // operator can see it happen.
     const frozen = matchweek.status !== "upcoming" || matchweek.has_participation;
-    // Counted rather than passed over in silence. A fixture dropped here never
-    // reaches the database at all, so no later job can put it right and no
-    // result for it will ever appear - which looks from the outside like a
-    // provider that forgot a match. See the frozenSkipped total on the way out.
-    if (frozen) return { created, updated, frozenSkipped: creatable.length };
-    // Widen to cover this round as well: a week another provider opened must not
-    // be narrowed to whatever slice this one happens to carry. The lock stays on
-    // the earliest kickoff in the week.
+
+    // The week's own dates only move while it is still open. Widening a locked
+    // week would drag its deadline backwards under players who already picked
+    // against it; end_at moves either way, since that is only the window the
+    // week is displayed and matched over.
     await sql`update matchweeks set
-      start_at = least(start_at, ${startAt}::timestamptz),
-      lock_at = least(lock_at, ${startAt}::timestamptz),
+      start_at = case when ${frozen} then start_at else least(start_at, ${startAt}::timestamptz) end,
+      lock_at = case when ${frozen} then lock_at else least(lock_at, ${startAt}::timestamptz) end,
       end_at = greatest(end_at, ${endAt}::timestamptz),
       updated_at = now()
       where id = ${matchweek.id}`;
@@ -232,7 +238,7 @@ async function synchronizeRound(providerName: string, config: LeagueConfig, roun
       created += 1;
     }
 
-    return { created, updated, frozenSkipped: 0 };
+    return { created, updated, lateAdded: frozen ? creatable.length : 0 };
   });
 }
 

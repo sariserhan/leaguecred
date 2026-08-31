@@ -187,7 +187,11 @@ describe("LeagueCred database integrity", () => {
     expect(careerRecord).toMatchObject({ wins: 3, losses: 1, voids: 1, settled_picks: 4, current_win_streak: 1, best_win_streak: 2, tier: "Provisional" });
   });
 
-  it("freezes fixture eligibility after participation while continuing score updates", async () => {
+  // A frozen week keeps its own dates and its recorded fixtures untouched, but
+  // it no longer refuses a fixture that arrives late. Dropping one wrote the
+  // match nowhere at all - not the schedule, not the results, and out of reach
+  // of every later job - so a match that was played simply never appeared.
+  it("keeps a frozen week's dates while still recording a fixture that arrives late", async () => {
     const suffix = crypto.randomUUID();
     const round = `Integration round ${suffix}`;
     const originalExternalId = `integration-fixture-${suffix}`;
@@ -255,9 +259,16 @@ describe("LeagueCred database integrity", () => {
     const [fixtureCount] = await sqlClient<Array<{ count: number }>>`
       select count(*)::int as count from fixtures where matchweek_id = ${created!.id}`;
 
+    // The recorded match keeps the kickoff it was locked against, and its score
+    // still moves.
     expect(new Date(original!.kickoff_at).toISOString()).toBe(originalKickoff);
     expect(original).toMatchObject({ status: "live", home_score: 1 });
-    expect(fixtureCount?.count).toBe(1);
+    // The late arrival is recorded rather than lost.
+    expect(fixtureCount?.count).toBe(2);
+
+    const [week] = await sqlClient<Array<{ lock_at: Date }>>`
+      select lock_at from matchweeks where id = ${created!.id}`;
+    expect(new Date(week!.lock_at).toISOString()).toBe(originalKickoff);
   });
 });
 

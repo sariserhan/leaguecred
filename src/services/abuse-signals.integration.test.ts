@@ -16,7 +16,10 @@ async function createSession(userId: string, ipAddress: string | null) {
 
 describe("getSharedIpAccounts", () => {
   it("flags accounts that have signed in from the same non-loopback address", async () => {
-    const ip = `203.0.113.${Math.floor(Math.random() * 254) + 1}`;
+    // Unique per run rather than one of 254 random addresses: the test database
+    // keeps every earlier run's accounts, so a repeat address made two runs look
+    // like one cluster of four.
+    const ip = `2001:db8::${crypto.randomUUID()}`;
     const a = `test-shared-a-${crypto.randomUUID()}`;
     const b = `test-shared-b-${crypto.randomUUID()}`;
     await createUser(a);
@@ -32,7 +35,7 @@ describe("getSharedIpAccounts", () => {
   });
 
   it("does not flag a single account's own address, or loopback addresses", async () => {
-    const ip = `203.0.113.${Math.floor(Math.random() * 254) + 1}`;
+    const ip = `2001:db8::${crypto.randomUUID()}`;
     const solo = `test-solo-${crypto.randomUUID()}`;
     await createUser(solo);
     await createSession(solo, ip);

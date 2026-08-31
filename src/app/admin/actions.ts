@@ -78,17 +78,17 @@ export async function saveSiteSettings(
 }
 
 export type LeagueRefreshResult =
-  | { ok: true; requests: number; created: number; updated: number; frozenSkipped: number }
+  | { ok: true; requests: number; created: number; updated: number; lateAdded: number }
   | { ok: false; message: string };
 
 /**
  * Rebuild one league's schedule from the provider: create fixtures it does not
  * have, update the ones it does, and refresh the standings table beside them.
  *
- * It reports what it did, frozen skips included. A fixture whose round lands on
- * a matchweek that is already locked or played is not written at all, and
- * without that number on screen the league simply looks as though the provider
- * never had the match.
+ * It reports what it did, including how many fixtures arrived into a week that
+ * had already locked or taken picks. Those are written rather than dropped -
+ * losing a played match is worse than a late arrival - but an operator should
+ * still see it happen.
  */
 export async function refreshLeagueFixtures(leagueSlug: string): Promise<LeagueRefreshResult> {
   const viewer = await requireAdmin();
@@ -126,7 +126,7 @@ export async function refreshLeagueFixtures(leagueSlug: string): Promise<LeagueR
     requests: result.requestCount,
     created: result.created,
     updated: result.updated,
-    frozenSkipped: result.frozenSkipped,
+    lateAdded: result.lateAdded,
   };
 }
 
