@@ -28,6 +28,15 @@ function fakeProvider(name: string, batch: FixtureBatch): FixtureProvider {
   };
 }
 
+// "Date.now() + N days" alone barely moves between two runs of this suite in
+// the same session, so a leftover matchweek from an earlier run can still
+// overlap this run's window and get wrongly joined - the exact bug these
+// tests guard against, just across runs instead of within one. Salting the
+// day count with each test's own random suffix keeps every run on its own day.
+function daysFromNow(base: number, suffix: string) {
+  return base + (parseInt(suffix.slice(0, 4), 16) % 300);
+}
+
 async function matchweeksFor(externalIds: string[]) {
   return sqlClient<Array<{ id: string; fixture_count: number }>>`
     select mw.id, count(f.id)::int as fixture_count
@@ -45,9 +54,10 @@ describe("synchronizeFixtures matchweek keying", () => {
     const suffix = crypto.randomUUID();
     // Both fall on the same real matchday: kickoffA's window runs to kickoffA + 3h,
     // and kickoffB sits inside it - a different provider's round, the same real week.
-    // Each test in this file uses its own day offset, far enough apart that a
-    // leftover matchweek from one test can never overlap another's window.
-    const kickoffA = new Date(Date.now() + 60 * 24 * 3_600_000).toISOString();
+    // Each test in this file has its own base offset, spaced far enough apart
+    // that they never collide with each other, and daysFromNow salts it with
+    // this run's own suffix so a rerun never lands on a prior run's leftovers.
+    const kickoffA = new Date(Date.now() + daysFromNow(600, suffix) * 24 * 3_600_000).toISOString();
     const kickoffB = new Date(Date.parse(kickoffA) + 2 * 3_600_000).toISOString();
     const providerA = `test-provider-a-${suffix}`;
     const providerB = `test-provider-b-${suffix}`;
@@ -88,7 +98,7 @@ describe("synchronizeFixtures matchweek keying", () => {
 
   it("still creates a separate matchweek for a genuinely later round with no date overlap", async () => {
     const suffix = crypto.randomUUID();
-    const kickoffA = new Date(Date.now() + 90 * 24 * 3_600_000).toISOString();
+    const kickoffA = new Date(Date.now() + daysFromNow(1000, suffix) * 24 * 3_600_000).toISOString();
     const kickoffLater = new Date(Date.parse(kickoffA) + 7 * 24 * 3_600_000).toISOString();
     const providerA = `test-provider-la-${suffix}`;
     const providerB = `test-provider-lb-${suffix}`;
@@ -131,7 +141,7 @@ describe("synchronizeFixtures matchweek keying", () => {
   // overlaps the next one's window. Only a different provider may join a week.
   it("never merges two overlapping rounds from the same provider", async () => {
     const suffix = crypto.randomUUID();
-    const kickoffA = new Date(Date.now() + 150 * 24 * 3_600_000).toISOString();
+    const kickoffA = new Date(Date.now() + daysFromNow(1400, suffix) * 24 * 3_600_000).toISOString();
     const kickoffB = new Date(Date.parse(kickoffA) + 2 * 3_600_000).toISOString();
     const provider = `test-provider-same-${suffix}`;
 
