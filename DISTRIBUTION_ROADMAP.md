@@ -11,18 +11,49 @@ The goal is not 1,000 empty registrations. The success target is:
 - At least 25 active lockers in every launch community
 - A repeatable acquisition loop driven by members, supporter communities, and public records
 
+## Current State
+
+Recorded 31 August 2026, so that the plan below is read against what exists rather than what is assumed.
+
+| | |
+| --- | ---: |
+| Registered members | 1 |
+| Locks ever made | 0 |
+| Public records | 0 |
+| Enabled competitions | 23 |
+| Clubs catalogued | 425 |
+| Upcoming fixtures | 1,097 |
+
+The fixture data, standings, team pages, specialist profiles and settlement are all working and live. What does not exist yet is a single member other than the founder. Every number in this roadmap starts from there.
+
+### Three things block the first member from mattering
+
+1. **Nobody can be followed yet.** A record needs a set number of settled locks before it is ranked or followable, and that setting is still at its default of ten. Until it is lowered, the Follow half of the product does nothing for the first ten match days — so a Founding Captain recruited on day one has nothing to show a recruit on day three. It is one field in the admin panel.
+2. **Nothing is measured.** There is no analytics of any kind. Phase 0 below assumes acquisition source, signup and first lock can be tracked; none of that is instrumented today. Driving even the first hundred people without it means learning nothing about where they were lost.
+3. **The site looks empty.** Twenty-three competitions with no activity in any of them is the first impression a recruit gets. Concentrating on one competition is not only a density argument — it is what stops the product looking abandoned.
+
+## A Lock Is Now Daily, Not Weekly
+
+The product changed after this roadmap was first written. A member makes **one call per league per day**, not one per week, and may hold several at once — one for today, one for tomorrow. Each closes when its own match kicks off.
+
+Three consequences run through everything below:
+
+- **A record builds roughly seven times faster.** A captain can clear a founding-season threshold of four in under a week rather than a month and a half. Phase 1 becomes realistic in days.
+- **There is a reason to return daily.** The weekly ritual in this document is still the right community cadence — recaps, spotlights and standings all work weekly — but the individual habit is now daily, and the product should be spoken about that way.
+- **Selectivity still matters, and needs restating.** "One call a day" is not "call every day". The discipline is unchanged: lock only what you are nearly certain of, and skipping a day costs nothing.
+
 ## Core Positioning
 
 LeagueCred is not another betting-tip feed. It is a free community where supporters make one high-confidence call in the team, region, or league they genuinely know, build a transparent public record, and combine their knowledge with other specialists.
 
 Primary message:
 
-> One team you truly know. One high-confidence call. A permanent public record. Completely free. Let's win together.
+> One team you truly know. One high-confidence call a day. A permanent public record. Completely free. Let's win together.
 
 Supporting messages:
 
 - This is a community for people who follow football closely, make selective calls, and want to win together.
-- Do not click every possible game. Lock only the game you are almost certain about.
+- Do not click every possible game. One call a day is the ceiling, not the target: lock only the game you are almost certain about, and skip the days you are not.
 - Know your team. Represent your league. Let other supporters do the same for theirs.
 - Every win and every miss remains visible. Credibility is earned, not claimed.
 - LeagueCred is completely free.
@@ -53,7 +84,15 @@ These numbers are operating targets, not guarantees. They make the required dail
 
 ## Launch Communities
 
-Begin with eight focused club or league communities rather than trying to activate every league simultaneously.
+Begin with one, then eight.
+
+Eight at once contradicts this document's own first principle while there is a
+single member: eight communities of three people each is the same empty product
+eight times over. Prove one competition to twenty-five active members first —
+Phase 1 exists for exactly this — and treat eight as the Phase 3 target once a
+repeatable playbook exists.
+
+Selection then applies to that first one, and to the seven that follow.
 
 Selection criteria:
 
@@ -138,7 +177,9 @@ LeagueCred needs a predictable event that members recognize and anticipate.
 
 - Open the Community Lock challenge.
 - Announce the current league-versus-league or club-versus-club matchup.
-- Give every member one clear action: make this week's lock.
+- Give every member one clear action: make today's call. The challenge runs for
+  the week; the lock is daily, so there is a reason to return each day of it
+  rather than once.
 
 ### Thursday–Friday: Insight and Recruitment
 
@@ -181,6 +222,28 @@ Each participant makes one selective call. LeagueCred publishes the complete res
 Every meaningful contribution should create a reason to return or share.
 
 ### Required Growth UI
+
+Checked against the codebase on 31 August 2026. Three of the nine exist; the
+loop this section describes does not close until the invitation pieces are
+built, because sharing a card is only half of it — there is currently no way to
+attribute anyone who arrives.
+
+| | Item | State |
+| ---: | --- | --- |
+| 1 | Shareable result cards | **Partial** — a specialist's profile renders a card with their league, accuracy, record, settled locks and best streak. There is no card for an individual settled result. |
+| 2 | Personal invitation links | **Not built.** Nothing attributes a registration to an inviter. |
+| 3 | Post-lock invitation prompt | **Not built.** |
+| 4 | Founding badges | **Not built.** Provisional and established tiers exist; founding identity does not. |
+| 5 | Community challenge pages | **Not built.** |
+| 6 | Weekly recap pages | **Not built.** Recaps would have to be published by hand. |
+| 7 | Public specialist profiles | **Built.** |
+| 8 | Representation identity | **Partial** — a profile carries a featured league, but it is not shown on cards. |
+| 9 | Source attribution | **Not built**, and blocked by there being no analytics at all. |
+
+Read against the phases below, that means Phase 2's "produce shareable result
+cards manually if automation is not ready" is the realistic path, and Phase 3's
+"add invitation and sharing flows" is the first real engineering dependency in
+this plan.
 
 1. **Shareable result cards**
    - Show the member, selection, outcome, lifetime record, and represented league or club.
@@ -313,16 +376,26 @@ LeagueCred must remain the primary destination and source of truth. Do not creat
 
 ### Phase 0: Instrumentation and Readiness — Days 1–3
 
+Two of these are hard blockers rather than preparation, and neither is started.
+
+- **Lower the rank threshold for the founding season.** It sits at ten, which
+  nobody can reach for ten match days. Four makes a captain followable inside a
+  week. One field in the admin panel, and everything in Phase 1 depends on it.
+- **Install analytics.** There is none. Every other line in this phase, and the
+  entire measurement framework below, assumes a funnel that is not being
+  recorded. This is the single largest gap between this plan and the product.
 - Finalize the core positioning and free-community message.
-- Select the first eight club or league communities.
+- Select the first community, and the seven that would follow it.
 - Define Founding Member and Founding Captain criteria.
 - Create a Founding Captain invitation page.
 - Confirm the signup-to-first-lock onboarding path is simple.
 - Track acquisition source, signup, selected interests, first lock, return, and invitation.
+- Reduce the visible competition list to those with activity, so a recruit's
+  first impression is not twenty-three empty leagues.
 - Prepare outreach tracking and a list of the first 100 candidates.
 - Prepare one reusable challenge format and one transparent recap format.
 
-**Exit criteria:** LeagueCred can identify where a member came from and whether they completed their first meaningful action.
+**Exit criteria:** LeagueCred can identify where a member came from and whether they completed their first meaningful action. Until analytics exist, this phase is not complete no matter how much of the rest is done.
 
 ### Phase 1: Establish the First Dense Community — Days 4–10
 
@@ -333,7 +406,11 @@ LeagueCred must remain the primary destination and source of truth. Do not creat
 - Personally welcome every new member.
 - Ask each activated member what was confusing or missing.
 
-**Exit criteria:** One community has at least 25 members who have made a real lock.
+Because a lock is daily, a member recruited on day four can hold a settled,
+followable record by day ten — inside this phase rather than after it. That is
+new, and it is what makes a seven-day window realistic.
+
+**Exit criteria:** One community has at least 25 members who have made a real lock, and at least a handful have cleared the founding threshold so there is somebody to follow.
 
 ### Phase 2: Prove the Weekly Ritual — Days 11–21
 
@@ -382,7 +459,12 @@ LeagueCred must remain the primary destination and source of truth. Do not creat
 
 ### Primary Metric
 
-**Weekly active lockers:** unique members who submit a valid lock during the week.
+**Weekly active lockers:** unique members who submit at least one valid lock during the week.
+
+Weekly remains the right window for retention even though the lock is daily —
+it smooths over the days a selective member deliberately sits out. Locks per
+active member per week is the secondary number to watch: if it climbs toward
+seven, the selectivity the positioning promises is being lost.
 
 Registrations are a supporting metric. They do not prove that a community exists.
 
@@ -447,19 +529,28 @@ Until the first 1,000 members:
 
 ## Immediate Action List
 
-1. Select the first eight communities.
-2. Create the Founding Captain page and badges.
-3. List the first 100 captains and community administrators.
-4. Contact the first 30 candidates personally.
-5. Recruit 25 credible supporters from one league or club.
-6. Run the first Community Lock challenge.
-7. Publish every result, including failures.
-8. Ask every participant to invite one supporter who knows another team better.
-9. Measure activation and following-week return by source.
-10. Expand only after the first community demonstrates repeat participation.
+1. Lower the rank threshold so a founding record can be followed within a week.
+2. Install analytics, before the first invitation rather than after it.
+3. Select the first community, and hide the competitions with no activity in them.
+4. Create the Founding Captain page and badges.
+5. List the first 100 captains and community administrators.
+6. Contact the first 30 candidates personally.
+7. Recruit 25 credible supporters from one league or club.
+8. Run the first Community Lock challenge.
+9. Publish every result, including failures.
+10. Ask every participant to invite one supporter who knows another team better.
+11. Measure activation and following-week return by source.
+12. Expand only after the first community demonstrates repeat participation.
 
 ## The One Thing to Do First
 
 Personally recruit the first 25 credible supporters in one league and help every one of them make a genuine lock.
 
 That creates the first real LeagueCred community. Everything else—content, referrals, partnerships, league rivalries, and search—can compound from it.
+
+Two things have to be true before that recruitment is worth doing, and both are
+half an hour of work: the threshold has to be low enough that those 25 people
+can be followed within a week, and analytics have to be recording where they
+came from. Recruiting 25 people into a product where nobody can be followed and
+nothing is measured spends the hardest-won audience there is — the first one —
+and learns nothing from it.
