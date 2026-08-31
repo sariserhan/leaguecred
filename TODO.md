@@ -6,13 +6,11 @@ None.
 
 ## Next
 
-- [ ] Three clubs the fixtures say are one but the names do not: Stade Rennais
-      and Rennes, Athletic Club and Athletic Bilbao, Deportivo and Deportivo de
-      A Coruña. `pnpm teams:dedupe` reports them and leaves them alone.
-- [ ] Look at the two clubs the dedupe leaves for review on production: Slavia
-      Prague is split across `slavia-prague` (no league) and `sk-slavia-praha`,
-      which look like one club but share no evidence the job will act on.
 - [ ] Rotate the Neon database password and update Vercel and .env.local
+- [ ] Run `pnpm matchweeks:merge` against production. It reports by default;
+      `--apply` folds each gameweek split across providers back into one and
+      leaves alone any cluster where more than one week already has a real
+      Weekly Lock, since deciding which one stands is a person's call.
 
 ## Blocked
 
@@ -76,5 +74,6 @@ None.
 - [x] Reconcile the two branches' migrations so both reach production in order
 - [x] Merge the clubs catalogued twice, on dev and production
 - [x] Count each match once in the standings, and each gameweek as one matchweek
+- [x] Resolve the last clubs catalogued twice under names that disagree
 - [x] Refuse to run migrations that the database can no longer reach
 - [x] Block disposable-email signups and surface shared-address abuse signals to admins

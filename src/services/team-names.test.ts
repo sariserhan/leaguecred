@@ -34,3 +34,19 @@ describe("teamNamesMatch", () => {
     expect(teamNamesMatch("Manchester City", "Manchester United")).toBe(false);
   });
 });
+
+describe("names the fixtures proved are one club", () => {
+  it.each([
+    ["Athletic Club", "Athletic Bilbao"],
+    ["Stade Rennais", "Rennes"],
+    ["Deportivo", "Deportivo de A Coruña"],
+    ["SK Slavia Praha", "Slavia Prague"],
+  ])("matches %s with %s", (left, right) => {
+    expect(teamNamesMatch(left, right)).toBe(true);
+  });
+
+  it("still keeps clubs that merely share a first word apart", () => {
+    expect(teamNamesMatch("Real Madrid", "Real Sociedad")).toBe(false);
+    expect(teamNamesMatch("Deportivo Alavés", "Deportivo de A Coruña")).toBe(false);
+  });
+});

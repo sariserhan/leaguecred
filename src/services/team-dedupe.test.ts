@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 
-import { namesCouldBeOneClub, pickCanonical, planTeamMerges, type DedupeTeam } from "@/services/team-dedupe";
+import { isSameClub, namesCouldBeOneClub, pickCanonical, planTeamMerges, type DedupeTeam } from "@/services/team-dedupe";
 
 const SPAIN = "country-spain";
 const TURKIYE = "country-turkiye";
@@ -153,10 +153,14 @@ describe("namesCouldBeOneClub", () => {
     // "real" names neither club on its own, and half a league is "United".
     ["Real Madrid", "Real Sociedad"],
     ["Newcastle United", "Leeds United"],
-    // A real pair, but only a generic word agrees, so it goes to review.
-    ["Athletic Club", "Athletic Bilbao"],
   ])("rejects %s and %s, leaving them for review", (left, right) => {
     expect(namesCouldBeOneClub(left, right)).toBe(false);
+  });
+
+  it("accepts a pair once an alias records what the fixtures proved", () => {
+    // Only "athletic" agreed, which is too generic to merge on. The fixtures
+    // settled it, and the alias now carries that answer.
+    expect(namesCouldBeOneClub("Athletic Club", "Athletic Bilbao")).toBe(true);
   });
 });
 
@@ -184,5 +188,29 @@ describe("planTeamMerges with fixture evidence", () => {
 
     expect(merges).toHaveLength(1);
     expect(merges[0].duplicates).toHaveLength(2);
+  });
+});
+
+describe("isSameClub with one side missing a country", () => {
+  it("absorbs a stub whose country the surviving row simply does not record", () => {
+    // Both Slavia Prague rows: one carries the league, the other the country.
+    const withLeague = team({ id: "sk-slavia-praha", name: "SK Slavia Praha", regions: ["Europe"], memberships: 1 });
+    const stub = team({ id: "slavia-prague", name: "Slavia Prague", country_id: "country-czechia" });
+
+    expect(isSameClub(withLeague, stub)).toBe(true);
+  });
+
+  it("still refuses when the two countries disagree", () => {
+    const spain = team({ id: "a", name: "Cordoba", country_id: "country-spain", memberships: 1 });
+    const argentina = team({ id: "b", name: "Cordoba", country_id: "country-argentina" });
+
+    expect(isSameClub(spain, argentina)).toBe(false);
+  });
+
+  it("still refuses a club that plays in a league of its own", () => {
+    const barcelona = team({ id: "barcelona", name: "Barcelona", country_id: "country-spain", regions: ["Europe"], memberships: 1 });
+    const ecuador = team({ id: "barcelona-sc", name: "Barcelona SC", regions: ["Americas"], memberships: 1 });
+
+    expect(isSameClub(barcelona, ecuador)).toBe(false);
   });
 });

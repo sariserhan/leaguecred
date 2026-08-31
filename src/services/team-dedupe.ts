@@ -80,13 +80,18 @@ export function pickCanonical<Team extends DedupeTeam>(group: Team[]) {
  *  - or a stub belonging to no league at all that contradicts nothing, whose
  *    only content is a provider key worth keeping as an alias.
  *
+ * A stub contradicts nothing when one of the two rows has no country recorded.
+ * Two countries that disagree are settled above and never reach here, so what
+ * is left is missing data rather than a difference — which is how the two
+ * Slavia Prague rows sat unmerged, one holding a country and the other a league.
+ *
  * Barcelona SC of Ecuador survives all three: it plays in a league, in another
  * region, and claims no country to agree on.
  */
 export function isSameClub(canonical: DedupeTeam, other: DedupeTeam) {
   if (other.regions.some((region) => canonical.regions.includes(region))) return true;
   if (canonical.country_id && other.country_id) return canonical.country_id === other.country_id;
-  return other.memberships === 0 && other.country_id === null;
+  return other.memberships === 0 && (other.country_id === null || canonical.country_id === null);
 }
 
 /**
