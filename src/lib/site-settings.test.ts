@@ -2,6 +2,7 @@ import { describe, expect, it } from "vitest";
 
 import {
   BANNER_MESSAGE_MAX_LENGTH,
+  HOMEPAGE_ACTIVITY_FLAG,
   LEAGUE_LEADERBOARD_FLAG,
   MAX_SETTLED_PICKS_FOR_RANK,
   MIN_SETTLED_PICKS_FOR_RANK,
@@ -20,6 +21,7 @@ describe("resolveFeatureFlags", () => {
 
     expect(flags).toHaveLength(featureFlagDefinitions.length);
     expect(isFeatureEnabled(flags, LEAGUE_LEADERBOARD_FLAG)).toBe(true);
+    expect(isFeatureEnabled(flags, HOMEPAGE_ACTIVITY_FLAG)).toBe(false);
   });
 
   it("lets a stored row override the default", () => {

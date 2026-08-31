@@ -11,6 +11,8 @@ import { buttonVariants } from "@/components/ui/button";
 import { getHomeData } from "@/data/home";
 import { getSession } from "@/lib/auth-session";
 import { enforceMaintenanceGate } from "@/lib/maintenance";
+import { HOMEPAGE_ACTIVITY_FLAG, isFeatureEnabled } from "@/lib/site-settings";
+import { getFeatureFlags } from "@/services/site-settings";
 
 export const dynamic = "force-dynamic";
 export const metadata: Metadata = {
@@ -26,7 +28,8 @@ const steps = [
 
 export default async function HomePage() {
   await enforceMaintenanceGate();
-  const [session, data] = await Promise.all([getSession(), getHomeData()]);
+  const [session, data, flags] = await Promise.all([getSession(), getHomeData(), getFeatureFlags()]);
+  const showActivity = isFeatureEnabled(flags, HOMEPAGE_ACTIVITY_FLAG);
   const returningHref = session ? "/slip" : "/leagues?intent=prove";
   const returningLabel = session ? "Continue to your Weekly Slip" : "Make today's call";
 
@@ -46,6 +49,7 @@ export default async function HomePage() {
               {session ? "Review your league network" : "See who has already proved it"}
             </Link>
           </div>
+          <p className="text-sm font-semibold">Free for everyone. No subscriptions, no paywalls—let&apos;s win together.</p>
         </div>
         <div className="relative">
           <div className="pointer-events-none absolute inset-x-[-8%] top-1/2 -z-10 hidden -translate-y-1/2 opacity-25 lg:block" aria-hidden="true"><PitchBackdrop className="w-full" /></div>
@@ -53,7 +57,7 @@ export default async function HomePage() {
         </div>
       </section>
 
-      <ActivityAndStats data={data} />
+      {showActivity ? <ActivityAndStats data={data} /> : null}
       <LeagueRail leagues={data.leagues} />
 
       <section id="how-it-works" className="border-y bg-secondary">
