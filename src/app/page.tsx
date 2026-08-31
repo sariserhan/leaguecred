@@ -52,7 +52,16 @@ export default async function HomePage() {
           <p className="text-sm font-semibold">Free for everyone. No subscriptions, no paywalls—let&apos;s win together.</p>
         </div>
         <div className="relative">
-          <div className="pointer-events-none absolute inset-x-[-8%] top-1/2 -z-10 hidden -translate-y-1/2 opacity-25 lg:block" aria-hidden="true"><PitchBackdrop className="w-full" /></div>
+          {/* The pitch is grass-coloured rather than a faint tint, but it is still a
+              backdrop. The mask softens only the inner edge, where the grass would
+              otherwise stop against the headline in a hard vertical line; the far
+              side runs off the viewport on its own. */}
+          <div
+            className="pointer-events-none absolute inset-x-[-8%] top-1/2 -z-10 hidden -translate-y-1/2 [mask-image:linear-gradient(to_right,transparent,black_18%)] lg:block"
+            aria-hidden="true"
+          >
+            <PitchBackdrop className="w-full" />
+          </div>
           <InteractiveDemo leagues={data.leagues} />
         </div>
       </section>

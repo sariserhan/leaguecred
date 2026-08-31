@@ -49,8 +49,11 @@
 }
 
 :root {
+  /* The page is a shade off pure white. Cards and popovers stay at white, so
+     they lift off it rather than dissolving into it — on a pure-white page a
+     white card has only its border to prove it exists. */
   color-scheme: light dark;
-  --background: oklch(1 0 0);
+  --background: oklch(0.975 0.004 255);
   --foreground: oklch(0.16 0.034 258);
   --card: oklch(1 0 0);
   --card-foreground: oklch(0.16 0.034 258);
@@ -58,14 +61,14 @@
   --popover-foreground: oklch(0.16 0.034 258);
   --primary: oklch(0.84 0.21 123);
   --primary-foreground: oklch(0.16 0.034 258);
-  --secondary: oklch(0.965 0.006 255);
+  --secondary: oklch(0.955 0.007 255);
   --secondary-foreground: oklch(0.16 0.034 258);
-  --muted: oklch(0.965 0.006 255);
+  --muted: oklch(0.955 0.007 255);
   --muted-foreground: oklch(0.48 0.02 258);
   --accent: oklch(0.84 0.21 123);
   --accent-foreground: oklch(0.16 0.034 258);
   --destructive: oklch(0.58 0.24 28);
-  --border: oklch(0.84 0.012 255);
+  --border: oklch(0.87 0.012 255);
   --input: oklch(0.78 0.015 255);
   --ring: oklch(0.73 0.19 123);
   --chart-1: oklch(0.84 0.21 123);
