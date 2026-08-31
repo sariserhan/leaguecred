@@ -8,6 +8,7 @@ import { getSafeInternalPath } from "@/lib/safe-redirect";
 export const metadata: Metadata = {
   title: "Sign in",
   description: "Sign in or create your LeagueCred identity.",
+  robots: { index: false, follow: false },
 };
 
 export default async function AuthPage({ searchParams }: PageProps<"/auth">) {

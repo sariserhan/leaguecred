@@ -15,6 +15,7 @@ import {
 import { setFeatureFlag, updateSiteSettings } from "@/services/site-settings";
 import { synchronizeFixtures } from "@/services/fixture-sync";
 import { EspnFixtureProvider } from "@/providers/espn-fixtures";
+import { withinUserRateLimit } from "@/services/rate-limit";
 
 export type AdminActionResult = { ok: true } | { ok: false; message: string };
 
@@ -66,7 +67,10 @@ export async function saveSiteSettings(
 }
 
 export async function refreshLeagueFixtures(leagueSlug: string): Promise<void> {
-  await requireAdmin();
+  const viewer = await requireAdmin();
+  // This one calls a provider, so the limit is as much about their rate as ours.
+  // The action returns nothing either way, so a refusal is simply no refresh.
+  if (!await withinUserRateLimit("refreshLeagueFixtures", viewer.id)) return;
   const parsed = z.string().min(1).max(120).regex(/^[a-z0-9-]+/).safeParse(leagueSlug);
   if (!parsed.success) return;
   try {

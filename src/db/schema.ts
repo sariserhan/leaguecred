@@ -10,6 +10,7 @@ import {
   numeric,
   pgEnum,
   pgTable,
+  primaryKey,
   text,
   timestamp,
   uniqueIndex,
@@ -456,6 +457,23 @@ export const appSettings = pgTable("app_settings", {
 }, (table) => [
   check("app_settings_singleton_check", sql`${table.id} = 'global'`),
   check("app_settings_rank_threshold_check", sql`${table.minimumSettledPicksForRank} between 1 and 100`),
+]);
+
+/**
+ * A fixed window per actor and action. Fixed rather than sliding so it stays one
+ * row per pair: a sliding window needs every attempt kept, and a table that
+ * grows with traffic is a poor way to defend against traffic. The cost is that
+ * an actor can spend two windows' worth of attempts across a boundary, which is
+ * an acceptable trade for what this guards.
+ */
+export const actionRateLimits = pgTable("action_rate_limits", {
+  /** The signed-in user, or the caller's address when there is no session. */
+  actor: text("actor").notNull(),
+  action: text("action").notNull(),
+  windowStartedAt: timestamp("window_started_at", { withTimezone: true }).defaultNow().notNull(),
+  attempts: integer("attempts").default(0).notNull(),
+}, (table) => [
+  primaryKey({ columns: [table.actor, table.action] }),
 ]);
 
 export const lockReminders = pgTable("lock_reminders", {

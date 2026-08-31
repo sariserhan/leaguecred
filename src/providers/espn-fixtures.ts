@@ -1,5 +1,6 @@
 import type { FixtureStatus } from "@/db/schema";
 import type { FixtureBatch, FixtureProvider, ProviderFixture } from "@/providers/fixtures";
+import { assertUnderstood } from "@/providers/upstream-shape";
 
 type EspnStatus = {
   name?: string;
@@ -143,12 +144,14 @@ export class EspnFixtureProvider implements FixtureProvider {
     const response = await fetch(url, { cache: "no-store" });
     if (!response.ok) throw new Error(`ESPN scoreboard request failed with ${response.status}`);
     const payload = (await response.json()) as EspnScoreboardResponse;
-    return {
-      fixtures: (payload.events ?? []).flatMap((event) => {
-        const fixture = mapEspnEvent(event, input.leagueExternalId);
-        return fixture ? [fixture] : [];
-      }),
-      requestCount: 1,
-    };
+    const events = payload.events ?? [];
+    const fixtures = events.flatMap((event) => {
+      const fixture = mapEspnEvent(event, input.leagueExternalId);
+      return fixture ? [fixture] : [];
+    });
+    // mapEspnEvent skips what it cannot read, so a renamed field would show up
+    // as an empty, successful sync rather than as a fault.
+    assertUnderstood(`ESPN scoreboard for ${input.leagueExternalId}`, events.length, fixtures.length);
+    return { fixtures, requestCount: 1 };
   }
 }
