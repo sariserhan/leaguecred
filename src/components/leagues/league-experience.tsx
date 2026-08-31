@@ -40,6 +40,7 @@ import {
 import { Spinner } from "@/components/ui/spinner";
 import { ToggleGroup, ToggleGroupItem } from "@/components/ui/toggle-group";
 import { LeagueLeaderboard } from "@/components/leagues/league-leaderboard";
+import { FixtureVotePoll } from "@/components/fixture-vote-poll";
 import { LockCountdown } from "@/components/lock-countdown";
 import { LocalTime } from "@/components/local-time";
 import type { LeagueExperienceData, PastMatchweek } from "@/data/leagues";
@@ -283,6 +284,7 @@ export function LeagueExperience({
                           <button type="button" disabled={disabled} onClick={() => setSelection({ fixtureId: fixture.id, teamId: fixture.awayTeamId, teamName: fixture.away })} className={cn("col-start-3 row-start-2 flex min-w-0 flex-col items-center justify-center gap-2 rounded-sm px-2 py-3 text-center font-semibold transition-colors focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ring disabled:cursor-not-allowed disabled:opacity-60 sm:row-start-1 sm:flex-row sm:justify-end sm:py-2 sm:text-right", awaySelected ? "bg-primary text-primary-foreground" : "hover:bg-muted")} aria-pressed={awaySelected}>
                             <span className="order-first sm:order-last"><TeamMark code={fixture.awayCode} logoUrl={fixture.awayLogoUrl} /></span><span className="min-w-0 break-words sm:order-first">{fixture.away}</span>
                           </button>
+                          <FixtureVotePoll fixtureId={fixture.id} homeVotes={fixture.homeVotes} awayVotes={fixture.awayVotes} viewerVote={fixture.viewerVote} />
                         </div>
                       );
                     })}

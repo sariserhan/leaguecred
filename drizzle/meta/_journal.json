@@ -134,6 +134,13 @@
       "when": 1788145125052,
       "tag": "0018_daily_locks",
       "breakpoints": true
+    },
+    {
+      "idx": 19,
+      "version": "7",
+      "when": 1788144829571,
+      "tag": "0019_thick_dakota_north",
+      "breakpoints": true
     }
   ]
 }

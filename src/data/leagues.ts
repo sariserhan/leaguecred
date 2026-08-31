@@ -8,6 +8,7 @@ import { fetchEspnStandings } from "@/providers/espn-standings";
 import type { FixtureStatus } from "@/db/schema";
 import type { League, Region } from "@/lib/league-data";
 import { getRankThreshold } from "@/services/site-settings";
+import { readVoterId } from "@/lib/voter-id";
 
 const flags: Record<string, string> = {
   AR: "🇦🇷", BR: "🇧🇷", CA: "🇨🇦", DE: "🇩🇪", ES: "🇪🇸", GB: "🏴",
@@ -150,6 +151,9 @@ export type DatabaseFixture = {
   awayTeamId: string;
   kickoffDate: string;
   kickoff: string;
+  homeVotes: number;
+  awayVotes: number;
+  viewerVote: "home" | "away" | null;
 };
 
 export type PastMatchweek = {
@@ -282,11 +286,20 @@ export async function getLeagueExperience(slug: string, userId?: string): Promis
   if (!matchweek) return null;
 
   const viewerId = userId ?? "";
+  const voterId = await readVoterId() ?? "";
   const [fixtureRows, pastFixtureRows, specialistRows, participationRows, pickRows, recordRows, followedRows, currentSeasonLeaderboardRows, careerLeaderboardRows] = await Promise.all([
-    sqlClient<Array<{ id: string; kickoff_at: Date; home_id: string; home: string; home_code: string; home_logo_url: string | null; away_id: string; away: string; away_code: string; away_logo_url: string | null }>>`
+    sqlClient<Array<{ id: string; kickoff_at: Date; home_id: string; home: string; home_code: string; home_logo_url: string | null; away_id: string; away: string; away_code: string; away_logo_url: string | null; home_votes: number; away_votes: number; viewer_vote: "home" | "away" | null }>>`
       select f.id, f.kickoff_at, h.id as home_id, h.name as home, h.short_name as home_code, h.logo_url as home_logo_url,
-        a.id as away_id, a.name as away, a.short_name as away_code, a.logo_url as away_logo_url
+        a.id as away_id, a.name as away, a.short_name as away_code, a.logo_url as away_logo_url,
+        coalesce(votes.home_votes, 0) as home_votes, coalesce(votes.away_votes, 0) as away_votes,
+        viewer_vote.choice as viewer_vote
       from fixtures f join teams h on h.id = f.home_team_id join teams a on a.id = f.away_team_id
+      left join lateral (
+        select count(*) filter (where fv.choice = 'home')::int as home_votes,
+          count(*) filter (where fv.choice = 'away')::int as away_votes
+        from fixture_votes fv where fv.fixture_id = f.id
+      ) votes on true
+      left join fixture_votes viewer_vote on viewer_vote.fixture_id = f.id and viewer_vote.voter_id = ${voterId}
       where f.matchweek_id = ${matchweek.id}
         and f.kickoff_at >= now()
         and f.status = 'scheduled'
@@ -381,6 +394,7 @@ export async function getLeagueExperience(slug: string, userId?: string): Promis
       away: fixture.away, awayCode: fixture.away_code, awayLogoUrl: fixture.away_logo_url, awayTeamId: fixture.away_id,
       kickoffDate: new Intl.DateTimeFormat("en", { weekday: "long", month: "long", day: "numeric", timeZone: "UTC" }).format(new Date(fixture.kickoff_at)),
       kickoff: new Intl.DateTimeFormat("en", { hour: "2-digit", minute: "2-digit", timeZone: "UTC", timeZoneName: "short" }).format(new Date(fixture.kickoff_at)),
+      homeVotes: fixture.home_votes, awayVotes: fixture.away_votes, viewerVote: fixture.viewer_vote,
     })),
     pastMatchweeks: [...pastMatchweeks.values()],
     specialists: specialistRows.map((specialist) => ({

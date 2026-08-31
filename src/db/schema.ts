@@ -30,6 +30,7 @@ export const matchweekStatusEnum = pgEnum("matchweek_status", [
   "upcoming", "locked", "settling", "settled",
 ]);
 export const participationModeEnum = pgEnum("participation_mode", ["independent", "follow"]);
+export const fixtureVoteChoiceEnum = pgEnum("fixture_vote_choice", ["home", "away"]);
 export const pickResultEnum = pgEnum("pick_result", ["pending", "win", "loss", "void"]);
 export const settlementEventTypeEnum = pgEnum("settlement_event_type", [
   "initial_settlement", "reversal", "correction",
@@ -258,6 +259,21 @@ export const fixtures = pgTable("fixtures", {
   index("fixtures_away_team_id_idx").on(table.awayTeamId),
   index("fixtures_winner_team_id_idx").on(table.winnerTeamId),
   check("fixtures_distinct_teams_check", sql`${table.homeTeamId} <> ${table.awayTeamId}`),
+]);
+
+/** A casual "who wins" poll on a fixture, open to any visitor - no account
+ * needed. voterId is a random id from a long-lived cookie, not a user id;
+ * it exists independently of whether the visitor ever signs in. */
+export const fixtureVotes = pgTable("fixture_votes", {
+  id: uuid("id").defaultRandom().primaryKey(),
+  fixtureId: uuid("fixture_id").notNull().references(() => fixtures.id, { onDelete: "cascade" }),
+  voterId: text("voter_id").notNull(),
+  choice: fixtureVoteChoiceEnum("choice").notNull(),
+  createdAt,
+  updatedAt,
+}, (table) => [
+  uniqueIndex("fixture_votes_fixture_voter_unique").on(table.fixtureId, table.voterId),
+  index("fixture_votes_fixture_idx").on(table.fixtureId),
 ]);
 
 export const matchweekParticipation = pgTable("matchweek_participation", {
