@@ -29,11 +29,11 @@ import { BrandMark } from "@/components/brand-logo";
 import { NotificationCenter } from "@/components/notification-center";
 import { GlobalSearch } from "@/components/global-search";
 import type { AppNotification, NotificationPreferences } from "@/data/notifications";
+import { HowItWorksDialog } from "@/components/how-it-works-dialog";
 
 const navItems = [
   { href: "/leagues", label: "Leagues", icon: TrophyIcon },
   { href: "/specialists", label: "Specialists", icon: UsersRoundIcon },
-  { href: "/#how-it-works", label: "How it works", icon: CircleUserRoundIcon },
 ] as const;
 
 export function SiteHeader({
@@ -79,7 +79,7 @@ export function SiteHeader({
             <DialogContent className="inset-y-0 left-0 h-dvh max-w-[min(88vw,380px)] translate-x-0 translate-y-0 content-start rounded-none p-0 sm:max-w-[380px]" showCloseButton>
               <DialogHeader className="border-b p-5">
                 <DialogTitle className="font-heading text-3xl font-extrabold uppercase">
-                  <DialogClose render={<Link href="/" className="inline-flex items-center gap-2.5 outline-none hover:opacity-90" aria-label="LeagueCred home" />}>
+                  <DialogClose nativeButton={false} render={<Link href="/" className="inline-flex items-center gap-2.5 outline-none hover:opacity-90" aria-label="LeagueCred home" />}>
                     <BrandMark size={28} />
                     <span>League<span className="text-primary">Cred</span></span>
                   </DialogClose>
@@ -88,11 +88,12 @@ export function SiteHeader({
               </DialogHeader>
               <nav className="divide-y" aria-label="Mobile navigation">
                 {navItems.map(({ href, label, icon: Icon }) => (
-                  <DialogClose key={href} render={<Link href={href} className="flex min-h-16 items-center gap-3 px-5 font-semibold hover:bg-muted" />}>
+                  <DialogClose nativeButton={false} key={href} render={<Link href={href} className="flex min-h-16 items-center gap-3 px-5 font-semibold hover:bg-muted" />}>
                     <Icon className="size-5 text-primary" />{label}<ChevronRightIcon className="ml-auto size-5 text-muted-foreground" />
                   </DialogClose>
                 ))}
-                {session ? <><DialogClose render={<Link href="/network" className="flex min-h-16 items-center gap-3 px-5 font-semibold hover:bg-muted" />}><Settings2Icon className="size-5 text-primary" />My network<ChevronRightIcon className="ml-auto size-5 text-muted-foreground" /></DialogClose><DialogClose render={<Link href="/slip" className="flex min-h-16 items-center gap-3 px-5 font-semibold hover:bg-muted" />}><CircleUserRoundIcon className="size-5 text-primary" />Weekly Slip<ChevronRightIcon className="ml-auto size-5 text-muted-foreground" /></DialogClose><DialogClose render={<Link href="/settings" className="flex min-h-16 items-center gap-3 px-5 font-semibold hover:bg-muted" />}><Settings2Icon className="size-5 text-primary" />Settings<ChevronRightIcon className="ml-auto size-5 text-muted-foreground" /></DialogClose></> : null}
+                <HowItWorksDialog mobile />
+                {session ? <><DialogClose nativeButton={false} render={<Link href="/network" className="flex min-h-16 items-center gap-3 px-5 font-semibold hover:bg-muted" />}><Settings2Icon className="size-5 text-primary" />My network<ChevronRightIcon className="ml-auto size-5 text-muted-foreground" /></DialogClose><DialogClose nativeButton={false} render={<Link href="/slip" className="flex min-h-16 items-center gap-3 px-5 font-semibold hover:bg-muted" />}><CircleUserRoundIcon className="size-5 text-primary" />Weekly Slip<ChevronRightIcon className="ml-auto size-5 text-muted-foreground" /></DialogClose><DialogClose nativeButton={false} render={<Link href="/settings" className="flex min-h-16 items-center gap-3 px-5 font-semibold hover:bg-muted" />}><Settings2Icon className="size-5 text-primary" />Settings<ChevronRightIcon className="ml-auto size-5 text-muted-foreground" /></DialogClose></> : null}
               </nav>
             </DialogContent>
           </Dialog>
@@ -107,10 +108,7 @@ export function SiteHeader({
         </div>
 
         <nav className="hidden items-center gap-9 text-sm font-semibold md:flex" aria-label="Primary navigation">
-          {navItems.map((item) => {
-            const active = item.href === "/leagues" ? pathname.startsWith("/leagues") : item.href === "/specialists" ? pathname.startsWith("/specialists") : false;
-            return <Link key={item.href} href={item.href} className={cn("relative py-2 transition-colors hover:text-foreground", active ? "text-foreground" : "text-muted-foreground")}>{item.label}{active ? <span className="absolute inset-x-0 -bottom-[1.58rem] h-0.5 bg-primary" /> : null}</Link>;
-          })}
+          <Link href="/leagues" className={cn("relative py-2 transition-colors hover:text-foreground", pathname.startsWith("/leagues") ? "text-foreground" : "text-muted-foreground")}>Leagues{pathname.startsWith("/leagues") ? <span className="absolute inset-x-0 -bottom-[1.58rem] h-0.5 bg-primary" /> : null}</Link>
           <Menu.Root onOpenChange={(open) => { if (!open) setSelectedLeague(null); }}>
             <Menu.Trigger
               className={cn(
@@ -179,6 +177,8 @@ export function SiteHeader({
               </Menu.Positioner>
             </Menu.Portal>
           </Menu.Root>
+          <Link href="/specialists" className={cn("relative py-2 transition-colors hover:text-foreground", pathname.startsWith("/specialists") ? "text-foreground" : "text-muted-foreground")}>Specialists{pathname.startsWith("/specialists") ? <span className="absolute inset-x-0 -bottom-[1.58rem] h-0.5 bg-primary" /> : null}</Link>
+          <HowItWorksDialog />
         </nav>
 
         <div className="flex items-center gap-1"><GlobalSearch />{session && notificationCenter ? <NotificationCenter initialItems={notificationCenter.items} initialPreferences={notificationCenter.preferences} /> : null}{session ? (
