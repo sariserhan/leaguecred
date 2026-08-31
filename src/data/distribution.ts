@@ -114,6 +114,7 @@ type ChallengeSide = {
   locks: number;
   wins: number;
   losses: number;
+  leaders: Array<{ id: string; name: string; locks: number; wins: number; losses: number; accuracy: number }>;
 };
 
 export async function getCommunityChallenge(fixtureId?: string): Promise<CommunityChallenge | null> {
@@ -133,7 +134,7 @@ export async function getCommunityChallenge(fixtureId?: string): Promise<Communi
   const fixture = rows[0];
   if (!fixture) return null;
 
-  const sideRows = await sqlClient<Array<{ team_id: string; supporters: number; locks: number; wins: number; losses: number }>>`
+  const [sideRows, recentCalls, leaderRows] = await Promise.all([sqlClient<Array<{ team_id: string; supporters: number; locks: number; wins: number; losses: number }>>`
     select side.team_id,
       count(distinct u.id)::int supporters,
       count(distinct p.id)::int locks,
@@ -142,7 +143,24 @@ export async function getCommunityChallenge(fixtureId?: string): Promise<Communi
     from (values (${fixture.home_id}::uuid), (${fixture.away_id}::uuid)) side(team_id)
     left join "user" u on u.primary_team_id = side.team_id
     left join picks p on p.user_id = u.id
-    group by side.team_id`;
+    group by side.team_id`, sqlClient<CommunityChallenge["recentCalls"]>`
+    select p.id, u.name supporter, st.name team, p.result, p.decision_reason reason, p.settled_at::text "settledAt"
+    from picks p join "user" u on u.id = p.user_id join teams st on st.id = p.selected_team_id
+    where u.primary_team_id in (${fixture.home_id}, ${fixture.away_id}) and p.result <> 'pending'
+    order by p.settled_at desc nulls last limit 12`, sqlClient<Array<{ id: string; name: string; team_id: string; locks: number; wins: number; losses: number; accuracy: number }>>`
+    with ranked as (
+      select u.id, u.name, u.primary_team_id team_id,
+        count(p.id) filter (where p.result in ('win','loss'))::int locks,
+        count(p.id) filter (where p.result='win')::int wins,
+        count(p.id) filter (where p.result='loss')::int losses,
+        coalesce(round(100.0 * count(p.id) filter (where p.result='win') / nullif(count(p.id) filter (where p.result in ('win','loss')),0)),0)::int accuracy,
+        row_number() over (partition by u.primary_team_id order by count(p.id) filter (where p.result='win') desc, count(p.id) filter (where p.result in ('win','loss')) desc, u.name) rank
+      from "user" u left join picks p on p.user_id=u.id
+      where u.primary_team_id in (${fixture.home_id}, ${fixture.away_id})
+      group by u.id, u.name, u.primary_team_id
+      having count(p.id) filter (where p.result in ('win','loss')) > 0
+    )
+    select id, name, team_id, locks, wins, losses, accuracy from ranked where rank <= 3 order by team_id, rank`]);
   const stats = new Map(sideRows.map((row) => [row.team_id, row]));
   const makeSide = (prefix: "home" | "away"): ChallengeSide => {
     const id = fixture[`${prefix}_id`];
@@ -150,13 +168,9 @@ export async function getCommunityChallenge(fixtureId?: string): Promise<Communi
     return {
       id, name: fixture[`${prefix}_name`], slug: fixture[`${prefix}_slug`], logoUrl: fixture[`${prefix}_logo`],
       supporters: row?.supporters ?? 0, locks: row?.locks ?? 0, wins: row?.wins ?? 0, losses: row?.losses ?? 0,
+      leaders: leaderRows.filter((leader) => leader.team_id === id).map((leader) => ({ id: leader.id, name: leader.name, locks: leader.locks, wins: leader.wins, losses: leader.losses, accuracy: leader.accuracy })),
     };
   };
-  const recentCalls = await sqlClient<CommunityChallenge["recentCalls"]>`
-    select p.id, u.name supporter, st.name team, p.result, p.decision_reason reason, p.settled_at::text "settledAt"
-    from picks p join "user" u on u.id = p.user_id join teams st on st.id = p.selected_team_id
-    where u.primary_team_id in (${fixture.home_id}, ${fixture.away_id}) and p.result <> 'pending'
-    order by p.settled_at desc nulls last limit 12`;
   return {
     id: fixture.id, league: { name: fixture.league_name, slug: fixture.league_slug }, kickoffAt: fixture.kickoff_at,
     status: fixture.status, home: makeSide("home"), away: makeSide("away"), recentCalls,
