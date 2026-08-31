@@ -1,5 +1,6 @@
 import { isAuthorizedCronRequest } from "@/lib/cron-auth";
 import { runJobSteps } from "@/lib/job-steps";
+import { measureCatalogHealth } from "@/services/catalog-health";
 import { synchronizeFreeFixtureSources } from "@/services/free-fixture-sync";
 import { settlePendingPicks } from "@/services/settlement";
 import {
@@ -26,6 +27,16 @@ export const maxDuration = 300;
 const steps = [
   ["fixtures", () => synchronizeFreeFixtureSources()],
   ["settlement", () => settlePendingPicks()],
+  // Reports, never repairs. Every duplicate this counts came back after being
+  // fixed, so something has to notice — but each repair has needed a judgement
+  // call the data could not make on its own, and a merge made at 4am by a job
+  // nobody watched is how Boca Juniors ends up inside Atlético Junior.
+  ["catalogHealth", () => measureCatalogHealth({
+    // Two clubs really are called Liverpool, and an undecided playoff tie
+    // really is stored twice under placeholder names.
+    duplicateClubNames: 1,
+    duplicateMatches: 2,
+  })],
   ["teamLogos", async () => ({
     footballDataOrg: await synchronizeFootballDataOrgLogos(),
     espn: await synchronizeEspnTeamLogos(),
