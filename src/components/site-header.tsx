@@ -183,19 +183,19 @@ export function SiteHeader({
 
         <div className="flex items-center gap-1"><GlobalSearch />{session && notificationCenter ? <NotificationCenter initialItems={notificationCenter.items} initialPreferences={notificationCenter.preferences} /> : null}{session ? (
           <DropdownMenu>
-            <DropdownMenuTrigger render={<Button variant="outline" size="icon" aria-label={`Open account menu for ${session.user.name}`} />}><Avatar className="size-8"><AvatarFallback>{initials}</AvatarFallback></Avatar></DropdownMenuTrigger>
+            <DropdownMenuTrigger render={<Button variant="outline" size="icon" className="cursor-pointer" aria-label={`Open account menu for `} />}><Avatar className="size-8"><AvatarFallback>{initials}</AvatarFallback></Avatar></DropdownMenuTrigger>
             <DropdownMenuContent align="end" className="w-56 rounded-none p-2">
               <DropdownMenuGroup>
                 <DropdownMenuLabel className="px-2 py-2">{session.user.name}</DropdownMenuLabel>
-                <DropdownMenuItem render={<Link href={`/specialists/${session.user.id}`} />} className="rounded-none px-2 py-2.5"><CircleUserRoundIcon />My dashboard</DropdownMenuItem>
-                <DropdownMenuItem render={<Link href="/slip" />} className="rounded-none px-2 py-2.5"><TrophyIcon />Weekly Slip</DropdownMenuItem>
-                <DropdownMenuItem render={<Link href="/network" />} className="rounded-none px-2 py-2.5"><Settings2Icon />My network</DropdownMenuItem>
-                <DropdownMenuItem render={<Link href="/onboarding" />} className="rounded-none px-2 py-2.5"><UsersRoundIcon />Set up leagues</DropdownMenuItem>
-                <DropdownMenuItem render={<Link href="/settings" />} className="rounded-none px-2 py-2.5"><Settings2Icon />Settings</DropdownMenuItem>
-                {isAdmin ? <DropdownMenuItem render={<Link href="/admin" />} className="rounded-none px-2 py-2.5"><ShieldCheckIcon />Admin</DropdownMenuItem> : null}
+                <DropdownMenuItem render={<Link href={`/specialists/${session.user.id}`} />} className="cursor-pointer rounded-none px-2 py-2.5"><CircleUserRoundIcon />My dashboard</DropdownMenuItem>
+                <DropdownMenuItem render={<Link href="/slip" />} className="cursor-pointer rounded-none px-2 py-2.5"><TrophyIcon />Weekly Slip</DropdownMenuItem>
+                <DropdownMenuItem render={<Link href="/network" />} className="cursor-pointer rounded-none px-2 py-2.5"><Settings2Icon />My network</DropdownMenuItem>
+                <DropdownMenuItem render={<Link href="/onboarding" />} className="cursor-pointer rounded-none px-2 py-2.5"><UsersRoundIcon />Set up leagues</DropdownMenuItem>
+                <DropdownMenuItem render={<Link href="/settings" />} className="cursor-pointer rounded-none px-2 py-2.5"><Settings2Icon />Settings</DropdownMenuItem>
+                {isAdmin ? <DropdownMenuItem render={<Link href="/admin" />} className="cursor-pointer rounded-none px-2 py-2.5"><ShieldCheckIcon />Admin</DropdownMenuItem> : null}
               </DropdownMenuGroup>
               <DropdownMenuSeparator />
-              <DropdownMenuGroup><DropdownMenuItem onClick={signOut} className="rounded-none px-2 py-2.5"><LogOutIcon />Sign out</DropdownMenuItem></DropdownMenuGroup>
+              <DropdownMenuGroup><DropdownMenuItem onClick={signOut} className="cursor-pointer rounded-none px-2 py-2.5"><LogOutIcon />Sign out</DropdownMenuItem></DropdownMenuGroup>
             </DropdownMenuContent>
           </DropdownMenu>
         ) : <Link href="/auth" aria-disabled={isPending} className={buttonVariants({ variant: "outline", size: "lg" })}>Sign in</Link>}</div>
