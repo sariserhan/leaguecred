@@ -372,6 +372,75 @@ Immediately ask each newcomer to introduce their club and league and give them o
 
 LeagueCred must remain the primary destination and source of truth. Do not create an external community that makes the product optional.
 
+## Community Product Loop
+
+The product now supports the first version of the participation loop:
+
+- **Decision reason:** members can optionally explain why they made a Daily Lock.
+- **Public game discussion:** every current league fixture has a discussion area.
+- **Guest participation:** visitors can post without an account and appear as names such as `guest123`.
+- **Member identity:** signed-in contributors appear under their account name.
+- **Abuse protection:** discussion posts are validated and rate-limited.
+
+This changes the acquisition message from “come look at predictions” to:
+
+> Make your call, explain your thinking, and compare it with other supporters.
+
+The intended loop is:
+
+1. A match post or partner link brings a supporter to a specific game.
+2. The supporter reads the existing reasons and community opinion.
+3. They post their own idea, even without signing in.
+4. They create an account when they want a permanent record, Daily Lock, or followable identity.
+5. The result settles and becomes a shareable proof point.
+6. The supporter returns for the next game and invites somebody who supports another team.
+
+### Product Priorities for Distribution
+
+| Priority | Feature | Purpose | State |
+| ---: | --- | --- | --- |
+| 1 | Shareable match and result cards | Turn a correct call or useful reason into a distribution asset | Next |
+| 2 | Reply and discussion notifications | Bring contributors back when a game conversation moves | Next |
+| 3 | User profiles with reasoning history | Make expertise and identity followable | Partial |
+| 4 | Invite links and attribution | Measure which members and partners create activated users | Not built |
+| 5 | Report, moderation, and rate-limit controls | Keep public discussion trustworthy as volume grows | Partial |
+| 6 | Weekly community recap | Convert real reasons, results, and misses into original content | Manual first |
+| 7 | Community challenge pages | Give captains and partners a home for rivalry campaigns | Not built |
+
+Do not treat guest discussion as the final conversion. A guest should be able to
+participate immediately, then receive a clear but non-blocking invitation to
+create a profile and preserve their record.
+
+### Discussion Quality Rules
+
+- Ask for football reasoning, not only a team name.
+- Show useful disagreement without rewarding hostility.
+- Keep the reason optional so the lock remains quick.
+- Add reporting before broad promotion of guest posting.
+- Never edit a member’s historical decision after the result.
+- Distinguish a community opinion from a guaranteed outcome.
+- Feature thoughtful misses as well as successful calls.
+- Review the first 50–100 discussions manually to identify spam patterns and
+  common product confusion.
+
+### New Community Metrics
+
+Add these to the measurement framework once analytics are installed:
+
+- Fixture-page visitors who expand a discussion
+- Guest posts per 100 fixture visitors
+- Guest-to-account conversion
+- Reason completion rate among Daily Locks
+- Discussion replies or reactions per active game
+- Visitors arriving through a shared match or result card
+- Returning contributors after their first post
+- Reports per 100 posts and moderation response time
+
+The first meaningful discussion target is not volume. It is **10 useful
+contributions on one league fixture**, followed by contributors returning for the
+next matchday.
+
+
 ## 60–90 Day Execution Plan
 
 ### Phase 0: Instrumentation and Readiness — Days 1–3
