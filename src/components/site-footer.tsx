@@ -1,5 +1,6 @@
 import Link from "next/link";
 import { BrandMark } from "@/components/brand-logo";
+import { FooterHelpLinks } from "@/components/site-footer-feedback";
 import { ThemeToggle } from "@/components/theme-toggle";
 
 const footerGroups = [
@@ -28,7 +29,7 @@ const footerGroups = [
 export function SiteFooter() {
   return (
     <footer className="border-t bg-foreground text-background">
-      <div className="page-shell grid gap-10 py-10 sm:grid-cols-[1fr_auto_auto] sm:gap-16">
+      <div className="page-shell grid gap-10 py-10 sm:grid-cols-[1fr_auto_auto_auto] sm:gap-16">
         <div>
           <Link href="/" className="flex items-center gap-2.5 font-heading text-3xl font-extrabold uppercase">
             <BrandMark size={32} className="size-8" />
@@ -48,6 +49,10 @@ export function SiteFooter() {
             </ul>
           </nav>
         ))}
+        <nav aria-label="Help">
+          <h2 className="text-sm font-bold text-primary">Help</h2>
+          <FooterHelpLinks />
+        </nav>
       </div>
       <div className="border-t border-background/20">
         <div className="page-shell flex flex-col items-start justify-between gap-3 py-4 text-xs text-background/60 sm:flex-row sm:items-center">

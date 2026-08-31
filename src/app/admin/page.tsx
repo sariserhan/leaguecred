@@ -8,6 +8,7 @@ import {
   DiagnosticsHeading,
   OperationalSummaryPanel,
   SettlementCorrectionsPanel,
+  SiteFeedbackPanel,
   SyncRunsPanel,
 } from "@/components/admin/diagnostics-panels";
 import { FeatureFlagControls } from "@/components/admin/feature-flag-controls";
@@ -31,6 +32,7 @@ import {
 import { getFeatureFlags, getSiteSettings } from "@/services/site-settings";
 import { getDistributionAnalytics } from "@/data/distribution";
 import { listMembers } from "@/services/member-seeding";
+import { getSiteFeedback } from "@/services/site-feedback";
 import { TOLERATED_CATALOG_FAULTS, measureCatalogHealth } from "@/services/catalog-health";
 
 export const dynamic = "force-dynamic";
@@ -58,6 +60,7 @@ export default async function AdminPage() {
     distribution,
     members,
     catalogHealth,
+    feedback,
   ] = await Promise.all([
     getSiteSettings(),
     getFeatureFlags(),
@@ -72,6 +75,7 @@ export default async function AdminPage() {
     getDistributionAnalytics(),
     listMembers(),
     measureCatalogHealth(TOLERATED_CATALOG_FAULTS),
+    getSiteFeedback(),
   ]);
 
   return (
@@ -117,6 +121,7 @@ export default async function AdminPage() {
         <SettlementCorrectionsPanel corrections={corrections} />
         <AdminAuditLogPanel entries={auditLog} />
         <AbuseSignalsPanel sharedIpClusters={sharedIpClusters} suspiciousFollows={suspiciousFollows} />
+        <SiteFeedbackPanel bug={feedback.bug} contact={feedback.contact} support={feedback.support} />
       </section>
     </div>
   );

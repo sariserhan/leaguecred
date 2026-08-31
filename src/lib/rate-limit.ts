@@ -31,6 +31,9 @@ export const RATE_LIMITS = {
   becomeCommunityCaptain: { limit: 5, windowSeconds: 60 },
   addPickOpinion: { limit: 12, windowSeconds: 60 },
   votePickOpinion: { limit: 90, windowSeconds: 60 },
+  /** A bug report, contact message, or support request from the footer. No
+   * account required; five is plenty for a real visitor in one minute. */
+  submitSiteFeedback: { limit: 5, windowSeconds: 60 },
 } as const satisfies Record<string, RateLimitPolicy>;
 
 export type RateLimitedAction = keyof typeof RATE_LIMITS;

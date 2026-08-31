@@ -44,6 +44,7 @@ export const adminAuditActionEnum = pgEnum("admin_audit_action", [
 export const leaguePreferenceKindEnum = pgEnum("league_preference_kind", ["know", "help"]);
 export const notificationKindEnum = pgEnum("notification_kind", ["lock_deadline", "specialist_lock", "pick_result", "followed_result", "specialist_recommendation"]);
 export const communityRoleEnum = pgEnum("community_role", ["member", "founding_member", "captain"]);
+export const siteFeedbackKindEnum = pgEnum("site_feedback_kind", ["bug", "contact", "support"]);
 
 // Better Auth core tables. Property names intentionally match its Drizzle adapter.
 export const user = pgTable("user", {
@@ -296,6 +297,20 @@ export const gameDiscussions = pgTable("game_discussions", {
 }, (table) => [
   index("game_discussions_fixture_created_idx").on(table.fixtureId, table.createdAt),
   check("game_discussions_author_check", sql`(${table.userId} is not null and ${table.guestName} is null) or (${table.userId} is null and ${table.guestName} is not null)` ),
+]);
+
+/** Bug reports, contact messages, and support requests from the footer -
+ * open to any visitor, signed in or not. Read by admins in three separate
+ * lists, one per kind; there is no reply path, only an optional email. */
+export const siteFeedback = pgTable("site_feedback", {
+  id: uuid("id").defaultRandom().primaryKey(),
+  kind: siteFeedbackKindEnum("kind").notNull(),
+  userId: text("user_id").references(() => user.id, { onDelete: "set null" }),
+  email: text("email"),
+  message: text("message").notNull(),
+  createdAt,
+}, (table) => [
+  index("site_feedback_kind_created_idx").on(table.kind, table.createdAt),
 ]);
 
 export const matchweekParticipation = pgTable("matchweek_participation", {

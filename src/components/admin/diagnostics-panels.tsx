@@ -1,4 +1,4 @@
-import { ActivityIcon, CircleAlertIcon, HistoryIcon, RefreshCwIcon, ScrollTextIcon, ShieldAlertIcon } from "lucide-react";
+import { ActivityIcon, BugIcon, CircleAlertIcon, HistoryIcon, LifeBuoyIcon, MailIcon, RefreshCwIcon, ScrollTextIcon, ShieldAlertIcon } from "lucide-react";
 
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
@@ -9,6 +9,7 @@ import type {
   SettlementCorrectionDiagnostic,
   SyncRunDiagnostic,
 } from "@/services/admin-diagnostics";
+import type { SiteFeedbackByKind, SiteFeedbackEntry } from "@/services/site-feedback";
 
 const auditActionLabel: Record<AdminAuditEntry["action"], string> = {
   site_settings_updated: "Site settings updated",
@@ -292,6 +293,57 @@ export function AbuseSignalsPanel({
         )}
       </CardContent>
     </Card>
+  );
+}
+
+const feedbackGroups = [
+  { kind: "bug" as const, label: "Bug reports", icon: BugIcon },
+  { kind: "contact" as const, label: "Contact messages", icon: MailIcon },
+  { kind: "support" as const, label: "Support requests", icon: LifeBuoyIcon },
+];
+
+function SiteFeedbackList({ entries }: { entries: SiteFeedbackEntry[] }) {
+  if (entries.length === 0) {
+    return <p className="border-t px-6 py-8 text-sm text-muted-foreground">Nothing yet.</p>;
+  }
+  return (
+    <ul className="divide-y border-t">
+      {entries.map((entry) => (
+        <li key={entry.id} className="px-6 py-4">
+          <div className="flex flex-wrap items-center justify-between gap-2 text-xs text-muted-foreground">
+            <span className="font-semibold text-foreground">{entry.userName ?? "Anonymous visitor"}</span>
+            <time>{formatMoment(entry.createdAt)}</time>
+          </div>
+          <p className="mt-2 text-sm whitespace-pre-wrap">{entry.message}</p>
+          {entry.email ? <p className="mt-1 text-xs text-muted-foreground">{entry.email}</p> : null}
+        </li>
+      ))}
+    </ul>
+  );
+}
+
+/** Bug reports, contact messages, and support requests submitted from the
+ * footer - open to anyone, signed in or not. Read-only; there is no reply
+ * path here, only the optional email a sender left. */
+export function SiteFeedbackPanel({ bug, contact, support }: SiteFeedbackByKind) {
+  const byKind = { bug, contact, support };
+  return (
+    <>
+      {feedbackGroups.map((group) => (
+        <Card key={group.kind} className="rounded-sm">
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2 font-heading text-2xl font-bold uppercase">
+              <group.icon aria-hidden="true" className="size-5" />
+              {group.label}
+            </CardTitle>
+            <CardDescription>The most recent {group.label.toLowerCase()} from the footer, newest first.</CardDescription>
+          </CardHeader>
+          <CardContent className="p-0">
+            <SiteFeedbackList entries={byKind[group.kind]} />
+          </CardContent>
+        </Card>
+      ))}
+    </>
   );
 }
 

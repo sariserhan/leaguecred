@@ -79,3 +79,38 @@ export async function castFixtureVote(fixtureId: string, choice: "home" | "away"
     return { ok: false, message: "This fixture is no longer open for voting." };
   }
 }
+
+const feedbackInput = z.object({
+  kind: z.enum(["bug", "contact", "support"]),
+  message: z.string().trim().min(1).max(2000),
+  email: z.string().trim().email().max(320).optional(),
+});
+
+export type SiteFeedbackResult = { ok: true } | { ok: false; message: string };
+
+/**
+ * A bug report, contact message, or support request from the footer - open
+ * to anyone, signed in or not. Read-only for the sender: there is no reply
+ * path here, only an optional email an admin can use to follow up.
+ */
+export async function submitSiteFeedback(
+  kind: "bug" | "contact" | "support",
+  message: string,
+  email?: string,
+): Promise<SiteFeedbackResult> {
+  const parsed = feedbackInput.safeParse({ kind, message, email: email || undefined });
+  if (!parsed.success) return { ok: false, message: "Write a message, and a valid email if you include one." };
+
+  const session = await getSession();
+  if (!await withinUserRateLimit("submitSiteFeedback", session?.user.id)) {
+    return { ok: false, message: "That is a lot of messages at once. Wait a moment and try again." };
+  }
+
+  try {
+    await sqlClient`insert into site_feedback (kind, user_id, email, message)
+      values (${parsed.data.kind}, ${session?.user.id ?? null}, ${parsed.data.email ?? null}, ${parsed.data.message})`;
+    return { ok: true };
+  } catch {
+    return { ok: false, message: "Your message could not be sent. Please try again." };
+  }
+}
