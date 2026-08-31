@@ -229,9 +229,12 @@ describe("isDuplicateOfCatalogued", () => {
   const played = (name: string, fixtures = 5) => ({ name, fixtures });
   const stub = (name: string) => ({ name, fixtures: 0 });
 
+  // Genk beside Racing Genk used to sit here. It is in the alias map now, which
+  // says outright that they are one club, so the pair merges instead of being
+  // reported — which is what an alias is for. The rule below is unchanged.
   it.each([
-    ["Genk", "Racing Genk"],
     ["Sturm", "SK Sturm Graz"],
+    ["Hertha", "Hertha Berlin"],
   ])("flags the unplayed %s beside %s for review", (candidate, catalogued) => {
     expect(isDuplicateOfCatalogued(stub(candidate), played(catalogued))).toBe(true);
   });

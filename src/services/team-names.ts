@@ -169,6 +169,12 @@ const aliases: Record<string, string> = {
   hamburgersv: "hamburgsv",
   sslazio: "lazio",
   tsg1899hoffenheim: "hoffenheim",
+  // football-data.co.uk drops the prefix Belgian clubs are listed under
+  // everywhere else, which left each of these catalogued twice.
+  racinggenk: "genk",
+  waaslandbeveren: "beveren",
+  kvkortrijk: "kortrijk",
+  royalcharleroi: "charleroi",
   cologne: "koln",
   // A club beside a leftover catalogue entry naming the same club. Each was
   // checked one at a time: name nesting alone is not evidence, since inside a

@@ -92,6 +92,10 @@ describe("football-data.org spellings", () => {
     ["Hamburger SV", "Hamburg SV"],
     ["SS Lazio", "Lazio"],
     ["TSG 1899 Hoffenheim", "TSG Hoffenheim"],
+    ["Racing Genk", "Genk"],
+    ["Waasland-Beveren", "Beveren"],
+    ["KV Kortrijk", "Kortrijk"],
+    ["Royal Charleroi SC", "Charleroi"],
   ])("resolves %s to the same club as %s", (verbose, plain) => {
     expect(normalizeTeamName(verbose)).toBe(normalizeTeamName(plain));
   });
