@@ -78,6 +78,14 @@ async function main() {
     const touched = new Map<string, { leagueId: string; seasonId: string; leagueName: string }>();
 
     for (const week of weeks) {
+      // Every league examined is renumbered, not only the ones split here. The
+      // numbering counts weeks by start date, so absorbing a week elsewhere —
+      // merge-matchweeks does exactly that — leaves the same hole this job was
+      // added to close. Renaming is a no-op where the names already fit.
+      touched.set(`${week.league_id}:${week.season_id}`, {
+        leagueId: week.league_id, seasonId: week.season_id, leagueName: week.league_name,
+      });
+
       const fixtures = await sqlClient<Array<{ id: string; kickoff_at: Date | string }>>`
         select id, kickoff_at from fixtures where matchweek_id = ${week.id} order by kickoff_at`;
       const rounds = planMatchweekRounds(fixtures.map((f) => ({ id: f.id, kickoffAt: f.kickoff_at })));
@@ -98,9 +106,6 @@ async function main() {
         console.info(`  round ${index + 1}: ${round.fixtureIds.length} fixture(s) ${range}${index === 0 ? " (stays)" : ""}`);
       }
       split += rounds.length - 1;
-      touched.set(`${week.league_id}:${week.season_id}`, {
-        leagueId: week.league_id, seasonId: week.season_id, leagueName: week.league_name,
-      });
       if (!apply) continue;
 
       await sqlClient.begin(async (sql) => {
