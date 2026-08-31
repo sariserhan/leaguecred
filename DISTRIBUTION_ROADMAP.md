@@ -219,8 +219,8 @@ Every meaningful contribution should create a reason to return or share.
 
 ### Example Share Card
 
-> Serhan called Inter to win — correct  
-> 7 of 9 lifetime locks  
+> Serhan called Inter to win — correct<br>
+> 7 of 9 lifetime locks<br>
 > Representing Serie A on LeagueCred
 
 This is stronger distribution than a generic “Join our website” post because it gives the member identity and credible proof to share.
