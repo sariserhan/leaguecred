@@ -2,10 +2,13 @@ import type postgres from "postgres";
 
 import { catalogEntries } from "@/db/catalog-data";
 
-export const disabledLeagueSlugs = new Set([
-  "switzerland-super-league",
-  "czech-republic-czech-liga",
-]);
+/**
+ * Leagues to seed but leave switched off. Empty on purpose: the Swiss and Czech
+ * competitions used to sit here, and have since been dropped from the catalog
+ * outright — no fixture source carries them. A league that should exist but not
+ * be playable belongs here; one nobody wants at all belongs nowhere.
+ */
+export const disabledLeagueSlugs = new Set<string>([]);
 
 export async function seedExpandedLeagueCatalog(sql: postgres.TransactionSql) {
   const distinctCountries = [...new Map(catalogEntries.map((entry) => [entry.countryCode, {
