@@ -1,5 +1,4 @@
 import type { Metadata } from "next";
-import Image from "next/image";
 import Link from "next/link";
 import { ArrowLeftIcon, CheckIcon, UsersRoundIcon } from "lucide-react";
 import { notFound } from "next/navigation";
@@ -8,6 +7,7 @@ import { Badge } from "@/components/ui/badge";
 import { buttonVariants } from "@/components/ui/button";
 import { getMatchweekHistory } from "@/data/leagues";
 import { cn } from "@/lib/utils";
+import { Crest } from "@/components/ui/crest";
 
 export const dynamic = "force-dynamic";
 
@@ -17,7 +17,7 @@ type MatchweekPageProps = {
 
 function TeamLogo({ name, logoUrl }: { name: string; logoUrl: string | null }) {
   return logoUrl ? (
-    <Image src={logoUrl} alt="" width={32} height={32} className="size-8 object-contain" />
+    <Crest src={logoUrl} size={32} />
   ) : (
     <span className="flex size-8 items-center justify-center bg-muted text-xs font-bold">
       {name.slice(0, 3).toUpperCase()}

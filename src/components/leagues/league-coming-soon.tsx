@@ -1,4 +1,3 @@
-import Image from "next/image";
 import Link from "next/link";
 import { ArrowLeftIcon, UsersRoundIcon } from "lucide-react";
 
@@ -6,6 +5,7 @@ import { TeamCatalogSection } from "@/components/leagues/team-catalog-section";
 import { buttonVariants } from "@/components/ui/button";
 import type { LeagueTeamCatalog } from "@/data/leagues";
 import type { League } from "@/lib/league-data";
+import { Crest } from "@/components/ui/crest";
 
 export function LeagueComingSoon({
   league,
@@ -20,7 +20,7 @@ export function LeagueComingSoon({
         <div className="flex flex-col gap-8 md:flex-row md:items-center">
           {league.logoUrl ? (
             <span className="flex size-28 shrink-0 items-center justify-center bg-white p-3">
-              <Image src={league.logoUrl} alt="" width={88} height={88} className="size-22 object-contain" />
+              <Crest src={league.logoUrl} size={88} />
             </span>
           ) : null}
           <div>

@@ -11,6 +11,7 @@ import { Input } from "@/components/ui/input";
 import { ToggleGroup, ToggleGroupItem } from "@/components/ui/toggle-group";
 import type { League, Region } from "@/lib/league-data";
 import { cn } from "@/lib/utils";
+import { Crest } from "@/components/ui/crest";
 
 const regions = ["All", "Europe", "Americas", "Asia", "Africa", "Oceania"] as const;
 const availabilityOptions = ["All leagues", "Daily Lock ready", "Team catalog"] as const;
@@ -33,7 +34,7 @@ function LeagueRow({ league, intent, authenticated }: { league: League; intent: 
         <span>{league.country}</span>
       </span>
       <strong className="flex items-center gap-3">
-        {league.logoUrl ? <span className="flex size-10 shrink-0 items-center justify-center bg-white p-1"><Image src={league.logoUrl} alt="" width={32} height={32} className="size-8 object-contain" /></span> : null}
+        {league.logoUrl ? <Crest src={league.logoUrl} size={40} /> : null}
         <span>{league.name}</span>
       </strong>
       <span className="flex items-center gap-2 text-sm text-muted-foreground"><UsersRoundIcon aria-hidden="true" className="size-4 shrink-0" />{league.specialistCount} ranked specialist{league.specialistCount === 1 ? "" : "s"}</span>

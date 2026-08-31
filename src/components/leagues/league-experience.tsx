@@ -1,7 +1,6 @@
 "use client";
 
 import { useState, useTransition } from "react";
-import Image from "next/image";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import {
@@ -46,6 +45,7 @@ import { LockCountdown } from "@/components/lock-countdown";
 import { LocalTime } from "@/components/local-time";
 import type { LeagueExperienceData, PastMatchweek } from "@/data/leagues";
 import { cn } from "@/lib/utils";
+import { Crest } from "@/components/ui/crest";
 
 type ParticipationMode = "prove" | "follow";
 type Selection = { fixtureId: string; teamId: string; teamName: string };
@@ -54,7 +54,7 @@ function TeamMark({ code, logoUrl }: { code: string; logoUrl: string | null }) {
   return (
     <span className="flex size-10 shrink-0 items-center justify-center font-heading text-sm font-bold">
       {logoUrl ? (
-        <Image src={logoUrl} alt="" width={40} height={40} className="size-10 object-contain" />
+        <Crest src={logoUrl} size={40} />
       ) : code}
     </span>
   );
