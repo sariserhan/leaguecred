@@ -81,6 +81,9 @@ None.
 - [x] Draw the hero pitch backdrop to real proportions, on grass
 - [x] Replace the drawn hero pitch with a photograph of a real one
 - [x] Drop the square button frame from around the round header avatar
+- [x] Answer 404 for a page that does not exist, instead of 200 with a not-found screen
+- [x] Redirect the old /teams/<name>-<id> links to the canonical team slug
+- [x] Keep members-only routes out of the sitemap and the index
 - [x] Give the light theme a page tone, so white cards read as raised
 - [x] Reach any team page from a Teams menu in the header
 - [x] Load the header's clubs a league at a time instead of shipping the catalog

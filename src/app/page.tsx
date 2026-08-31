@@ -23,6 +23,7 @@ export const dynamic = "force-dynamic";
 export const metadata: Metadata = {
   title: "LeagueCred — Football knowledge, proven over time",
   description: "Make one permanent Daily Lock in the league you know, or follow a football specialist with a transparent record.",
+  alternates: { canonical: "/" },
 };
 
 const steps = [

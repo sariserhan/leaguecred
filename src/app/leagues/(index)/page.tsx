@@ -11,6 +11,7 @@ export const metadata: Metadata = {
   title: "Explore leagues",
   description:
     "Build your record where you have knowledge and follow proven football specialists everywhere else.",
+  alternates: { canonical: "/leagues" },
 };
 
 export default async function LeaguesPage({ searchParams }: PageProps<"/leagues">) {

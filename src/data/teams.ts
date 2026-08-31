@@ -42,6 +42,19 @@ type FixtureRow = {
   opponent_score: number | null;
 };
 
+/**
+ * The canonical slug for a team id.
+ *
+ * Team pages used to live at /teams/<name>-<uuid>. Those links are still in the
+ * wild, and the id inside one is enough to say which page it meant, so the old
+ * URL can be redirected instead of answering 404.
+ */
+export const getTeamSlugById = cache(async function getTeamSlugById(teamId: string): Promise<string | null> {
+  const [team] = await sqlClient<Array<{ slug: string }>>`
+    select slug from teams where id = ${teamId} limit 1`;
+  return team?.slug ?? null;
+});
+
 export const getTeamProfile = cache(async function getTeamProfile(teamSlug: string): Promise<TeamProfileData | null> {
   const [team] = await sqlClient<Array<{ id: string; name: string; slug: string; short_name: string; logo_url: string | null; country: string | null }>>`
     select t.id, t.name, t.slug, t.short_name, t.logo_url, c.name as country

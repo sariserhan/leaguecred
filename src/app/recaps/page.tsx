@@ -6,7 +6,7 @@ import { buttonVariants } from "@/components/ui/button";
 import { getWeeklyRecap } from "@/data/distribution";
 
 export const dynamic = "force-dynamic";
-export const metadata: Metadata = { title: "Weekly recap", description: "The transparent weekly record across LeagueCred communities." };
+export const metadata: Metadata = { title: "Weekly recap", description: "The transparent weekly record across LeagueCred communities.", alternates: { canonical: "/recaps" } };
 
 export default async function RecapsPage() {
   const data = await getWeeklyRecap();

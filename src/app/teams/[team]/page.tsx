@@ -1,12 +1,13 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 import { CalendarDaysIcon, TrophyIcon } from "lucide-react";
-import { notFound } from "next/navigation";
+import { notFound, permanentRedirect } from "next/navigation";
 
 import type { TeamFixture } from "@/data/teams";
-import { getTeamProfile } from "@/data/teams";
+import { getTeamProfile, getTeamSlugById } from "@/data/teams";
 import { cn } from "@/lib/utils";
 import { JsonLd } from "@/lib/json-ld";
+import { teamIdFromPath } from "@/lib/team-path";
 import { Crest } from "@/components/ui/crest";
 
 export const dynamic = "force-dynamic";
@@ -34,7 +35,15 @@ export async function generateMetadata(props: TeamPageProps): Promise<Metadata> 
 export default async function TeamPage(props: TeamPageProps) {
   const { team } = await props.params;
   const data = await getTeamProfile(team);
-  if (!data) notFound();
+  if (!data) {
+    // Before slugs, a team page was /teams/<name>-<uuid>. Shared links and
+    // anything already indexed still carry that shape, so honour the id in it
+    // rather than losing the page to a 404.
+    const legacyId = teamIdFromPath(team);
+    const slug = legacyId ? await getTeamSlugById(legacyId) : null;
+    if (slug) permanentRedirect(`/teams/${slug}`);
+    notFound();
+  }
   const { record } = data;
 
   return <><JsonLd data={{ "@context": "https://schema.org", "@type": "SportsTeam", name: data.team.name, url: `https://leaguecred.com/teams/${data.team.slug}`, logo: data.team.logoUrl ?? undefined, sport: "Soccer" }} /><div className="page-shell py-8 sm:py-12"><header className="border-b border-foreground bg-foreground px-5 py-8 text-background sm:px-8 sm:py-10"><div className="flex items-center gap-5"><TeamMark name={data.team.name} logoUrl={data.team.logoUrl} size={96} /><div><p className="font-semibold text-primary">{data.team.country ?? "Football club"}</p><h1 className="mt-1 font-heading text-5xl leading-none font-extrabold uppercase sm:text-7xl">{data.team.name}</h1><p className="mt-3 text-background/75">{data.leagues.map((league) => league.name).join(" · ") || "League catalog team"}</p></div></div></header><section className="grid border-x border-b sm:grid-cols-2 xl:grid-cols-5" aria-label="Current season team record">{[["Played", record.played], ["Wins", record.wins], ["Draws", record.draws], ["Losses", record.losses], ["Goals", `${record.goalsFor}–${record.goalsAgainst}`]].map(([label, value]) => <div key={label} className="border-b p-5 last:border-b-0 sm:border-r sm:last:border-r-0 xl:border-b-0"><strong className="block font-heading text-4xl leading-none">{value}</strong><span className="mt-1 block text-sm text-muted-foreground">{label}</span></div>)}</section><div className="mt-7 grid gap-7 xl:grid-cols-2"><section className="border" aria-labelledby="upcoming-heading"><div className="flex items-center gap-2 border-b px-5 py-4"><CalendarDaysIcon aria-hidden="true" className="size-5 text-primary" /><h2 id="upcoming-heading" className="font-heading text-2xl font-bold uppercase">Upcoming games</h2></div>{data.upcoming.length > 0 ? <div>{data.upcoming.map((fixture) => <FixtureRow key={fixture.id} fixture={fixture} teamName={data.team.name} />)}</div> : <p className="p-5 text-muted-foreground">No upcoming fixture is currently available.</p>}</section><section className="border" aria-labelledby="recent-heading"><div className="flex items-center gap-2 border-b px-5 py-4"><TrophyIcon aria-hidden="true" className="size-5 text-primary" /><h2 id="recent-heading" className="font-heading text-2xl font-bold uppercase">Recent results</h2></div>{data.recent.length > 0 ? <div>{data.recent.map((fixture) => <FixtureRow key={fixture.id} fixture={fixture} teamName={data.team.name} recent />)}</div> : <p className="p-5 text-muted-foreground">No completed result is available yet.</p>}</section></div></div></>;

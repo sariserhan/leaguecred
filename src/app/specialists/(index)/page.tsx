@@ -6,7 +6,7 @@ import { enforceMaintenanceGate } from "@/lib/maintenance";
 import { getRankThreshold } from "@/services/site-settings";
 
 export const dynamic = "force-dynamic";
-export const metadata: Metadata = { title: "Find specialists", description: "Compare verified football specialists by league, record, and evidence." };
+export const metadata: Metadata = { title: "Find specialists", description: "Compare verified football specialists by league, record, and evidence.", alternates: { canonical: "/specialists" } };
 
 export default async function SpecialistsPage({ searchParams }: PageProps<"/specialists">) {
   await enforceMaintenanceGate();
