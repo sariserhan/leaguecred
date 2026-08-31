@@ -79,6 +79,8 @@ None.
 - [x] Explain the exchange with named clubs across four countries
 - [x] Give the hero one primary action and one credible accuracy range
 - [x] Draw the hero pitch backdrop to real proportions, on grass
+- [x] Replace the drawn hero pitch with a photograph of a real one
+- [x] Give the light theme a page tone, so white cards read as raised
 - [x] Reach any team page from a Teams menu in the header
 - [x] Load the header's clubs a league at a time instead of shipping the catalog
 - [x] Stop continental competitions creating a second row for a club, and a bogus country with it

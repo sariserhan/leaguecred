@@ -5,7 +5,7 @@ import { ArrowRightIcon, ChartNoAxesColumnIncreasingIcon, ClipboardPenLineIcon, 
 import { ActivityAndStats, FinalCallToAction, LeagueRail, MemberVoices, SpecialistProof } from "@/components/home/home-proof";
 import { InteractiveDemo } from "@/components/home/interactive-demo";
 import { MobileHomeCta } from "@/components/home/mobile-home-cta";
-import { PitchBackdrop } from "@/components/home/pitch-backdrop";
+import { HeroBackdrop } from "@/components/home/hero-backdrop";
 import { ParticipationPaths, RecordAndQuestions } from "@/components/home/product-explainer";
 import { buttonVariants } from "@/components/ui/button";
 import { getHomeData } from "@/data/home";
@@ -13,6 +13,9 @@ import { getSession } from "@/lib/auth-session";
 import { enforceMaintenanceGate } from "@/lib/maintenance";
 import { HOMEPAGE_ACTIVITY_FLAG, isFeatureEnabled } from "@/lib/site-settings";
 import { getFeatureFlags } from "@/services/site-settings";
+
+/** The hero photograph. Swap the file to change it. */
+const HERO_IMAGE = "/2.webp";
 
 export const dynamic = "force-dynamic";
 export const metadata: Metadata = {
@@ -52,16 +55,7 @@ export default async function HomePage() {
           <p className="text-sm font-semibold">Free for everyone. No subscriptions, no paywalls—let&apos;s win together.</p>
         </div>
         <div className="relative">
-          {/* The pitch is grass-coloured rather than a faint tint, but it is still a
-              backdrop. The mask softens only the inner edge, where the grass would
-              otherwise stop against the headline in a hard vertical line; the far
-              side runs off the viewport on its own. */}
-          <div
-            className="pointer-events-none absolute inset-x-[-8%] top-1/2 -z-10 hidden -translate-y-1/2 [mask-image:linear-gradient(to_right,transparent,black_18%)] lg:block"
-            aria-hidden="true"
-          >
-            <PitchBackdrop className="w-full" />
-          </div>
+          <HeroBackdrop src={HERO_IMAGE} />
           <InteractiveDemo leagues={data.leagues} />
         </div>
       </section>
