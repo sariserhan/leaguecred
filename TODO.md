@@ -39,6 +39,7 @@ None.
 - [x] Add the notification inbox, season archive, matchweek calendar, activation checklist, mobile member navigation, share-card tools, and UI regression coverage
 - [x] Add command navigation, dashboard customization, performance charts, richer comparisons, calendar exports, profile presentation controls, and responsive history tools
 - [x] Add persisted profile customization, a contextual product tour, network activity feed, loading transitions, and automated accessibility coverage
+- [x] Add avatar upload and cropping, anchored onboarding guidance, post-match reviews, and zoom/high-contrast accessibility regressions
 - [x] Add account settings for profile, password, league, network, and notification controls
 - [x] Add founding-season and provisional specialist discovery states
 - [x] Add management views for upcoming fixtures, recent accounts, and provisional records
