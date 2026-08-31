@@ -21,8 +21,8 @@ Recorded 31 August 2026, so that the plan below is read against what exists rath
 | Locks ever made | 0 |
 | Public records | 0 |
 | Enabled competitions | 23 |
-| Clubs catalogued | 425 |
-| Upcoming fixtures | 1,097 |
+| Clubs catalogued | 504 |
+| Upcoming fixtures | 1,171 |
 
 The fixture data, standings, team pages, specialist profiles and settlement are all working and live. What does not exist yet is a single member other than the founder. Every number in this roadmap starts from there.
 
@@ -311,6 +311,11 @@ One insight can become:
 - “What local supporters knew that the general football timeline missed.”
 - “This community made fewer calls and achieved better results.”
 - “The most confident miss of the week—and what we learned from it.”
+- “Only 34% of the community voted for the favorite—here's why.”
+
+The one-tap community vote is the cheapest source of this content: a live
+Home/Away split needs no writeup, just a screenshot, and it can be posted
+before a result exists rather than only after settlement.
 
 ### Content Rules
 
@@ -376,21 +381,22 @@ LeagueCred must remain the primary destination and source of truth. Do not creat
 
 The product now supports the first version of the participation loop:
 
+- **One-click community vote:** on any upcoming fixture, a visitor picks Home or Away with no account at all — a cookie identifies the vote, not a session. This is the lowest-friction action in the product: one tap, no typing, and the live Home/Away split shows immediately.
 - **Decision reason:** members can optionally explain why they made a Daily Lock.
 - **Public game discussion:** every current league fixture has a discussion area.
 - **Guest participation:** visitors can post without an account and appear as names such as `guest123`.
 - **Member identity:** signed-in contributors appear under their account name.
-- **Abuse protection:** discussion posts are validated and rate-limited.
+- **Abuse protection:** discussion posts and votes are both validated and rate-limited.
 
 This changes the acquisition message from “come look at predictions” to:
 
-> Make your call, explain your thinking, and compare it with other supporters.
+> Vote in one tap, make your call, explain your thinking, and compare it with other supporters.
 
 The intended loop is:
 
 1. A match post or partner link brings a supporter to a specific game.
-2. The supporter reads the existing reasons and community opinion.
-3. They post their own idea, even without signing in.
+2. They cast a one-tap Home/Away vote — no account, no typing, nothing to lose by trying it.
+3. Seeing the live split, they read the existing reasons and community opinion, and post their own idea, still without signing in.
 4. They create an account when they want a permanent record, Daily Lock, or followable identity.
 5. The result settles and becomes a shareable proof point.
 6. The supporter returns for the next game and invites somebody who supports another team.
@@ -407,9 +413,11 @@ The intended loop is:
 | 6 | Weekly community recap | Convert real reasons, results, and misses into original content | Manual first |
 | 7 | Community challenge pages | Give captains and partners a home for rivalry campaigns | Not built |
 
-Do not treat guest discussion as the final conversion. A guest should be able to
-participate immediately, then receive a clear but non-blocking invitation to
-create a profile and preserve their record.
+Do not treat a guest vote or a guest discussion post as the final conversion. A
+guest should be able to participate immediately, then receive a clear but
+non-blocking invitation to create a profile and preserve their record. The
+vote is the easiest of the two to promote widely, precisely because it asks
+for nothing — it is the right first link to share, not the discussion thread.
 
 ### Discussion Quality Rules
 
@@ -427,6 +435,9 @@ create a profile and preserve their record.
 
 Add these to the measurement framework once analytics are installed:
 
+- Fixture-page visitors who cast a community vote
+- Vote-to-discussion progression (of those who vote, how many then read or post)
+- Vote-to-account conversion, separate from discussion-to-account conversion
 - Fixture-page visitors who expand a discussion
 - Guest posts per 100 fixture visitors
 - Guest-to-account conversion
@@ -438,7 +449,9 @@ Add these to the measurement framework once analytics are installed:
 
 The first meaningful discussion target is not volume. It is **10 useful
 contributions on one league fixture**, followed by contributors returning for the
-next matchday.
+next matchday. The vote has a lower bar and should clear it first: a visible,
+non-trivial Home/Away split on every fixture in the launch league before
+worrying about discussion depth.
 
 
 ## 60–90 Day Execution Plan
