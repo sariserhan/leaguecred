@@ -101,11 +101,27 @@ async function main() {
       console.info(`${apply ? "MOVE" : "WOULD MOVE"} /teams/${team.slug} -> /teams/${preferredSlug}`);
       if (!apply) continue;
 
-      // Only move the page if nothing else already answers to that address.
-      await sqlClient`
-        update teams set slug = ${preferredSlug}, updated_at = now()
-        where id = ${team.id}
-          and not exists (select 1 from teams other where other.slug = ${preferredSlug})`;
+      // Only move the page if nothing else already answers to that address, and
+      // keep the old one so links already shared still reach the club. The
+      // history row is written in the same transaction as the move: recorded
+      // without moving would redirect a live address to itself.
+      await sqlClient.begin(async (sql) => {
+        const moved = await sql`
+          update teams set slug = ${preferredSlug}, updated_at = now()
+          where id = ${team.id}
+            and not exists (select 1 from teams other where other.slug = ${preferredSlug})
+          returning id`;
+        if (moved.length === 0) return;
+
+        // A slug can come back around — a club renamed and renamed again — so
+        // the newest claim on it wins rather than colliding with an older one.
+        await sql`
+          insert into team_slug_history (slug, team_id)
+          values (${team.slug}, ${team.id})
+          on conflict (slug) do update set team_id = excluded.team_id, created_at = now()`;
+        // Nothing may redirect away from an address a club currently answers to.
+        await sql`delete from team_slug_history where slug = ${preferredSlug}`;
+      });
     }
 
     console.info(`\n${renamed} club(s)${apply ? " renamed" : " to rename"}, ${reslugged} slug(s)${apply ? " moved" : " to move"}.`);

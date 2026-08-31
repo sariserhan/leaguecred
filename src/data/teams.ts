@@ -55,6 +55,22 @@ export const getTeamSlugById = cache(async function getTeamSlugById(teamId: stri
   return team?.slug ?? null;
 });
 
+/**
+ * The club that used to answer to a slug, for a page that has since moved.
+ *
+ * Consulted only after a lookup by the current slug has failed, so a club
+ * living at an address always wins over one that used to.
+ */
+export const getTeamSlugByFormerSlug = cache(async function getTeamSlugByFormerSlug(slug: string): Promise<string | null> {
+  const [row] = await sqlClient<Array<{ slug: string }>>`
+    select t.slug
+    from team_slug_history h
+    join teams t on t.id = h.team_id
+    where h.slug = ${slug}
+    limit 1`;
+  return row?.slug ?? null;
+});
+
 export const getTeamProfile = cache(async function getTeamProfile(teamSlug: string): Promise<TeamProfileData | null> {
   const [team] = await sqlClient<Array<{ id: string; name: string; slug: string; short_name: string; logo_url: string | null; country: string | null }>>`
     select t.id, t.name, t.slug, t.short_name, t.logo_url, c.name as country

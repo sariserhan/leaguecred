@@ -4,7 +4,7 @@ import { CalendarDaysIcon, TrophyIcon } from "lucide-react";
 import { notFound, permanentRedirect } from "next/navigation";
 
 import type { TeamFixture } from "@/data/teams";
-import { getTeamProfile, getTeamSlugById } from "@/data/teams";
+import { getTeamProfile, getTeamSlugByFormerSlug, getTeamSlugById } from "@/data/teams";
 import { cn } from "@/lib/utils";
 import { JsonLd } from "@/lib/json-ld";
 import { teamIdFromPath } from "@/lib/team-path";
@@ -40,7 +40,11 @@ export default async function TeamPage(props: TeamPageProps) {
     // anything already indexed still carry that shape, so honour the id in it
     // rather than losing the page to a 404.
     const legacyId = teamIdFromPath(team);
-    const slug = legacyId ? await getTeamSlugById(legacyId) : null;
+    const slug = legacyId
+      ? await getTeamSlugById(legacyId)
+      // Correcting a club's name moves its page. Anything already linking to
+      // the old address should still arrive.
+      : await getTeamSlugByFormerSlug(team);
     if (slug) permanentRedirect(`/teams/${slug}`);
     notFound();
   }

@@ -6,6 +6,16 @@ None.
 
 ## Next
 
+- [ ] Three catalog-health faults in production, in this order. Each reports
+      before it writes, so run it once to read and again with --apply:
+      1. `pnpm team:split nacional --name "Nacional Montevideo" --leagues copa-libertadores --aliases conmebol-official:copa-libertadores:nacional`
+         One row holds Nacional of Montevideo and the Portuguese club at once.
+      2. `pnpm matchweeks:merge` for the three overlapping gameweeks.
+      3. `pnpm teams:names` last: 21 renames and 12 slug moves. Safe to run now
+         that a moved slug redirects rather than 404s.
+      Prefix each with
+      `DATABASE_URL="$(grep -m1 '^PROD_DATABASE_URL_UNPOOLED=' .env.local | cut -d= -f2-)"`.
+
 - [ ] Clean up the duplicate clubs and fixtures football-data.org left in
       production. The source is unwired now, so this is a one-off. The first
       pass removed 254; the eight clubs it could not match then are matched

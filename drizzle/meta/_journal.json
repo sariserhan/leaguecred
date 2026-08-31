@@ -183,6 +183,13 @@
       "when": 1788152000000,
       "tag": "0025_admin_seed_audit",
       "breakpoints": true
+    },
+    {
+      "idx": 26,
+      "version": "7",
+      "when": 1788153000000,
+      "tag": "0026_team_slug_history",
+      "breakpoints": true
     }
   ]
 }

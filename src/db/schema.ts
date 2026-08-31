@@ -338,6 +338,22 @@ export const picks = pgTable("picks", {
   index("picks_season_id_idx").on(table.seasonId),
 ]);
 
+/**
+ * Addresses a club used to answer to.
+ *
+ * Correcting a name moves the page — /teams/newcastle to
+ * /teams/newcastle-united — and every link already shared to the old address
+ * would otherwise 404. Append-only: a slug that once named a club has to keep
+ * naming it, or the redirect it supports breaks.
+ */
+export const teamSlugHistory = pgTable("team_slug_history", {
+  slug: text("slug").primaryKey(),
+  teamId: uuid("team_id").notNull().references(() => teams.id, { onDelete: "cascade" }),
+  createdAt,
+}, (table) => [
+  index("team_slug_history_team_id_idx").on(table.teamId),
+]);
+
 export const leagueFollows = pgTable("league_follows", {
   id: uuid("id").defaultRandom().primaryKey(),
   followerUserId: text("follower_user_id").notNull().references(() => user.id, { onDelete: "cascade" }),
