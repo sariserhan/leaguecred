@@ -138,10 +138,19 @@ export function LeagueExperience({
 
   const decisions = data.viewer.wins + data.viewer.losses;
   const accuracy = decisions === 0 ? null : (data.viewer.wins / decisions) * 100;
-  const lockAt = new Intl.DateTimeFormat("en", {
-    weekday: "long", hour: "2-digit", minute: "2-digit", timeZone: "UTC", timeZoneName: "short",
-  }).format(new Date(data.matchweek.lockAt));
-  const interactionLocked = data.matchweek.status !== "upcoming" || new Date(data.matchweek.lockAt) <= new Date();
+  // A lock closes when its own match starts, not when the week's first one does.
+  // The week's lock_at is its earliest kickoff, so testing against that closed
+  // every call in the week the moment any match in it began — which is every
+  // week, once it is under way, and is why nothing anywhere could be selected.
+  const openFixtures = data.fixtures.filter((fixture) => fixture.open);
+  const nextDeadline = openFixtures[0]?.kickoffAt ?? null;
+  const lockAt = nextDeadline
+    ? new Intl.DateTimeFormat("en", {
+        weekday: "long", hour: "2-digit", minute: "2-digit", timeZone: "UTC", timeZoneName: "short",
+      }).format(new Date(nextDeadline))
+    : null;
+  // Only a week that is over, or one with nothing left to call, is closed.
+  const interactionLocked = data.matchweek.status !== "upcoming" || openFixtures.length === 0;
   const fixturesByDate = new Map<string, typeof data.fixtures>();
   for (const fixture of data.fixtures) {
     const fixtures = fixturesByDate.get(fixture.kickoffDate);
@@ -231,9 +240,9 @@ export function LeagueExperience({
               <Badge variant="outline" className="border-background/40 text-background">{data.matchweek.displayName}</Badge>
               <span className="flex items-center gap-2 text-sm">
                 <LockKeyholeIcon aria-hidden="true" className="size-4" />
-                Locks close {lockAt}
+                {lockAt ? `Next lock closes ${lockAt}` : "Every match this week has started"}
               </span>
-              {!interactionLocked ? <div className="bg-background text-foreground"><LockCountdown lockAt={data.matchweek.lockAt} compact /></div> : null}
+              {nextDeadline ? <div className="bg-background text-foreground"><LockCountdown lockAt={nextDeadline} compact /></div> : null}
             </div>
           </div>
           <aside className="grid grid-cols-[1fr_auto] items-end gap-x-5 gap-y-1 border-t border-background/20 py-5 lg:flex lg:flex-col lg:items-stretch lg:justify-center lg:border-t-0 lg:border-l lg:py-8 lg:pl-8">
@@ -249,7 +258,7 @@ export function LeagueExperience({
         </div>
       </section>
 
-      <nav className="sticky top-0 z-20 border-b bg-background/95 backdrop-blur" aria-label="League sections"><div className="page-shell flex overflow-x-auto"><a href="#fixtures" className="shrink-0 border-b-2 border-primary px-4 py-3 text-sm font-bold">Fixtures</a><a href="#specialists" className="shrink-0 px-4 py-3 text-sm font-bold">Specialists</a><a href="#leaderboard" className="shrink-0 px-4 py-3 text-sm font-bold">Leaderboard</a><a href="#history" className="shrink-0 px-4 py-3 text-sm font-bold">History</a><span className="ml-auto hidden items-center text-xs text-muted-foreground lg:flex">Deadline:&nbsp;<LocalTime value={data.matchweek.lockAt} relative /></span></div></nav>
+      <nav className="sticky top-0 z-20 border-b bg-background/95 backdrop-blur" aria-label="League sections"><div className="page-shell flex overflow-x-auto"><a href="#fixtures" className="shrink-0 border-b-2 border-primary px-4 py-3 text-sm font-bold">Fixtures</a><a href="#specialists" className="shrink-0 px-4 py-3 text-sm font-bold">Specialists</a><a href="#leaderboard" className="shrink-0 px-4 py-3 text-sm font-bold">Leaderboard</a><a href="#history" className="shrink-0 px-4 py-3 text-sm font-bold">History</a><span className="ml-auto hidden items-center text-xs text-muted-foreground lg:flex">Deadline:&nbsp;{nextDeadline ? <LocalTime value={nextDeadline} relative /> : "closed"}</span></div></nav>
 
       <div className="page-shell py-6 sm:py-8">
         {error ? <Alert variant="destructive" className="mb-5"><AlertDescription>{error}</AlertDescription></Alert> : null}
@@ -278,7 +287,9 @@ export function LeagueExperience({
                     {fixtures.map((fixture) => {
                       const homeSelected = selection?.teamId === fixture.homeTeamId;
                       const awaySelected = selection?.teamId === fixture.awayTeamId;
-                      const disabled = mode === "follow" || Boolean(lockedTeam) || interactionLocked;
+                      // Each match closes on its own kickoff, so a Saturday
+                      // result never shuts the Wednesday call beside it.
+                      const disabled = mode === "follow" || Boolean(lockedTeam) || interactionLocked || !fixture.open;
                       return (
                         <div key={fixture.id} className="grid grid-cols-[minmax(0,1fr)_auto_minmax(0,1fr)] items-stretch gap-2 bg-background p-3 sm:items-center sm:gap-3">
                           <button type="button" disabled={disabled} onClick={() => setSelection({ fixtureId: fixture.id, teamId: fixture.homeTeamId, teamName: fixture.home })} className={cn("col-start-1 row-start-2 flex min-w-0 flex-col items-center justify-center gap-2 rounded-sm px-2 py-3 text-center font-semibold transition-colors focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ring disabled:cursor-not-allowed disabled:opacity-60 sm:row-start-1 sm:flex-row sm:justify-start sm:py-2 sm:text-left", homeSelected ? "bg-primary text-primary-foreground" : "hover:bg-muted")} aria-pressed={homeSelected}>

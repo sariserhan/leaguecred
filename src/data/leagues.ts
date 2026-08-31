@@ -151,6 +151,12 @@ export type DatabaseFixture = {
   awayTeamId: string;
   kickoffDate: string;
   kickoff: string;
+  /** The real kickoff, so the page can say when this call closes. */
+  kickoffAt: string;
+  /** Whether this match can still be called. Decided here, against the
+   * database clock, rather than in the browser: a lock closes on its own
+   * kickoff, and the server is what will accept or refuse it. */
+  open: boolean;
   homeVotes: number;
   awayVotes: number;
   viewerVote: "home" | "away" | null;
@@ -291,8 +297,9 @@ export async function getLeagueExperience(slug: string, userId?: string): Promis
   const viewerId = userId ?? "";
   const voterId = await readVoterId() ?? "";
   const [fixtureRows, discussionRows, pastFixtureRows, specialistRows, participationRows, pickRows, recordRows, followedRows, currentSeasonLeaderboardRows, careerLeaderboardRows] = await Promise.all([
-    sqlClient<Array<{ id: string; kickoff_at: Date; home_id: string; home: string; home_code: string; home_logo_url: string | null; away_id: string; away: string; away_code: string; away_logo_url: string | null; home_votes: number; away_votes: number; viewer_vote: "home" | "away" | null }>>`
-      select f.id, f.kickoff_at, h.id as home_id, h.name as home, h.short_name as home_code, h.logo_url as home_logo_url,
+    sqlClient<Array<{ id: string; kickoff_at: Date; open: boolean; home_id: string; home: string; home_code: string; home_logo_url: string | null; away_id: string; away: string; away_code: string; away_logo_url: string | null; home_votes: number; away_votes: number; viewer_vote: "home" | "away" | null }>>`
+      select f.id, f.kickoff_at, (f.kickoff_at > now() and f.status = 'scheduled') as open,
+        h.id as home_id, h.name as home, h.short_name as home_code, h.logo_url as home_logo_url,
         a.id as away_id, a.name as away, a.short_name as away_code, a.logo_url as away_logo_url,
         coalesce(votes.home_votes, 0) as home_votes, coalesce(votes.away_votes, 0) as away_votes,
         viewer_vote.choice as viewer_vote
@@ -408,6 +415,8 @@ export async function getLeagueExperience(slug: string, userId?: string): Promis
       away: fixture.away, awayCode: fixture.away_code, awayLogoUrl: fixture.away_logo_url, awayTeamId: fixture.away_id,
       kickoffDate: new Intl.DateTimeFormat("en", { weekday: "long", month: "long", day: "numeric", timeZone: "UTC" }).format(new Date(fixture.kickoff_at)),
       kickoff: new Intl.DateTimeFormat("en", { hour: "2-digit", minute: "2-digit", timeZone: "UTC", timeZoneName: "short" }).format(new Date(fixture.kickoff_at)),
+      kickoffAt: new Date(fixture.kickoff_at).toISOString(),
+      open: fixture.open,
       homeVotes: fixture.home_votes, awayVotes: fixture.away_votes, viewerVote: fixture.viewer_vote,
       discussion: discussionsByFixture.get(fixture.id) ?? [],
     })),
