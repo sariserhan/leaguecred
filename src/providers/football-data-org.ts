@@ -40,13 +40,13 @@ export function normalizeFootballDataStatus(status: string): FixtureStatus {
   return "unknown";
 }
 
-export function mapFootballDataMatch(match: FootballDataMatch): ProviderFixture {
+export function mapFootballDataMatch(match: FootballDataMatch, competitionCode: string): ProviderFixture {
   const homeExternalId = String(match.homeTeam.id);
   const awayExternalId = String(match.awayTeam.id);
   const round = match.matchday ? `Matchday ${match.matchday}` : match.stage.replaceAll("_", " ");
   return {
     externalId: String(match.id),
-    round: `football-data-org:CL:${round}`,
+    round: `football-data-org:${competitionCode}:${round}`,
     kickoffAt: match.utcDate,
     status: normalizeFootballDataStatus(match.status),
     home: {
@@ -67,9 +67,29 @@ export function mapFootballDataMatch(match: FootballDataMatch): ProviderFixture 
   };
 }
 
+// The free plan's fixed competition list. Whatever ESPN and football-data-uk
+// already cover for these leagues means three independent sources agree
+// before a lock ever closes; a paid plan would widen this, not change the shape.
+// ponytail: the free plan is capped at 10 requests/minute, and synchronizeFixtures
+// fires one request per competition here concurrently - right at that ceiling once
+// a day. A failure here is caught upstream and just skips the step for the night;
+// if it starts happening often, space these requests out or move to a paid plan.
+export const FOOTBALL_DATA_ORG_COMPETITIONS = [
+  { leagueSlug: "uefa-champions-league", externalId: "CL" },
+  { leagueSlug: "premier-league", externalId: "PL" },
+  { leagueSlug: "efl-championship", externalId: "ELC" },
+  { leagueSlug: "bundesliga", externalId: "BL1" },
+  { leagueSlug: "la-liga", externalId: "PD" },
+  { leagueSlug: "ligue-1", externalId: "FL1" },
+  { leagueSlug: "serie-a", externalId: "SA" },
+  { leagueSlug: "primeira-liga", externalId: "PPL" },
+  { leagueSlug: "eredivisie", externalId: "DED" },
+  { leagueSlug: "brasileirao-serie-a", externalId: "BSA" },
+] as const;
+
 export class FootballDataOrgProvider implements FixtureProvider {
   readonly name = "football-data-org";
-  readonly competitions = [{ leagueSlug: "uefa-champions-league", externalId: "CL" }] as const;
+  readonly competitions = FOOTBALL_DATA_ORG_COMPETITIONS;
 
   async fetchTeams(input: { competitionExternalId: string; season: string }) {
     const url = new URL(`competitions/${input.competitionExternalId}/teams`, `${serverEnv.footballDataBaseUrl}/`);
@@ -91,6 +111,9 @@ export class FootballDataOrgProvider implements FixtureProvider {
     });
     if (!response.ok) throw new Error(`football-data.org request failed with ${response.status}`);
     const payload = (await response.json()) as FootballDataResponse;
-    return { fixtures: payload.matches.map(mapFootballDataMatch), requestCount: 1 };
+    return {
+      fixtures: payload.matches.map((match) => mapFootballDataMatch(match, input.leagueExternalId)),
+      requestCount: 1,
+    };
   }
 }
