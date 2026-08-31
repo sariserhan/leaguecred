@@ -20,9 +20,10 @@ None.
 - [ ] Additional launch leagues with current provider mappings
 - [ ] Leagues outside football-data.org's free-tier list (Liga MX, MLS,
       Saudi Pro League, Argentina, and the rest not in FOOTBALL_DATA_ORG_
-      COMPETITIONS) still rely on ESPN alone with football-data-uk's 12-
-      league CSV feed as backup at best. Decide whether that is acceptable
-      or a fourth source is worth it for those specifically.
+      COMPETITIONS) rely on ESPN alone. football-data-uk covers 12 of them
+      but is deliberately unwired (it never added a match ESPN didn't
+      already have). Decide whether ESPN-only is acceptable for those
+      leagues or a real second source is worth adding for them specifically.
 - [ ] Product/web analytics (deferred; PostHog is the marketplace pick when this is picked up)
 - [ ] Decide whether expertise is scoped to clubs as well as leagues
 - [ ] Plan the first season, when no record clears the rank threshold yet
