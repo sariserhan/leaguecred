@@ -1,7 +1,7 @@
 import { sqlClient } from "@/db";
 import { describeDatabaseTarget } from "@/lib/env";
 import { teamSlug } from "@/lib/team-path";
-import { planTeamMerges, type DedupeTeam, type TeamMerge } from "@/services/team-dedupe";
+import { namesCouldBeOneClub, planTeamMerges, type DedupeTeam, type TeamMerge } from "@/services/team-dedupe";
 
 /**
  * Merges clubs that were catalogued twice.
@@ -43,6 +43,44 @@ async function loadTeams() {
     left join countries c on c.id = l.country_id
     group by t.id
     order by t.created_at`;
+}
+
+/**
+ * Pairs the fixtures prove are one club: two rows in the same league and season
+ * kicking off at the same minute with one side identical. No club plays two
+ * matches at once, so the differing sides are the same club under two names —
+ * which is how "Newcastle" and "Newcastle United" were both catalogued.
+ *
+ * Only cross-provider evidence counts, and seeded demo fixtures are ignored: a
+ * fabricated match sharing a kickoff with a real one paired Antalyaspor with
+ * Besiktas, two entirely different clubs.
+ */
+async function loadFixtureEvidence() {
+  const rows = await sqlClient<Array<{ a: string; b: string; name_a: string; name_b: string }>>`
+    with pairs as (
+      select distinct
+        least(case when f1.home_team_id = f2.home_team_id then f1.away_team_id else f1.home_team_id end,
+              case when f1.home_team_id = f2.home_team_id then f2.away_team_id else f2.home_team_id end) as a,
+        greatest(case when f1.home_team_id = f2.home_team_id then f1.away_team_id else f1.home_team_id end,
+                 case when f1.home_team_id = f2.home_team_id then f2.away_team_id else f2.home_team_id end) as b
+      from fixtures f1
+      join fixtures f2
+        on f2.league_id = f1.league_id and f2.season_id = f1.season_id
+       and f2.kickoff_at = f1.kickoff_at and f2.id <> f1.id
+       and ((f1.home_team_id = f2.home_team_id and f1.away_team_id <> f2.away_team_id)
+         or (f1.away_team_id = f2.away_team_id and f1.home_team_id <> f2.home_team_id))
+      where f1.provider <> 'seed' and f2.provider <> 'seed' and f1.provider <> f2.provider
+    )
+    select p.a, p.b, ta.name as name_a, tb.name as name_b
+    from pairs p join teams ta on ta.id = p.a join teams tb on tb.id = p.b`;
+
+  const accepted: Array<[string, string]> = [];
+  const rejected: Array<{ nameA: string; nameB: string }> = [];
+  for (const row of rows) {
+    if (namesCouldBeOneClub(row.name_a, row.name_b)) accepted.push([row.a, row.b]);
+    else rejected.push({ nameA: row.name_a, nameB: row.name_b });
+  }
+  return { accepted, rejected };
 }
 
 /** Fixtures where both sides collapse to one team would break the check
@@ -124,7 +162,11 @@ async function main() {
   console.info(apply ? "Applying merges." : "Dry run. Pass --apply to write.");
 
   try {
-    const planned = planTeamMerges(await loadTeams());
+    const evidence = await loadFixtureEvidence();
+    for (const pair of evidence.rejected) {
+      console.warn(`FIXTURES SUGGEST ${pair.nameA} and ${pair.nameB} are one club, but the names do not agree. Left alone.`);
+    }
+    const planned = planTeamMerges(await loadTeams(), evidence.accepted);
     const merges = only ? planned.merges.filter((merge) => [merge.canonical.slug, ...merge.duplicates.map((team) => team.slug)].some((slug) => only.has(slug))) : planned.merges;
     const unresolved = only ? [] : planned.unresolved;
 

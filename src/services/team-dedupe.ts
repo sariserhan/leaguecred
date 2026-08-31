@@ -1,6 +1,35 @@
 import { normalizeTeamName } from "@/services/team-names";
 
 /**
+ * A second opinion on a pair the fixtures say is one club.
+ *
+ * The fixture evidence is strong on its own — a club cannot play two matches at
+ * the same minute — but it reads from data, and bad data has already produced
+ * one false pair. Requiring the names to look related as well means a single
+ * wrong fixture cannot merge two real clubs on its own.
+ */
+export function namesCouldBeOneClub(left: string, right: string) {
+  const a = normalizeTeamName(left);
+  const b = normalizeTeamName(right);
+  if (a === b) return true;
+  if (a.length >= 4 && b.length >= 4 && (a.includes(b) || b.includes(a))) return true;
+
+  // A shared word only means something if it names the club rather than
+  // describing it. "Real Madrid" and "Real Sociedad" share "real"; half the
+  // league shares "united". Only a long, distinctive word counts.
+  const GENERIC = new Set([
+    "united", "sporting", "sport", "sportif", "racing", "athletic", "atletico",
+    "deportivo", "royal", "football", "futbol", "calcio", "association", "olympique",
+  ]);
+  const tokens = (value: string) => new Set(
+    value.toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "")
+      .split(/[^a-z0-9]+/)
+      .filter((token) => token.length >= 5 && !GENERIC.has(token)));
+  const rightTokens = tokens(right);
+  return [...tokens(left)].some((token) => rightTokens.has(token));
+}
+
+/**
  * Decides which catalogued clubs are the same club.
  *
  * Team identity is keyed on (provider, provider_external_id), so one club
@@ -64,10 +93,40 @@ export function isSameClub(canonical: DedupeTeam, other: DedupeTeam) {
  * Groups the catalog by normalised name and splits each group into the rows
  * that can be merged and the rows that need a person to look at them.
  */
-export function planTeamMerges<Team extends DedupeTeam>(teams: Team[]) {
-  const byName = new Map<string, Team[]>();
+export function planTeamMerges<Team extends DedupeTeam>(
+  teams: Team[],
+  /** Pairs the fixtures show to be one club, as team id tuples. */
+  evidencePairs: Array<[string, string]> = [],
+) {
+  // Union-find over both signals, so a club reached by name and another reached
+  // by fixture evidence end up in one group rather than two half-merges.
+  const parent = new Map(teams.map((team) => [team.id, team.id]));
+  const find = (id: string): string => {
+    const seen = parent.get(id);
+    if (seen === undefined || seen === id) return id;
+    const root = find(seen);
+    parent.set(id, root);
+    return root;
+  };
+  const union = (left: string, right: string) => {
+    const a = find(left);
+    const b = find(right);
+    if (a !== b) parent.set(a, b);
+  };
+
+  const firstWithName = new Map<string, string>();
   for (const team of teams) {
     const key = normalizeTeamName(team.name);
+    const seen = firstWithName.get(key);
+    if (seen) union(seen, team.id); else firstWithName.set(key, team.id);
+  }
+  for (const [left, right] of evidencePairs) {
+    if (parent.has(left) && parent.has(right)) union(left, right);
+  }
+
+  const byName = new Map<string, Team[]>();
+  for (const team of teams) {
+    const key = find(team.id);
     byName.set(key, [...(byName.get(key) ?? []), team]);
   }
 
