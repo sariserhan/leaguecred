@@ -32,6 +32,7 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
     { url: BASE_URL, changeFrequency: "daily", priority: 1 },
     { url: `${BASE_URL}/leagues`, changeFrequency: "daily", priority: 0.9 },
     { url: `${BASE_URL}/challenges`, changeFrequency: "daily", priority: 0.8 },
+    { url: `${BASE_URL}/fixtures`, changeFrequency: "hourly", priority: 0.9 },
     { url: `${BASE_URL}/live-locks`, changeFrequency: "hourly", priority: 0.9 },
     { url: `${BASE_URL}/communities`, changeFrequency: "daily", priority: 0.8 },
     { url: `${BASE_URL}/specialists`, changeFrequency: "daily", priority: 0.7 },

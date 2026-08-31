@@ -105,8 +105,11 @@ export async function submitDailyLocks(
   }
 
   try {
-    const slug = await sqlClient.begin(async (sql) => {
-      let leagueSlug = "";
+    const slugs = await sqlClient.begin(async (sql) => {
+      // Several leagues at once, because the fixture board mixes them: one call
+      // per league per day still holds, but a Friday in Serie A and a Friday in
+      // the Premier League are two different days' worth of call.
+      const touched = new Set<string>();
       for (const entry of parsed.data.entries) {
         const [fixture] = await sql<Array<{ league_id: string; season_id: string; matchweek_id: string; slug: string }>>`
           select f.league_id, f.season_id, f.matchweek_id, l.slug
@@ -117,7 +120,7 @@ export async function submitDailyLocks(
             and (f.home_team_id = ${entry.selectedTeamId} or f.away_team_id = ${entry.selectedTeamId})
           for update of mw, f`;
         if (!fixture) throw new Error("fixture is not eligible");
-        leagueSlug = fixture.slug;
+        touched.add(fixture.slug);
 
         await sql`insert into matchweek_participation (user_id, league_id, matchweek_id, mode)
           values (${userId}, ${fixture.league_id}, ${fixture.matchweek_id}, 'independent')
@@ -127,11 +130,12 @@ export async function submitDailyLocks(
       }
       await sql`update referrals set activated_at=coalesce(activated_at, now()), updated_at=now()
         where invited_user_id=${userId}`;
-      return leagueSlug;
+      return [...touched];
     });
 
-    revalidatePath(`/leagues/${slug}`);
+    for (const slug of slugs) revalidatePath(`/leagues/${slug}`);
     revalidatePath("/leagues");
+    revalidatePath("/fixtures");
     revalidatePath("/invite");
     revalidatePath("/challenges");
     revalidatePath("/recaps");

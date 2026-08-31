@@ -85,6 +85,9 @@ None.
 - [x] Filter the performance trend by every league a specialist has played, not only the recent few
 - [x] Stop two providers filing the same match twice, and clear the duplicates already stored
 - [x] Split the Liga Portugal week that had swallowed two others
+- [x] Close a lock on its own kickoff, so a week stays callable after its first match
+- [x] Choose a team for several days and lock them in one go
+- [x] Add a board of every league's fixtures by day, with voting, discussion and locking
 - [x] Answer 404 for a page that does not exist, instead of 200 with a not-found screen
 - [x] Redirect the old /teams/<name>-<id> links to the canonical team slug
 - [x] Keep members-only routes out of the sitemap and the index
