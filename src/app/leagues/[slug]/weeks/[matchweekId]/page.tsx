@@ -40,7 +40,7 @@ export async function generateMetadata(props: MatchweekPageProps): Promise<Metad
     title: `${data.league.name} ${data.matchweek.displayName}`,
     description,
     alternates: { canonical: `/leagues/${slug}/weeks/${matchweekId}` },
-    openGraph: { title: `${data.league.name} ${data.matchweek.displayName} · LeagueCred`, description, type: "website" },
+    openGraph: { title: `${data.league.name} ${data.matchweek.displayName} · LeagueCred`, description, type: "website", images: ["/opengraph-image"] },
   };
 }
 

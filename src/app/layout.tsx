@@ -38,17 +38,17 @@ export const metadata: Metadata = {
     template: "%s · LeagueCred",
   },
   description,
+  // No title or description here on purpose. A value set at the root is
+  // inherited by every page, so naming one made /live-locks, /communities and
+  // the rest all share the homepage's card: the same headline whatever you
+  // shared. Left unset, each page's own title and description fill these in.
   openGraph: {
     siteName: "LeagueCred",
     type: "website",
     locale: "en_US",
-    title: "LeagueCred — Know one league",
-    description,
   },
   twitter: {
     card: "summary",
-    title: "LeagueCred — Know one league",
-    description,
   },
 };
 

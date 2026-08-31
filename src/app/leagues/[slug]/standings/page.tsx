@@ -17,7 +17,7 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
     title: `${data.league.name} standings`,
     description,
     alternates: { canonical: `/leagues/${data.league.slug}/standings` },
-    openGraph: { title: `${data.league.name} standings · LeagueCred`, description, type: "website" },
+    openGraph: { title: `${data.league.name} standings · LeagueCred`, description, type: "website", images: ["/opengraph-image"] },
   };
 }
 

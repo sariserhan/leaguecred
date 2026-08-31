@@ -39,7 +39,7 @@ export async function generateMetadata(
     title: league.name,
     description,
     alternates: { canonical: `/leagues/${league.slug}` },
-    openGraph: { title: `${league.name} · LeagueCred`, description, type: "website" },
+    openGraph: { title: `${league.name} · LeagueCred`, description, type: "website", images: ["/opengraph-image"] },
   };
 }
 
