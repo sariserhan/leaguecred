@@ -14,6 +14,16 @@ import { assertUnderstood } from "@/providers/upstream-shape";
 
 const STANDINGS_ENDPOINT = "https://site.api.espn.com/apis/v2/sports/soccer";
 
+/**
+ * Names the cached table for one competition, so an admin refreshing a league
+ * can drop it. Without a tag the only handle on this response is its URL, and
+ * revalidating the page it appears on does not reach the fetch behind it — the
+ * page would re-render and still read a table up to the cache window old.
+ */
+export function espnStandingsTag(leagueExternalId: string) {
+  return `espn-standings:${leagueExternalId}`;
+}
+
 type EspnStat = { name?: string; value?: number };
 
 type EspnEntry = {
@@ -87,7 +97,9 @@ export async function fetchEspnStandings(input: {
   revalidate?: number;
 }): Promise<EspnStandingRow[]> {
   const url = `${STANDINGS_ENDPOINT}/${input.leagueExternalId}/standings?season=${input.season}`;
-  const response = await fetch(url, { next: { revalidate: input.revalidate ?? 300 } });
+  const response = await fetch(url, {
+    next: { revalidate: input.revalidate ?? 300, tags: [espnStandingsTag(input.leagueExternalId)] },
+  });
   if (!response.ok) throw new Error(`ESPN standings responded ${response.status}.`);
 
   const payload = (await response.json()) as EspnStandingsResponse;

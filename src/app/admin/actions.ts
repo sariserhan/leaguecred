@@ -1,6 +1,6 @@
 "use server";
 
-import { revalidatePath } from "next/cache";
+import { revalidatePath, updateTag } from "next/cache";
 import { z } from "zod";
 
 import { requireAdmin } from "@/lib/admin";
@@ -14,7 +14,8 @@ import {
 } from "@/lib/site-settings";
 import { setFeatureFlag, updateSiteSettings } from "@/services/site-settings";
 import { synchronizeFixtures } from "@/services/fixture-sync";
-import { EspnFixtureProvider } from "@/providers/espn-fixtures";
+import { ESPN_FIXTURE_COMPETITIONS, EspnFixtureProvider } from "@/providers/espn-fixtures";
+import { espnStandingsTag } from "@/providers/espn-standings";
 import { withinUserRateLimit } from "@/services/rate-limit";
 
 export type AdminActionResult = { ok: true } | { ok: false; message: string };
@@ -79,6 +80,14 @@ export async function refreshLeagueFixtures(leagueSlug: string): Promise<void> {
     console.error("Failed to refresh league fixtures.", error);
     return;
   }
+  // The table is fetched from ESPN and cached against its own tag, so the page
+  // revalidation below does not reach it. Without this a refresh updates the
+  // fixtures immediately and leaves the standings as they were. updateTag
+  // rather than revalidateTag: this is a server action, and the admin who
+  // pressed refresh should see the new table, not the next visitor.
+  const competition = ESPN_FIXTURE_COMPETITIONS.find((entry) => entry.leagueSlug === parsed.data);
+  if (competition) updateTag(espnStandingsTag(competition.externalId));
+
   revalidatePath(`/leagues/${parsed.data}`, "page");
   revalidatePath(`/leagues/${parsed.data}/standings`, "page");
   revalidatePath("/", "layout");
