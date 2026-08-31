@@ -7,7 +7,7 @@ import { getNotificationCenter } from "@/data/notifications";
 import { getSession } from "@/lib/auth-session";
 
 export const dynamic = "force-dynamic";
-export const metadata: Metadata = { title: "Your Network", description: "Manage your leagues, specialists, and LeagueCred notifications." };
+export const metadata: Metadata = { title: "Your Network", description: "Manage your leagues, specialists, and LeagueCred notifications.", robots: { index: false, follow: false } };
 
 export default async function NetworkPage() {
   const session = await getSession();

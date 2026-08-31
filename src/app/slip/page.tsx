@@ -17,6 +17,7 @@ export const dynamic = "force-dynamic";
 export const metadata: Metadata = {
   title: "Your Weekly Slip",
   description: "Your independent Weekly Locks and followed specialist calls in one place.",
+  robots: { index: false, follow: false },
 };
 
 function TeamLogo({ entry }: { entry: WeeklySlipEntry }) {

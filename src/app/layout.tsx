@@ -11,6 +11,7 @@ import { getLeagueNavOptions } from "@/data/teams";
 import { getSession } from "@/lib/auth-session";
 import { getNotificationCenter } from "@/data/notifications";
 import { Toaster } from "@/components/ui/toast";
+import { JsonLd } from "@/lib/json-ld";
 
 import "./globals.css";
 
@@ -25,14 +26,28 @@ const barlowCondensed = Barlow_Condensed({
   variable: "--font-barlow-condensed",
 });
 
+const description =
+  "Build a verified record in the football league you know and follow proven specialists everywhere else.";
+
 export const metadata: Metadata = {
   metadataBase: new URL("https://leaguecred.com"),
   title: {
     default: "LeagueCred — Know one league",
     template: "%s · LeagueCred",
   },
-  description:
-    "Build a verified record in the football league you know and follow proven specialists everywhere else.",
+  description,
+  openGraph: {
+    siteName: "LeagueCred",
+    type: "website",
+    locale: "en_US",
+    title: "LeagueCred — Know one league",
+    description,
+  },
+  twitter: {
+    card: "summary",
+    title: "LeagueCred — Know one league",
+    description,
+  },
 };
 
 export default async function RootLayout({ children }: LayoutProps<"/">) {
@@ -50,6 +65,15 @@ export default async function RootLayout({ children }: LayoutProps<"/">) {
       className={inter.variable + " " + barlowCondensed.variable + " antialiased"}
     >
       <body suppressHydrationWarning className="flex min-h-screen flex-col bg-background text-foreground">
+        <JsonLd
+          data={{
+            "@context": "https://schema.org",
+            "@type": "WebSite",
+            name: "LeagueCred",
+            url: "https://leaguecred.com",
+            description,
+          }}
+        />
         <SiteBanner />
         <SiteHeader isAdmin={isAdmin} leagues={leagues} notificationCenter={notificationCenter} />
         <main className="flex-1">{children}</main>

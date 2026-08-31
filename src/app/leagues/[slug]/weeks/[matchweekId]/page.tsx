@@ -34,9 +34,14 @@ function ResultBadge({ result }: { result: "win" | "loss" | "void" | "pending" }
 export async function generateMetadata(props: MatchweekPageProps): Promise<Metadata> {
   const { slug, matchweekId } = await props.params;
   const data = await getMatchweekHistory(slug, matchweekId);
-  return data
-    ? { title: `${data.league.name} ${data.matchweek.displayName}`, description: `Weekly Lock results and specialist calls for ${data.league.name}.` }
-    : { title: "Matchweek not found" };
+  if (!data) return { title: "Matchweek not found" };
+  const description = `Weekly Lock results and specialist calls for ${data.league.name}.`;
+  return {
+    title: `${data.league.name} ${data.matchweek.displayName}`,
+    description,
+    alternates: { canonical: `/leagues/${slug}/weeks/${matchweekId}` },
+    openGraph: { title: `${data.league.name} ${data.matchweek.displayName} · LeagueCred`, description, type: "website" },
+  };
 }
 
 export default async function MatchweekHistoryPage(props: MatchweekPageProps) {
