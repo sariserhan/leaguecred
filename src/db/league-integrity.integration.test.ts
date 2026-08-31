@@ -27,10 +27,14 @@ async function createAndSettlePick(input: {
   winnerTeamId: string | null;
 }) {
   const kickoff = new Date().toISOString();
-  const lockAt = "2031-01-01T00:00:00.000Z";
+  // A real matchweek's window spans hours, not years. This test never checks
+  // lock timing, but a multi-year placeholder here would overlap every other
+  // matchweek any other test in this file creates, colliding with matchweek
+  // lookup-by-date-window in fixture-sync.ts.
+  const endAt = new Date(Date.now() + 3 * 3_600_000).toISOString();
   const [createdMatchweek] = await sqlClient<Array<{ id: string }>>`
     insert into matchweeks (league_id, season_id, provider_round_name, display_name, start_at, lock_at, end_at, status)
-    values (${superLig}, ${input.seasonId}, ${input.round}, ${input.round}, ${kickoff}, ${lockAt}, ${lockAt}, 'upcoming') returning id`;
+    values (${superLig}, ${input.seasonId}, ${input.round}, ${input.round}, ${kickoff}, ${endAt}, ${endAt}, 'upcoming') returning id`;
   const [createdFixture] = await sqlClient<Array<{ id: string }>>`
     insert into fixtures (provider, provider_external_id, league_id, season_id, matchweek_id, home_team_id, away_team_id, kickoff_at, status, winner_team_id, last_synced_at)
     values ('settlement-test', ${input.round}, ${superLig}, ${input.seasonId}, ${createdMatchweek!.id}, ${besiktas}, ${konyaspor}, ${kickoff}, ${input.fixtureStatus}, ${input.winnerTeamId}, now()) returning id`;

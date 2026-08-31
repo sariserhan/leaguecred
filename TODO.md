@@ -7,6 +7,10 @@ None.
 ## Next
 
 - [ ] Rotate the Neon database password and update Vercel and .env.local
+- [ ] Run `pnpm matchweeks:merge` against production. It reports by default;
+      `--apply` folds each gameweek split across providers back into one and
+      leaves alone any cluster where more than one week already has a real
+      Weekly Lock, since deciding which one stands is a person's call.
 
 ## Blocked
 
