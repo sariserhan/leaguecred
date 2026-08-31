@@ -1,5 +1,5 @@
 const aliases: Record<string, string> = {
-  "1fsvmainz05": "mainz",
+  fsvmainz05: "mainz",
   acmilan: "milan",
   adodenhaag: "denhaag",
   asroma: "roma",
@@ -182,6 +182,11 @@ export function normalizeTeamName(value: string) {
     .normalize("NFKD")
     .replace(/\p{Diacritic}/gu, "")
     .toLowerCase()
+    // German clubs are numbered by founding order — "1. FC Köln", "1. FC Union
+    // Berlin" — and the digit survived into the key, so those never matched the
+    // plain spelling another provider uses. The trailing period is what marks it
+    // as an ordinal: "2 de Mayo" has none, and keeps its number.
+    .replace(/^\s*\d+\.\s*/, "")
     .replace(/\b(fc|cf|afc|sk|fk|sc|ssc|pae)\b/g, " ")
     .replace(/[^a-z0-9]+/g, "")
     .replace(/^(club|clube)/, "");

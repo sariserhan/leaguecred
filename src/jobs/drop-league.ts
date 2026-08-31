@@ -15,6 +15,7 @@ import { describeDatabaseTarget } from "@/lib/env";
  * that belongs to nothing is what the dedupe work spent so long cleaning up.
  *
  * Usage: pnpm league:drop <slug> [<slug>...] [--apply]
+ *        pnpm league:drop --orphans [--apply]   (clubs left in no competition)
  */
 
 type LeagueRow = {
@@ -50,13 +51,49 @@ function playerData(league: LeagueRow) {
   return league.picks + league.follows + league.records + league.participation;
 }
 
+/**
+ * Clubs no competition lists and no match mentions. Providers leave these behind
+ * as they rename and re-import, and they are pure noise: unreachable in the app,
+ * yet still offered to every name match the dedupe makes.
+ */
+async function sweepOrphans(apply: boolean) {
+  const orphans = await sqlClient<Array<{ id: string; name: string }>>`
+    select t.id, t.name from teams t
+    where not exists (select 1 from league_team_memberships m where m.team_id = t.id)
+      and not exists (select 1 from fixtures f where f.home_team_id = t.id or f.away_team_id = t.id)
+      and not exists (select 1 from picks p where p.selected_team_id = t.id)`;
+
+  if (orphans.length === 0) {
+    console.info("No clubs left over.");
+    return;
+  }
+  console.info(`${apply ? "REMOVING" : "WOULD REMOVE"} ${orphans.length} club(s) in no competition and no fixture:`);
+  for (const orphan of orphans.slice(0, 10)) console.info(`  ${orphan.name}`);
+  if (orphans.length > 10) console.info(`  ... and ${orphans.length - 10} more`);
+
+  if (apply) {
+    await sqlClient`delete from teams where id = any(${orphans.map((orphan) => orphan.id)})`;
+  }
+}
+
 async function main() {
   const args = process.argv.slice(2);
   const apply = args.includes("--apply");
   const slugs = args.filter((arg) => !arg.startsWith("--"));
 
+  if (args.includes("--orphans")) {
+    console.info(`Target database: ${describeDatabaseTarget()}`);
+    console.info(apply ? "Applying." : "Dry run. Pass --apply to write.");
+    try {
+      await sweepOrphans(apply);
+    } finally {
+      await sqlClient.end();
+    }
+    return;
+  }
+
   if (slugs.length === 0) {
-    console.error("Usage: pnpm league:drop <slug> [<slug>...] [--apply]");
+    console.error("Usage: pnpm league:drop <slug> [<slug>...] [--apply]\n       pnpm league:drop --orphans [--apply]");
     process.exitCode = 1;
     return;
   }

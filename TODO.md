@@ -6,15 +6,10 @@ None.
 
 ## Next
 
-- [ ] `pnpm teams:dedupe` reports SUSPECT pairs: a club beside an entry naming
-      the same club, in one competition, one never played. They are never merged
-      because the same shape also describes Boca Juniors beside Atlético Junior.
-      Check them and add an alias where they really are one club.
+- [ ] Check any SUSPECT pair `pnpm teams:dedupe` reports and add an alias where
+      the two really are one club. Nothing to act on today: the only pair is Boca
+      Juniors beside Atlético Junior, which is the rule working, not a fault.
 - [ ] Rotate the Neon database password and update Vercel and .env.local
-- [ ] Run `pnpm matchweeks:merge` against production. It reports by default;
-      `--apply` folds each gameweek split across providers back into one and
-      leaves alone any cluster where more than one week already has a real
-      Weekly Lock, since deciding which one stands is a person's call.
 
 ## Blocked
 
@@ -84,5 +79,6 @@ None.
 - [x] Merge the clubs catalogued twice, on dev and production
 - [x] Count each match once in the standings, and each gameweek as one matchweek
 - [x] Resolve the last clubs catalogued twice under names that disagree
+- [x] Match clubs numbered by founding order to their plain spelling
 - [x] Refuse to run migrations that the database can no longer reach
 - [x] Block disposable-email signups and surface shared-address abuse signals to admins
