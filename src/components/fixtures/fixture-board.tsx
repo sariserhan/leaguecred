@@ -189,7 +189,7 @@ export function FixtureBoard({ board, authenticated }: { board: FixtureBoard; au
       </div>
 
       {chosen.length > 0 ? (
-        <div className="fixed inset-x-0 bottom-0 z-30 border-t border-primary bg-foreground p-3 text-background shadow-2xl">
+        <div className="fixed inset-x-0 bottom-0 z-30 border-t border-primary bg-inverted p-3 text-inverted-foreground shadow-2xl">
           <div className="page-shell flex items-center gap-3">
             <div className="min-w-0 flex-1">
               <span className="block text-[10px] font-bold uppercase text-primary">

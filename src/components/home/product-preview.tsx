@@ -30,7 +30,7 @@ function PreviewRow({
           : "grid grid-cols-[auto_1fr_auto] items-center gap-3 border border-border bg-background p-4"
       }
     >
-      <span className="flex size-10 items-center justify-center rounded-full bg-foreground font-heading text-sm font-bold text-background">
+      <span className="flex size-10 items-center justify-center rounded-full bg-inverted font-heading text-sm font-bold text-inverted-foreground">
         {code}
       </span>
       <span className="min-w-0">

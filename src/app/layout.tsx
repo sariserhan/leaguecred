@@ -76,7 +76,7 @@ export default async function RootLayout({ children }: LayoutProps<"/">) {
       </head>
       <body suppressHydrationWarning className="flex min-h-screen flex-col bg-background text-foreground">
         <ThemeProvider>
-          <a href="#main-content" className="sr-only z-[100] bg-foreground px-4 py-3 font-semibold text-background focus:not-sr-only focus:fixed focus:top-2 focus:left-2">Skip to main content</a>
+          <a href="#main-content" className="sr-only z-[100] bg-inverted px-4 py-3 font-semibold text-inverted-foreground focus:not-sr-only focus:fixed focus:top-2 focus:left-2">Skip to main content</a>
           <JsonLd
             data={{
               "@context": "https://schema.org",

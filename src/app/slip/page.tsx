@@ -75,10 +75,10 @@ export default async function WeeklySlipPage() {
 
   return (
     <div className="page-shell py-8 sm:py-12">
-      <header className="border-b border-foreground bg-foreground px-5 py-8 text-background sm:px-8 sm:py-10">
+      <header className="border-b border-inverted bg-inverted px-5 py-8 text-inverted-foreground sm:px-8 sm:py-10">
         <p className="font-semibold text-primary">Your cross-league record</p>
         <h1 className="mt-2 font-heading text-5xl leading-none font-extrabold uppercase sm:text-7xl">Weekly Slip</h1>
-        <p className="mt-4 max-w-2xl text-background/75">Your own confident calls and the specialists you chose to follow—always shown separately.</p>
+        <p className="mt-4 max-w-2xl text-inverted-foreground/75">Your own confident calls and the specialists you chose to follow—always shown separately.</p>
       </header>
 
       <section className="grid border-x border-b sm:grid-cols-2 xl:grid-cols-4" aria-label="Weekly Slip statistics">

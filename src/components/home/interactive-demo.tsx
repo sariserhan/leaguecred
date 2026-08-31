@@ -38,7 +38,7 @@ export function InteractiveDemo({ leagues }: { leagues: HomeLeague[] }) {
               key={item.slug}
               type="button"
               onClick={() => reset(index)}
-              className={index === leagueIndex ? "shrink-0 border border-foreground bg-foreground px-3 py-2 text-sm font-semibold text-background" : "shrink-0 border px-3 py-2 text-sm font-semibold hover:bg-muted"}
+              className={index === leagueIndex ? "shrink-0 border border-inverted bg-inverted px-3 py-2 text-sm font-semibold text-inverted-foreground" : "shrink-0 border px-3 py-2 text-sm font-semibold hover:bg-muted"}
               aria-pressed={index === leagueIndex}
             >
               {item.shortName}
@@ -62,7 +62,7 @@ export function InteractiveDemo({ leagues }: { leagues: HomeLeague[] }) {
                   key={name}
                   type="button"
                   onClick={() => setTeam(name)}
-                  className={team === name ? "min-h-24 border-2 border-primary bg-primary/10 p-4 text-left" : "min-h-24 border p-4 text-left transition-colors hover:border-foreground"}
+                  className={team === name ? "min-h-24 border-2 border-primary bg-primary/10 p-4 text-left" : "min-h-24 border p-4 text-left transition-colors hover:border-inverted"}
                   aria-pressed={team === name}
                 >
                   <span className="block font-heading text-xl font-bold uppercase">{name}</span>

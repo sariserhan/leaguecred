@@ -71,7 +71,7 @@ function FeedbackDialog({ kind }: { kind: Kind }) {
 
   return (
     <Dialog open={open} onOpenChange={(next) => { setOpen(next); if (!next) reset(); }}>
-      <DialogTrigger render={<button type="button" className="transition-colors hover:text-background" />}>{text.label}</DialogTrigger>
+      <DialogTrigger render={<button type="button" className="transition-colors hover:text-inverted-foreground" />}>{text.label}</DialogTrigger>
       <DialogContent className="rounded-none sm:max-w-lg">
         <DialogHeader>
           <DialogTitle className="font-heading text-3xl font-extrabold uppercase">{text.title}</DialogTitle>
@@ -123,7 +123,7 @@ function FeedbackDialog({ kind }: { kind: Kind }) {
 
 export function FooterHelpLinks() {
   return (
-    <ul className="mt-3 space-y-2 text-sm text-background/75">
+    <ul className="mt-3 space-y-2 text-sm text-inverted-foreground/75">
       <li><FeedbackDialog kind="bug" /></li>
       <li><FeedbackDialog kind="contact" /></li>
       <li><FeedbackDialog kind="support" /></li>

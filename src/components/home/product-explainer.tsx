@@ -92,7 +92,7 @@ function PathSteps({
   dark?: boolean;
 }) {
   return (
-    <ol className={dark ? "divide-y divide-background/20 border-y border-background/20" : "divide-y border-y"}>
+    <ol className={dark ? "divide-y divide-background/20 border-y border-inverted-foreground/20" : "divide-y border-y"}>
       {steps.map((step, index) => {
         const Icon = step.icon;
 
@@ -123,7 +123,7 @@ export function ParticipationPaths() {
       </h2>
 
       <div className="relative mt-8 grid border lg:grid-cols-2">
-        <article className="bg-foreground p-6 text-background sm:p-8 lg:p-10">
+        <article className="bg-inverted p-6 text-inverted-foreground sm:p-8 lg:p-10">
           <div className="mb-6 flex items-center gap-4 border-b border-primary pb-5">
             <TrophyIcon aria-hidden="true" className="size-8 text-primary" strokeWidth={1.5} />
             <h3 className="font-heading text-3xl font-bold uppercase sm:text-4xl">
@@ -133,7 +133,7 @@ export function ParticipationPaths() {
           <PathSteps steps={proveSteps} dark />
         </article>
 
-        <div className="absolute top-1/2 left-1/2 z-10 hidden size-14 -translate-x-1/2 -translate-y-1/2 items-center justify-center rounded-full border-4 border-background bg-foreground font-heading text-xl font-bold text-background lg:flex">
+        <div className="absolute top-1/2 left-1/2 z-10 hidden size-14 -translate-x-1/2 -translate-y-1/2 items-center justify-center rounded-full border-4 border-inverted-foreground bg-inverted font-heading text-xl font-bold text-inverted-foreground lg:flex">
           OR
         </div>
 
@@ -173,7 +173,7 @@ export function RecordAndQuestions() {
         </dl>
       </section>
 
-      <section className="bg-foreground text-background" aria-label="LeagueCred responsible-use statement">
+      <section className="bg-inverted text-inverted-foreground" aria-label="LeagueCred responsible-use statement">
         <div className="page-shell flex flex-col gap-6 py-10 sm:flex-row sm:items-center sm:gap-8 sm:py-12">
           <ShieldCheckIcon aria-hidden="true" className="size-14 shrink-0 text-primary" strokeWidth={1.5} />
           <p className="max-w-5xl text-xl leading-8 font-semibold sm:text-2xl sm:leading-9">

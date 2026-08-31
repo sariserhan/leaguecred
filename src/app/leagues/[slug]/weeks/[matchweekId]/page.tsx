@@ -60,12 +60,12 @@ export default async function MatchweekHistoryPage(props: MatchweekPageProps) {
         Back to {data.league.name}
       </Link>
 
-      <header className="mt-6 border-b border-foreground bg-foreground px-5 py-8 text-background sm:px-8 sm:py-10">
+      <header className="mt-6 border-b border-inverted bg-inverted px-5 py-8 text-inverted-foreground sm:px-8 sm:py-10">
         <p className="font-semibold text-primary">{data.league.country} · Completed matchweek</p>
         <h1 className="mt-2 font-heading text-5xl leading-none font-extrabold uppercase sm:text-7xl">
           {data.matchweek.displayName}
         </h1>
-        <p className="mt-4 max-w-2xl text-background/75">
+        <p className="mt-4 max-w-2xl text-inverted-foreground/75">
           Every independent Daily Lock is visible here after the week closes.
         </p>
       </header>

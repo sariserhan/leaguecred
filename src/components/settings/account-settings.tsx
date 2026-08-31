@@ -72,7 +72,7 @@ export function AccountSettings({ user, leagues, initialPreferences }: { user: {
   const { theme, resolvedTheme, setTheme } = useTheme();
 
   return <main className="page-shell py-8 sm:py-12">
-    <header className="border-b border-foreground bg-foreground px-5 py-8 text-background sm:px-8 sm:py-10"><p className="font-semibold text-primary">Account control</p><h1 className="mt-2 font-heading text-5xl leading-none font-extrabold uppercase sm:text-7xl">Settings</h1><p className="mt-4 max-w-2xl text-background/75">Keep your identity, security, leagues, and alerts current.</p></header>
+    <header className="border-b border-inverted bg-inverted px-5 py-8 text-inverted-foreground sm:px-8 sm:py-10"><p className="font-semibold text-primary">Account control</p><h1 className="mt-2 font-heading text-5xl leading-none font-extrabold uppercase sm:text-7xl">Settings</h1><p className="mt-4 max-w-2xl text-inverted-foreground/75">Keep your identity, security, leagues, and alerts current.</p></header>
     <p className="mt-4 min-h-6 text-sm font-semibold text-primary" role="status" aria-live="polite">{isPending && !message ? "Saving…" : message}</p>
     <div className="mt-4"><AvatarUploader initial={user.image??""} name={user.name}/></div>
     <div className="mt-4 grid gap-5 lg:grid-cols-2">

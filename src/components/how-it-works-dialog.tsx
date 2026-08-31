@@ -52,11 +52,11 @@ export function HowItWorksDialog({ mobile = false }: { mobile?: boolean }) {
         {mobile ? <ArrowRightIcon data-icon="inline-end" className="ml-auto text-muted-foreground" /> : null}
       </DialogTrigger>
       <DialogContent initialFocus={titleRef} className="max-h-[min(90dvh,760px)] gap-0 overflow-y-auto rounded-sm p-0 sm:max-w-3xl">
-        <DialogHeader className="bg-foreground p-6 pr-14 text-background sm:p-8 sm:pr-16">
+        <DialogHeader className="bg-inverted p-6 pr-14 text-inverted-foreground sm:p-8 sm:pr-16">
           <DialogTitle ref={titleRef} tabIndex={-1} className="font-heading text-4xl leading-none font-extrabold uppercase sm:text-6xl">
             Your 99% call. Our stronger week.
           </DialogTitle>
-          <DialogDescription className="max-w-2xl text-base leading-7 text-background/70">
+          <DialogDescription className="max-w-2xl text-base leading-7 text-inverted-foreground/70">
             LeagueCred is a free community for football supporters who believe the person closest to a team often knows what the table cannot show.
           </DialogDescription>
         </DialogHeader>

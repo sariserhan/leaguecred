@@ -154,10 +154,10 @@ export function NetworkHub({ initialData, initialPreferences }: { initialData: N
   const actions = { pendingKey, onFollow: follow, onSwitch: switchTo, onUnfollow: unfollow };
   return (
     <div className="page-shell py-8 sm:py-12">
-      <header className="border-b border-foreground bg-foreground px-5 py-8 text-background sm:px-8 sm:py-10">
+      <header className="border-b border-inverted bg-inverted px-5 py-8 text-inverted-foreground sm:px-8 sm:py-10">
         <p className="font-semibold text-primary">Your football network</p>
         <h1 className="mt-2 font-heading text-5xl leading-none font-extrabold uppercase sm:text-7xl">Network control</h1>
-        <p className="mt-4 max-w-2xl text-background/75">Keep your league knowledge, proven specialists, alerts, and Weekly Slip working together.</p>
+        <p className="mt-4 max-w-2xl text-inverted-foreground/75">Keep your league knowledge, proven specialists, alerts, and Weekly Slip working together.</p>
       </header>
 
       <section className="grid border-x border-b sm:grid-cols-2 xl:grid-cols-4" aria-label="Network summary">
