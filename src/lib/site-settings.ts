@@ -4,6 +4,10 @@ export const LEAGUE_LEADERBOARD_FLAG = "league_leaderboard";
 export const LEAGUE_TEAM_CATALOG_FLAG = "league_team_catalog";
 
 export const BANNER_MESSAGE_MAX_LENGTH = 280;
+/** The standard bar, and what a season settles back to once one has run. */
+export const STANDARD_SETTLED_PICKS_FOR_RANK = 10;
+export const MIN_SETTLED_PICKS_FOR_RANK = 1;
+export const MAX_SETTLED_PICKS_FOR_RANK = 100;
 export const MAINTENANCE_MESSAGE_MAX_LENGTH = 500;
 
 export type FeatureFlagDefinition = {
@@ -35,6 +39,10 @@ export const featureFlagDefinitions: readonly FeatureFlagDefinition[] = [
 ] as const;
 
 export type SiteSettings = {
+  /** Settled independent Weekly Locks a record needs before it is ranked and
+   * can be followed. A founding season has nobody who can reach the standard
+   * ten for ten gameweeks, so the bar is set rather than fixed. */
+  minimumSettledPicksForRank: number;
   maintenanceEnabled: boolean;
   maintenanceMessage: string | null;
   bannerEnabled: boolean;
@@ -43,6 +51,7 @@ export type SiteSettings = {
 };
 
 export const defaultSiteSettings: SiteSettings = {
+  minimumSettledPicksForRank: STANDARD_SETTLED_PICKS_FOR_RANK,
   maintenanceEnabled: false,
   maintenanceMessage: null,
   bannerEnabled: false,

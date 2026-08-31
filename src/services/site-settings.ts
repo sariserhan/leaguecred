@@ -11,6 +11,7 @@ import {
 import { recordAdminAudit } from "@/services/admin-audit-log";
 
 type SettingsRow = {
+  minimum_settled_picks_for_rank: number;
   maintenance_enabled: boolean;
   maintenance_message: string | null;
   banner_enabled: boolean;
@@ -26,11 +27,13 @@ type SettingsRow = {
 export const getSiteSettings = cache(async (): Promise<SiteSettings> => {
   try {
     const [row] = await sqlClient<SettingsRow[]>`
-      select maintenance_enabled, maintenance_message, banner_enabled, banner_message, banner_tone
+      select minimum_settled_picks_for_rank, maintenance_enabled, maintenance_message,
+        banner_enabled, banner_message, banner_tone
       from app_settings where id = 'global'`;
     if (!row) return defaultSiteSettings;
 
     return {
+      minimumSettledPicksForRank: row.minimum_settled_picks_for_rank,
       maintenanceEnabled: row.maintenance_enabled,
       maintenanceMessage: row.maintenance_message,
       bannerEnabled: row.banner_enabled,
@@ -54,8 +57,22 @@ export const getFeatureFlags = cache(async (): Promise<ResolvedFeatureFlag[]> =>
   }
 });
 
+/**
+ * Settled independent Weekly Locks a record needs before it is ranked and can
+ * be followed. Read from the settings rather than fixed, because a founding
+ * season has nobody who can reach the standard bar for ten gameweeks.
+ *
+ * Cached per request like the settings it reads, so the dozen queries that gate
+ * on it do not each make their own round trip.
+ */
+export const getRankThreshold = cache(async (): Promise<number> => {
+  const settings = await getSiteSettings();
+  return settings.minimumSettledPicksForRank;
+});
+
 export async function updateSiteSettings(
   input: {
+    minimumSettledPicksForRank: number;
     maintenanceEnabled: boolean;
     maintenanceMessage: string | null;
     bannerEnabled: boolean;
@@ -66,17 +83,20 @@ export async function updateSiteSettings(
 ) {
   await sqlClient.begin(async (sql) => {
     const [before] = await sql<SettingsRow[]>`
-      select maintenance_enabled, maintenance_message, banner_enabled, banner_message, banner_tone
+      select minimum_settled_picks_for_rank, maintenance_enabled, maintenance_message,
+        banner_enabled, banner_message, banner_tone
       from app_settings where id = 'global' for update`;
 
     await sql`
       insert into app_settings (
-        id, maintenance_enabled, maintenance_message, banner_enabled, banner_message, banner_tone, updated_by_user_id
+        id, minimum_settled_picks_for_rank, maintenance_enabled, maintenance_message,
+        banner_enabled, banner_message, banner_tone, updated_by_user_id
       ) values (
-        'global', ${input.maintenanceEnabled}, ${input.maintenanceMessage}, ${input.bannerEnabled},
-        ${input.bannerMessage}, ${input.bannerTone}, ${updatedByUserId}
+        'global', ${input.minimumSettledPicksForRank}, ${input.maintenanceEnabled}, ${input.maintenanceMessage},
+        ${input.bannerEnabled}, ${input.bannerMessage}, ${input.bannerTone}, ${updatedByUserId}
       )
       on conflict (id) do update set
+        minimum_settled_picks_for_rank = excluded.minimum_settled_picks_for_rank,
         maintenance_enabled = excluded.maintenance_enabled,
         maintenance_message = excluded.maintenance_message,
         banner_enabled = excluded.banner_enabled,

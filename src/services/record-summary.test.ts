@@ -23,3 +23,21 @@ describe("calculateRecordSummary", () => {
     });
   });
 });
+
+describe("the rank threshold a summary is measured against", () => {
+  const results = Array.from({ length: 5 }, () => "win" as const);
+
+  it("calls five settled locks provisional at the standard bar", () => {
+    expect(calculateRecordSummary(results).tier).toBe("Provisional");
+  });
+
+  it("calls the same record established once a founding season lowers the bar", () => {
+    expect(calculateRecordSummary(results, 4).tier).toBe("Established");
+  });
+
+  it("still measures the record itself the same way", () => {
+    // Only the tier moves; the accuracy a thin record earns does not.
+    expect(calculateRecordSummary(results, 4).confidenceAdjustedAccuracy)
+      .toBe(calculateRecordSummary(results).confidenceAdjustedAccuracy);
+  });
+});

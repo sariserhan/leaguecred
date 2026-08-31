@@ -21,11 +21,11 @@ describe("admin audit log", () => {
     await createUser(adminId);
 
     await updateSiteSettings(
-      { maintenanceEnabled: false, maintenanceMessage: null, bannerEnabled: false, bannerMessage: null, bannerTone: "info" },
+      { minimumSettledPicksForRank: 10, maintenanceEnabled: false, maintenanceMessage: null, bannerEnabled: false, bannerMessage: null, bannerTone: "info" },
       adminId,
     );
     await updateSiteSettings(
-      { maintenanceEnabled: true, maintenanceMessage: "Back soon", bannerEnabled: false, bannerMessage: null, bannerTone: "info" },
+      { minimumSettledPicksForRank: 10, maintenanceEnabled: true, maintenanceMessage: "Back soon", bannerEnabled: false, bannerMessage: null, bannerTone: "info" },
       adminId,
     );
 

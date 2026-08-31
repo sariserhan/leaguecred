@@ -9,6 +9,9 @@ None.
 - [ ] Check any SUSPECT pair `pnpm teams:dedupe` reports and add an alias where
       the two really are one club. Nothing to act on today: the only pair is Boca
       Juniors beside Atlético Junior, which is the rule working, not a fault.
+- [ ] Set the founding-season rank threshold in the admin panel. It ships at the
+      standard 10, which nobody can reach for 10 gameweeks; 4 opens Follow after
+      about a month. Raise it back once a cohort has cleared it.
 - [ ] Rotate the Neon database password and update Vercel and .env.local
 
 ## Blocked
@@ -26,7 +29,6 @@ None.
       leagues or a real second source is worth adding for them specifically.
 - [ ] Product/web analytics (deferred; PostHog is the marketplace pick when this is picked up)
 - [ ] Decide whether expertise is scoped to clubs as well as leagues
-- [ ] Plan the first season, when no record clears the rank threshold yet
 - [ ] Consider live in-UI feedback (toast or similar) when another user's
       action is relevant right now - e.g. a followed specialist locking while
       you're on the page. Today the notification bell only updates on the
@@ -81,5 +83,6 @@ None.
 - [x] Count each match once in the standings, and each gameweek as one matchweek
 - [x] Resolve the last clubs catalogued twice under names that disagree
 - [x] Match clubs numbered by founding order to their plain spelling
+- [x] Make the rank threshold a setting, so a founding season can open at a lower bar
 - [x] Refuse to run migrations that the database can no longer reach
 - [x] Block disposable-email signups and surface shared-address abuse signals to admins

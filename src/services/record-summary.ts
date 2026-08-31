@@ -13,7 +13,12 @@ export type RecordSummary = {
   confidenceAdjustedAccuracy: string;
 };
 
-export function calculateRecordSummary(results: readonly SettledResult[]): RecordSummary {
+export function calculateRecordSummary(
+  results: readonly SettledResult[],
+  /** Defaults to the standard bar so callers with no settings to hand — tests,
+   * and anything summarising a record outside a request — still work. */
+  minimumSettledPicks = MINIMUM_SETTLED_PICKS_FOR_RANK,
+): RecordSummary {
   let wins = 0;
   let losses = 0;
   let voids = 0;
@@ -41,7 +46,7 @@ export function calculateRecordSummary(results: readonly SettledResult[]): Recor
     settledPicks,
     currentWinStreak,
     bestWinStreak,
-    tier: settledPicks < MINIMUM_SETTLED_PICKS_FOR_RANK ? "Provisional" : "Established",
+    tier: settledPicks < minimumSettledPicks ? "Provisional" : "Established",
     confidenceAdjustedAccuracy: wilsonLowerBound(wins, losses).toFixed(6),
   };
 }

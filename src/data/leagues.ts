@@ -7,7 +7,7 @@ import { ESPN_FIXTURE_COMPETITIONS } from "@/providers/espn-fixtures";
 import { fetchEspnStandings } from "@/providers/espn-standings";
 import type { FixtureStatus } from "@/db/schema";
 import type { League, Region } from "@/lib/league-data";
-import { MINIMUM_SETTLED_PICKS_FOR_RANK } from "@/lib/reputation";
+import { getRankThreshold } from "@/services/site-settings";
 
 const flags: Record<string, string> = {
   AR: "🇦🇷", BR: "🇧🇷", CA: "🇨🇦", DE: "🇩🇪", ES: "🇪🇸", GB: "🏴",
@@ -35,10 +35,11 @@ type DirectoryRow = {
 };
 
 export async function getLeagueDirectory(userId?: string): Promise<League[]> {
+  const rankThreshold = await getRankThreshold();
   const currentUserId = userId ?? "";
   const rows = await sqlClient<DirectoryRow[]>`
     select l.slug, c.name as country, c.code as country_code, c.flag_url, l.name, l.short_name, l.logo_url, l.region,
-      (select count(*)::int from user_league_records r where r.league_id = l.id and r.settled_picks >= ${MINIMUM_SETTLED_PICKS_FOR_RANK}) as specialist_count,
+      (select count(*)::int from user_league_records r where r.league_id = l.id and r.settled_picks >= ${rankThreshold}) as specialist_count,
       own.wins, own.losses,
       exists(select 1 from matchweeks mw where mw.league_id = l.id) as has_experience,
       (select p.kind from user_league_preferences p where p.user_id = ${currentUserId} and p.league_id = l.id order by case p.kind when 'know' then 0 else 1 end limit 1) as preference_kind,
@@ -230,6 +231,8 @@ export type LeagueLeaderboardEntry = {
 };
 
 export type LeagueExperienceData = {
+  /** What the leaderboard tells a reader public rank costs. */
+  rankThreshold: number;
   league: { id: string; slug: string; name: string; shortName: string; country: string; countryCode: string };
   matchweek: { id: string; seasonId: string; displayName: string; lockAt: string; status: MatchweekRow["status"] };
   fixtures: DatabaseFixture[];
@@ -252,6 +255,7 @@ export type LeagueExperienceData = {
 };
 
 export async function getLeagueExperience(slug: string, userId?: string): Promise<LeagueExperienceData | null> {
+  const rankThreshold = await getRankThreshold();
   const [league] = await sqlClient<LeagueRow[]>`
     select l.id, l.slug, l.name, l.short_name, c.name as country, c.code as country_code
     from leagues l join countries c on c.id = l.country_id
@@ -315,7 +319,7 @@ export async function getLeagueExperience(slug: string, userId?: string): Promis
       join "user" u on u.id = r.user_id
       join picks p on p.user_id = r.user_id and p.league_id = r.league_id and p.matchweek_id = ${matchweek.id}
       join teams t on t.id = p.selected_team_id
-      where r.league_id = ${league.id} and r.settled_picks >= ${MINIMUM_SETTLED_PICKS_FOR_RANK} and u.id <> ${viewerId}
+      where r.league_id = ${league.id} and r.settled_picks >= ${rankThreshold} and u.id <> ${viewerId}
       order by r.confidence_adjusted_accuracy desc nulls last, r.settled_picks desc limit 10`,
     sqlClient<Array<{ mode: "independent" | "follow"; expert_picks_revealed_at: Date | null }>>`
       select mode, expert_picks_revealed_at from matchweek_participation
@@ -331,14 +335,14 @@ export async function getLeagueExperience(slug: string, userId?: string): Promis
       select u.id, u.name, record.wins, record.losses, record.settled_picks, record.current_win_streak, record.confidence_adjusted_accuracy
       from user_league_season_records record
       join "user" u on u.id = record.user_id
-      where record.league_id = ${league.id} and record.season_id = ${matchweek.season_id} and record.settled_picks >= ${MINIMUM_SETTLED_PICKS_FOR_RANK}
+      where record.league_id = ${league.id} and record.season_id = ${matchweek.season_id} and record.settled_picks >= ${rankThreshold}
       order by record.confidence_adjusted_accuracy desc nulls last, record.wins::numeric / nullif(record.wins + record.losses, 0) desc nulls last, record.settled_picks desc, record.last_settled_at asc nulls last, u.name asc
       limit 50`,
     sqlClient<Array<{ id: string; name: string; wins: number; losses: number; settled_picks: number; current_win_streak: number; confidence_adjusted_accuracy: string }>>`
       select u.id, u.name, record.wins, record.losses, record.settled_picks, record.current_win_streak, record.confidence_adjusted_accuracy
       from user_league_records record
       join "user" u on u.id = record.user_id
-      where record.league_id = ${league.id} and record.settled_picks >= ${MINIMUM_SETTLED_PICKS_FOR_RANK}
+      where record.league_id = ${league.id} and record.settled_picks >= ${rankThreshold}
       order by record.confidence_adjusted_accuracy desc nulls last, record.wins::numeric / nullif(record.wins + record.losses, 0) desc nulls last, record.settled_picks desc, record.last_settled_at asc nulls last, u.name asc
       limit 50`,
   ]);
@@ -369,6 +373,7 @@ export async function getLeagueExperience(slug: string, userId?: string): Promis
   }
 
   return {
+    rankThreshold,
     league: { id: league.id, slug: league.slug, name: league.name, shortName: league.short_name, country: league.country, countryCode: league.country_code },
     matchweek: { id: matchweek.id, seasonId: matchweek.season_id, displayName: matchweek.display_name, lockAt: new Date(matchweek.lock_at).toISOString(), status: matchweek.status },
     fixtures: fixtureRows.map((fixture) => ({

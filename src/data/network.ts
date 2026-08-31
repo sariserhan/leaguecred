@@ -3,7 +3,7 @@ import "server-only";
 import { cache } from "react";
 
 import { sqlClient } from "@/db";
-import { MINIMUM_SETTLED_PICKS_FOR_RANK } from "@/lib/reputation";
+import { getRankThreshold } from "@/services/site-settings";
 
 export type NetworkSpecialist = {
   id: string;
@@ -44,7 +44,7 @@ type SpecialistRow = {
   followers: number;
 };
 
-function mapSpecialist(row: SpecialistRow): NetworkSpecialist {
+function mapSpecialist(row: SpecialistRow, rankThreshold: number): NetworkSpecialist {
   return {
     id: row.id,
     name: row.name,
@@ -54,11 +54,12 @@ function mapSpecialist(row: SpecialistRow): NetworkSpecialist {
     settledPicks: row.settled_picks,
     adjustedAccuracy: Number(row.adjusted_accuracy ?? 0),
     followers: row.followers,
-    rankable: row.settled_picks >= MINIMUM_SETTLED_PICKS_FOR_RANK,
+    rankable: row.settled_picks >= rankThreshold,
   };
 }
 
 export const getNetworkHub = cache(async (userId: string): Promise<NetworkHubData> => {
+  const rankThreshold = await getRankThreshold();
   const [leagueRows, followRows, alternativeRows] = await Promise.all([
     sqlClient<LeagueRow[]>`
       select distinct l.id, l.name, l.slug, l.enabled, p.kind
@@ -87,7 +88,7 @@ export const getNetworkHub = cache(async (userId: string): Promise<NetworkHubDat
         join user_league_records r on r.league_id = l.id
         join "user" u on u.id = r.user_id
         where l.enabled = true and r.user_id <> ${userId}
-          and r.settled_picks >= ${MINIMUM_SETTLED_PICKS_FOR_RANK}
+          and r.settled_picks >= ${rankThreshold}
           and (exists(select 1 from user_league_preferences p where p.user_id = ${userId} and p.league_id = l.id)
             or exists(select 1 from league_follows f where f.follower_user_id = ${userId} and f.league_id = l.id))
           and not exists(select 1 from league_follows f where f.follower_user_id = ${userId} and f.specialist_user_id = u.id and f.league_id = l.id)
@@ -102,8 +103,8 @@ export const getNetworkHub = cache(async (userId: string): Promise<NetworkHubDat
     slug: league.slug,
     enabled: league.enabled,
     kind: league.kind ?? ("followed" as const),
-    followed: (followsByLeague.get(league.id) ?? []).map(mapSpecialist),
-    alternatives: (alternativesByLeague.get(league.id) ?? []).map(mapSpecialist),
+    followed: (followsByLeague.get(league.id) ?? []).map((row) => mapSpecialist(row, rankThreshold)),
+    alternatives: (alternativesByLeague.get(league.id) ?? []).map((row) => mapSpecialist(row, rankThreshold)),
   }));
   const followed = leagues.reduce((total, league) => total + league.followed.length, 0);
   const attention = leagues.reduce((total, league) => total + league.followed.filter((specialist) => !league.enabled || !specialist.rankable).length, 0);

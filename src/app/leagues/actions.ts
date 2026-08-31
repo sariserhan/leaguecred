@@ -5,7 +5,7 @@ import { z } from "zod";
 
 import { sqlClient } from "@/db";
 import { getSession } from "@/lib/auth-session";
-import { MINIMUM_SETTLED_PICKS_FOR_RANK } from "@/lib/reputation";
+import { getRankThreshold } from "@/services/site-settings";
 
 export type LeagueActionResult = { ok: true } | { ok: false; message: string };
 
@@ -140,12 +140,13 @@ export async function followSpecialist(specialistUserId: string, leagueId: strin
   if (!userId) return { ok: false, message: "Sign in before following a specialist." };
   if (userId === parsed.data.specialistUserId) return { ok: false, message: "You cannot follow your own record." };
 
+  const rankThreshold = await getRankThreshold();
   try {
     const [league] = await sqlClient<Array<{ slug: string }>>`
       select l.slug from leagues l
       join user_league_records r on r.league_id = l.id
       where l.id = ${parsed.data.leagueId} and l.enabled = true
-        and r.user_id = ${parsed.data.specialistUserId} and r.settled_picks >= ${MINIMUM_SETTLED_PICKS_FOR_RANK}
+        and r.user_id = ${parsed.data.specialistUserId} and r.settled_picks >= ${rankThreshold}
       limit 1`;
     if (!league) return { ok: false, message: "This specialist does not have a public record in that league." };
     await sqlClient`insert into league_follows (follower_user_id, specialist_user_id, league_id)

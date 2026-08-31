@@ -5,7 +5,7 @@ import { z } from "zod";
 
 import { sqlClient } from "@/db";
 import { getSession } from "@/lib/auth-session";
-import { MINIMUM_SETTLED_PICKS_FOR_RANK } from "@/lib/reputation";
+import { getRankThreshold } from "@/services/site-settings";
 
 export type NetworkActionResult = { ok: true } | { ok: false; message: string };
 const choiceSchema = z.object({ specialistId: z.string().min(1), leagueId: z.string().uuid() });
@@ -37,11 +37,12 @@ export async function switchSpecialist(fromSpecialistId: string, toSpecialistId:
     return { ok: false, message: "That specialist switch is invalid." };
   }
 
+  const rankThreshold = await getRankThreshold();
   const changed = await sqlClient.begin(async (sql) => {
     const [target] = await sql<Array<{ id: string }>>`
       select r.user_id id from user_league_records r join leagues l on l.id = r.league_id
       where r.user_id = ${parsed.data.toSpecialistId} and r.league_id = ${parsed.data.leagueId}
-        and r.settled_picks >= ${MINIMUM_SETTLED_PICKS_FOR_RANK} and l.enabled = true`;
+        and r.settled_picks >= ${rankThreshold} and l.enabled = true`;
     if (!target) return false;
     const removed = await sql`
       delete from league_follows where follower_user_id = ${session.user.id}
