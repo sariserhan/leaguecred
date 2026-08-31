@@ -102,10 +102,10 @@ export const getSpecialistProfile = cache(async function getSpecialistProfile(
   const [leagueRows, recentLockRows, followedLeagueRows, followedHistoryRows, locksDueRows] = await Promise.all([
     sqlClient<Array<{
       id: string; slug: string; name: string; wins: number; losses: number; settled_picks: number;
-      current_win_streak: number; confidence_adjusted_accuracy: string; followed_by_viewer: boolean;
+      current_win_streak: number; best_win_streak: number; confidence_adjusted_accuracy: string; followed_by_viewer: boolean;
       tier: string; league_followers: number; season_rank: number | null;
     }>>`
-      select l.id, l.slug, l.name, r.wins, r.losses, r.settled_picks, r.current_win_streak,
+      select l.id, l.slug, l.name, r.wins, r.losses, r.settled_picks, r.current_win_streak, r.best_win_streak,
         r.confidence_adjusted_accuracy, r.tier,
         (select count(*)::int from league_follows lf
           where lf.specialist_user_id = r.user_id and lf.league_id = l.id) as league_followers,
@@ -175,7 +175,9 @@ export const getSpecialistProfile = cache(async function getSpecialistProfile(
     wins: summary.wins + league.wins,
     losses: summary.losses + league.losses,
     settledPicks: summary.settledPicks + league.settled_picks,
-    bestWinStreak: Math.max(summary.bestWinStreak, league.current_win_streak),
+    // The best run they have had, not the one they are on. Settlement keeps
+    // both; this used to read the current streak and call it the best.
+    bestWinStreak: Math.max(summary.bestWinStreak, league.best_win_streak),
   }), { wins: 0, losses: 0, settledPicks: 0, bestWinStreak: 0 });
 
   return {
