@@ -35,7 +35,10 @@ async function loadTeams() {
       t.sports_db_external_id, t.provider, t.provider_external_id,
       extract(epoch from t.created_at)::float8 as created_at,
       coalesce(array_agg(distinct l.region) filter (where l.region is not null), '{}') as regions,
-      count(membership.id)::int as memberships,
+      -- Count only memberships in leagues that are switched on, matching the
+      -- regions beside it. Counting a disabled league made an unattached stub
+      -- look like it played somewhere, which kept the two Slavia Prague rows apart.
+      count(l.id)::int as memberships,
       count(*) filter (where c.is_region = false)::int as domestic_memberships
     from teams t
     left join league_team_memberships membership on membership.team_id = t.id

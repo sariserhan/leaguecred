@@ -148,6 +148,11 @@ const aliases: Record<string, string> = {
   odenseboldklub: "odensebk",
   lyngbyboldklub: "lyngby",
   fckbenhavn: "copenhagen",
+  // Each of these was proved by the fixtures: the two names met the same
+  // opponent at the same kickoff, from different providers, more than once.
+  athleticclub: "athleticbilbao",
+  staderennais: "rennes",
+  deportivo: "lacoruna",
 };
 
 export function normalizeTeamName(value: string) {
