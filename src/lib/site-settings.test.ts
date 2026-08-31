@@ -2,8 +2,10 @@ import { describe, expect, it } from "vitest";
 
 import {
   BANNER_MESSAGE_MAX_LENGTH,
+  COMMUNITY_CHALLENGE_FLAG,
   HOMEPAGE_ACTIVITY_FLAG,
   LEAGUE_LEADERBOARD_FLAG,
+  LIVE_LOCKS_FLAG,
   MAX_SETTLED_PICKS_FOR_RANK,
   MIN_SETTLED_PICKS_FOR_RANK,
   STANDARD_SETTLED_PICKS_FOR_RANK,
@@ -22,6 +24,23 @@ describe("resolveFeatureFlags", () => {
     expect(flags).toHaveLength(featureFlagDefinitions.length);
     expect(isFeatureEnabled(flags, LEAGUE_LEADERBOARD_FLAG)).toBe(true);
     expect(isFeatureEnabled(flags, HOMEPAGE_ACTIVITY_FLAG)).toBe(false);
+  });
+
+  it("leaves the Community Challenge and global board on until an admin turns them off", () => {
+    const flags = resolveFeatureFlags([]);
+
+    expect(isFeatureEnabled(flags, COMMUNITY_CHALLENGE_FLAG)).toBe(true);
+    expect(isFeatureEnabled(flags, LIVE_LOCKS_FLAG)).toBe(true);
+  });
+
+  it("turns the Community Challenge and global board off from stored rows", () => {
+    const flags = resolveFeatureFlags([
+      { key: COMMUNITY_CHALLENGE_FLAG, enabled: false },
+      { key: LIVE_LOCKS_FLAG, enabled: false },
+    ]);
+
+    expect(isFeatureEnabled(flags, COMMUNITY_CHALLENGE_FLAG)).toBe(false);
+    expect(isFeatureEnabled(flags, LIVE_LOCKS_FLAG)).toBe(false);
   });
 
   it("lets a stored row override the default", () => {

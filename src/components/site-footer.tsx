@@ -2,6 +2,7 @@ import Link from "next/link";
 import { BrandMark } from "@/components/brand-logo";
 import { FooterHelpLinks } from "@/components/site-footer-feedback";
 import { ThemeToggle } from "@/components/theme-toggle";
+import { COMMUNITY_CHALLENGE_FLAG, LIVE_LOCKS_FLAG } from "@/lib/site-settings";
 
 const footerGroups = [
   {
@@ -9,9 +10,9 @@ const footerGroups = [
     links: [
       { href: "/leagues", label: "Leagues" },
       { href: "/#how-it-works", label: "How it works" },
-      { href: "/challenges", label: "Community challenge" },
+      { href: "/challenges", label: "Community challenge", flag: COMMUNITY_CHALLENGE_FLAG },
       { href: "/fixtures", label: "Fixtures by day" },
-      { href: "/live-locks", label: "Global active locks" },
+      { href: "/live-locks", label: "Global active locks", flag: LIVE_LOCKS_FLAG },
       { href: "/communities", label: "Communities" },
       { href: "/recaps", label: "Weekly recap" },
     ],
@@ -26,7 +27,14 @@ const footerGroups = [
   },
 ] as const;
 
-export function SiteFooter() {
+export function SiteFooter({ challengeEnabled, liveLocksEnabled }: { challengeEnabled: boolean; liveLocksEnabled: boolean }) {
+  // A footer link to a route the flag has turned into a 404 is worse than no
+  // link, so a flagged entry is dropped along with the page it points at.
+  const enabledByFlag: Record<string, boolean> = {
+    [COMMUNITY_CHALLENGE_FLAG]: challengeEnabled,
+    [LIVE_LOCKS_FLAG]: liveLocksEnabled,
+  };
+
   return (
     <footer className="border-t bg-inverted text-inverted-foreground">
       <div className="page-shell grid gap-10 py-10 sm:grid-cols-[1fr_auto_auto_auto] sm:gap-16">
@@ -43,7 +51,7 @@ export function SiteFooter() {
           <nav key={group.title} aria-label={group.title}>
             <h2 className="text-sm font-bold text-primary">{group.title}</h2>
             <ul className="mt-3 space-y-2 text-sm text-inverted-foreground/75">
-              {group.links.map((link) => (
+              {group.links.filter((link) => !("flag" in link) || enabledByFlag[link.flag]).map((link) => (
                 <li key={link.href}><Link href={link.href} className="transition-colors hover:text-inverted-foreground">{link.label}</Link></li>
               ))}
             </ul>

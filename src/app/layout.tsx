@@ -9,6 +9,8 @@ import { SiteFooter } from "@/components/site-footer";
 import { viewerIsAdmin } from "@/lib/admin";
 import { getLeagueNavOptions } from "@/data/teams";
 import { getSession } from "@/lib/auth-session";
+import { COMMUNITY_CHALLENGE_FLAG, LIVE_LOCKS_FLAG, isFeatureEnabled } from "@/lib/site-settings";
+import { getFeatureFlags } from "@/services/site-settings";
 import { getNotificationCenter } from "@/data/notifications";
 import { Toaster } from "@/components/ui/toast";
 import { MobileMemberNav } from "@/components/mobile-member-nav";
@@ -58,11 +60,14 @@ export const metadata: Metadata = {
 const isProduction = process.env.VERCEL_ENV === "production";
 
 export default async function RootLayout({ children }: LayoutProps<"/">) {
-  const [isAdmin, session, leagues] = await Promise.all([
+  const [isAdmin, session, leagues, flags] = await Promise.all([
     viewerIsAdmin(),
     getSession(),
     getLeagueNavOptions(),
+    getFeatureFlags(),
   ]);
+  const challengeEnabled = isFeatureEnabled(flags, COMMUNITY_CHALLENGE_FLAG);
+  const liveLocksEnabled = isFeatureEnabled(flags, LIVE_LOCKS_FLAG);
   const notificationCenter = session ? await getNotificationCenter(session.user.id) : null;
 
   return (
@@ -92,10 +97,10 @@ export default async function RootLayout({ children }: LayoutProps<"/">) {
             }}
           />
           <SiteBanner />
-          <SiteHeader isAdmin={isAdmin} leagues={leagues} notificationCenter={notificationCenter} />
+          <SiteHeader isAdmin={isAdmin} leagues={leagues} notificationCenter={notificationCenter} challengeEnabled={challengeEnabled} liveLocksEnabled={liveLocksEnabled} />
           <main id="main-content" tabIndex={-1} className={session ? "flex-1 pb-16 md:pb-0" : "flex-1"}>{children}</main>
-          <SiteFooter />
-          {session ? <MobileMemberNav userId={session.user.id} unread={notificationCenter?.items.filter((item) => !item.readAt).length ?? 0} /> : null}
+          <SiteFooter challengeEnabled={challengeEnabled} liveLocksEnabled={liveLocksEnabled} />
+          {session ? <MobileMemberNav userId={session.user.id} liveLocksEnabled={liveLocksEnabled} unread={notificationCenter?.items.filter((item) => !item.readAt).length ?? 0} /> : null}
           <Toaster timeout={4500} />
           {isProduction ? (
             <Script

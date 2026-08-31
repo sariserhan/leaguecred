@@ -9,6 +9,7 @@ import { getLeagueDirectory, getLeagueExperience, getLeagueTeamCatalog } from "@
 import { getSession } from "@/lib/auth-session";
 import { enforceMaintenanceGate } from "@/lib/maintenance";
 import {
+  COMMUNITY_CHALLENGE_FLAG,
   LEAGUE_LEADERBOARD_FLAG,
   LEAGUE_TEAM_CATALOG_FLAG,
   isFeatureEnabled,
@@ -67,8 +68,9 @@ export default async function LeaguePage(props: LeaguePageProps) {
       <LeagueExperience
         data={experience}
         leaderboardEnabled={isFeatureEnabled(flags, LEAGUE_LEADERBOARD_FLAG)}
+        challengeEnabled={isFeatureEnabled(flags, COMMUNITY_CHALLENGE_FLAG)}
       />
-      <div className="page-shell pt-8"><LeagueCommunityPulse leagueName={league.name} data={community} /></div>
+      <div className="page-shell pt-8"><LeagueCommunityPulse leagueName={league.name} data={community} challengeEnabled={isFeatureEnabled(flags, COMMUNITY_CHALLENGE_FLAG)} /></div>
       {isFeatureEnabled(flags, LEAGUE_TEAM_CATALOG_FLAG) ? (
         <div className="page-shell pb-14 sm:pb-20">
           <TeamCatalogSection teamCatalog={teamCatalog} />

@@ -3,6 +3,8 @@ import type { MetadataRoute } from "next";
 import { sqlClient } from "@/db";
 import { getLeagueDirectory } from "@/data/leagues";
 import { getSpecialistDirectory } from "@/data/specialists";
+import { COMMUNITY_CHALLENGE_FLAG, LIVE_LOCKS_FLAG, isFeatureEnabled } from "@/lib/site-settings";
+import { getFeatureFlags } from "@/services/site-settings";
 
 const BASE_URL = "https://leaguecred.com";
 
@@ -16,9 +18,10 @@ const BASE_URL = "https://leaguecred.com";
  * which teaches a crawler to stop believing the field.
  */
 export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
-  const [leagues, specialists, teams] = await Promise.all([
+  const [leagues, specialists, flags, teams] = await Promise.all([
     getLeagueDirectory(),
     getSpecialistDirectory(),
+    getFeatureFlags(),
     sqlClient<Array<{ slug: string; updated_at: string | Date }>>`
       select distinct t.slug, t.updated_at
       from teams t
@@ -31,9 +34,13 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
   return [
     { url: BASE_URL, changeFrequency: "daily", priority: 1 },
     { url: `${BASE_URL}/leagues`, changeFrequency: "daily", priority: 0.9 },
-    { url: `${BASE_URL}/challenges`, changeFrequency: "daily", priority: 0.8 },
+    ...(isFeatureEnabled(flags, COMMUNITY_CHALLENGE_FLAG)
+      ? [{ url: `${BASE_URL}/challenges`, changeFrequency: "daily" as const, priority: 0.8 }]
+      : []),
     { url: `${BASE_URL}/fixtures`, changeFrequency: "hourly", priority: 0.9 },
-    { url: `${BASE_URL}/live-locks`, changeFrequency: "hourly", priority: 0.9 },
+    ...(isFeatureEnabled(flags, LIVE_LOCKS_FLAG)
+      ? [{ url: `${BASE_URL}/live-locks`, changeFrequency: "hourly" as const, priority: 0.9 }]
+      : []),
     { url: `${BASE_URL}/communities`, changeFrequency: "daily", priority: 0.8 },
     { url: `${BASE_URL}/specialists`, changeFrequency: "daily", priority: 0.7 },
     { url: `${BASE_URL}/recaps`, changeFrequency: "daily", priority: 0.7 },

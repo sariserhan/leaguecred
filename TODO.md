@@ -33,9 +33,22 @@ None.
       saying “Not tracked”. Filling it in means calling Cloudflare's GraphQL
       Analytics API, which needs an account API token held as a real secret —
       unlike the beacon token, which is public.
+- [ ] Drop a switched-off feature's URL from sitemap.xml without a deploy.
+      `src/app/sitemap.ts` now filters /challenges and /live-locks by their
+      flags, but the route is prerendered at build, so the filter reflects the
+      flags as they stood at deploy time. Toggling a flag afterwards leaves the
+      old URL listed until the next build. Fixing it properly means making the
+      sitemap dynamic, which puts its league, team and specialist queries on
+      every crawl.
 - [ ] Decide whether expertise is scoped to clubs as well as leagues
 
 ## Completed
+
+- [x] Put the Community Challenge and the global active-locks board behind
+      admin feature flags. Both default to on, so nothing changes until an admin
+      turns one off in the panel; off means the pages 404, every link into them
+      disappears from the header, footer, mobile bar, league pages and member
+      home, the server actions refuse writes, and the URLs leave the sitemap.
 
 - [x] Say in the Cookie Notice and Privacy page that analytics now run, and
       what they store. Written from the visitorping tracker source rather than

@@ -121,9 +121,11 @@ function PastMatchweekHistory({ leagueSlug, matchweeks }: { leagueSlug: string; 
 export function LeagueExperience({
   data,
   leaderboardEnabled,
+  challengeEnabled,
 }: {
   data: LeagueExperienceData;
   leaderboardEnabled: boolean;
+  challengeEnabled: boolean;
 }) {
   const router = useRouter();
   const [mode, setMode] = useState<ParticipationMode>(data.viewer.mode === "follow" ? "follow" : "prove");
@@ -422,7 +424,7 @@ export function LeagueExperience({
           </DialogHeader>
           <div className="grid gap-3 sm:grid-cols-2">
             <Link href="/invite" className={buttonVariants()}><UsersRoundIcon data-icon="inline-start" />Invite a specialist</Link>
-            <Link href="/challenges" className={buttonVariants({ variant: "outline" })}><ShieldCheckIcon data-icon="inline-start" />Open the challenge</Link>
+            {challengeEnabled ? <Link href="/challenges" className={buttonVariants({ variant: "outline" })}><ShieldCheckIcon data-icon="inline-start" />Open the challenge</Link> : null}
           </div>
           <DialogFooter><Button variant="ghost" onClick={() => setGrowthPromptOpen(false)}>Not now</Button><Link href="/slip" className={buttonVariants()}>Open Weekly Slip</Link></DialogFooter>
         </DialogContent>

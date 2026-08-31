@@ -13,7 +13,7 @@ import { buttonVariants } from "@/components/ui/button";
 import { getHomeData, getMemberHome } from "@/data/home";
 import { getSession } from "@/lib/auth-session";
 import { enforceMaintenanceGate } from "@/lib/maintenance";
-import { HOMEPAGE_ACTIVITY_FLAG, isFeatureEnabled } from "@/lib/site-settings";
+import { HOMEPAGE_ACTIVITY_FLAG, LIVE_LOCKS_FLAG, isFeatureEnabled } from "@/lib/site-settings";
 import { getFeatureFlags } from "@/services/site-settings";
 
 /** The hero photograph. Swap the file to change it. */
@@ -38,12 +38,13 @@ export default async function HomePage() {
   const memberPromise = sessionPromise.then((current) => current ? getMemberHome(current.user.id) : null);
   const [session, data, flags, member] = await Promise.all([sessionPromise, getHomeData(), getFeatureFlags(), memberPromise]);
   const showActivity = isFeatureEnabled(flags, HOMEPAGE_ACTIVITY_FLAG);
+  const liveLocksEnabled = isFeatureEnabled(flags, LIVE_LOCKS_FLAG);
   const returningHref = session ? "/slip" : "/leagues?intent=prove";
   const returningLabel = session ? "Continue to your Weekly Slip" : "Make today's call";
 
   return (
     <>
-      {session && member ? <><FirstSessionTour /><MemberHome data={member} /></> : null}
+      {session && member ? <><FirstSessionTour /><MemberHome data={member} liveLocksEnabled={liveLocksEnabled} /></> : null}
       <section className="page-shell grid min-h-[650px] items-center gap-12 py-14 lg:grid-cols-[0.86fr_1.14fr] lg:py-10">
         <div className="flex flex-col items-start gap-7">
           <h1 className="display-title max-w-[760px] normal-case">

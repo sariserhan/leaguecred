@@ -3,6 +3,8 @@ import type { BannerTone } from "@/db/schema";
 export const LEAGUE_LEADERBOARD_FLAG = "league_leaderboard";
 export const LEAGUE_TEAM_CATALOG_FLAG = "league_team_catalog";
 export const HOMEPAGE_ACTIVITY_FLAG = "homepage_activity";
+export const COMMUNITY_CHALLENGE_FLAG = "community_challenge";
+export const LIVE_LOCKS_FLAG = "live_locks";
 
 export const BANNER_MESSAGE_MAX_LENGTH = 280;
 /** The standard bar, and what a season settles back to once one has run. */
@@ -42,6 +44,20 @@ export const featureFlagDefinitions: readonly FeatureFlagDefinition[] = [
     label: "League team catalog",
     description:
       "Shows the partial team and badge catalog underneath each league page.",
+    defaultEnabled: true,
+  },
+  {
+    key: COMMUNITY_CHALLENGE_FLAG,
+    label: "Community Challenge",
+    description:
+      "Serves /challenges and every link into it. Turning this off hides the navigation entries and makes the pages 404.",
+    defaultEnabled: true,
+  },
+  {
+    key: LIVE_LOCKS_FLAG,
+    label: "Global active locks",
+    description:
+      "Serves /live-locks and its opinion threads. Turning this off hides the navigation entries, makes the page 404, and stops new opinions and votes.",
     defaultEnabled: true,
   },
 ] as const;

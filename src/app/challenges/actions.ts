@@ -6,6 +6,8 @@ import { z } from "zod";
 
 import { sqlClient } from "@/db";
 import { getSession } from "@/lib/auth-session";
+import { featureEnabled } from "@/lib/feature-gate";
+import { COMMUNITY_CHALLENGE_FLAG } from "@/lib/site-settings";
 
 const sideSchema = z.object({
   challengeId: z.string().uuid(),
@@ -13,6 +15,10 @@ const sideSchema = z.object({
 });
 
 export async function chooseChallengeSide(formData: FormData) {
+  // The form is gone from the page while the flag is down, but the action is a
+  // public endpoint either way, so it checks the flag rather than trusting that.
+  if (!(await featureEnabled(COMMUNITY_CHALLENGE_FLAG))) throw new Error("The Community Challenge is not available.");
+
   const parsed = sideSchema.safeParse({
     challengeId: formData.get("challengeId"),
     teamId: formData.get("teamId"),
