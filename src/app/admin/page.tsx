@@ -13,6 +13,7 @@ import {
 import { FeatureFlagControls } from "@/components/admin/feature-flag-controls";
 import { SiteControls } from "@/components/admin/site-controls";
 import { AdminManagementPanels } from "@/components/admin/management-panels";
+import { CatalogHealthPanel } from "@/components/admin/catalog-health-panel";
 import { MemberSeedingPanel } from "@/components/admin/member-seeding-panel";
 import { DistributionAnalyticsPanel } from "@/components/admin/distribution-analytics";
 import { buttonVariants } from "@/components/ui/button";
@@ -30,6 +31,7 @@ import {
 import { getFeatureFlags, getSiteSettings } from "@/services/site-settings";
 import { getDistributionAnalytics } from "@/data/distribution";
 import { listMembers } from "@/services/member-seeding";
+import { TOLERATED_CATALOG_FAULTS, measureCatalogHealth } from "@/services/catalog-health";
 
 export const dynamic = "force-dynamic";
 
@@ -55,6 +57,7 @@ export default async function AdminPage() {
     suspiciousFollows,
     distribution,
     members,
+    catalogHealth,
   ] = await Promise.all([
     getSiteSettings(),
     getFeatureFlags(),
@@ -68,6 +71,7 @@ export default async function AdminPage() {
     getSuspiciousFollows(),
     getDistributionAnalytics(),
     listMembers(),
+    measureCatalogHealth(TOLERATED_CATALOG_FAULTS),
   ]);
 
   return (
@@ -100,6 +104,8 @@ export default async function AdminPage() {
       <section className="border p-5 sm:p-6"><h2 className="font-heading text-2xl font-bold uppercase">Refresh league data</h2><p className="mt-1 text-sm text-muted-foreground">Refresh one league’s fixtures and standings without touching other competitions.</p><div className="mt-5 grid gap-2 sm:grid-cols-2 lg:grid-cols-3">{leagues.map((league) => <form key={league.slug} action={refreshLeagueFixtures.bind(null, league.slug)}><button type="submit" className="flex w-full items-center justify-between border px-4 py-3 text-left text-sm font-semibold transition-colors hover:bg-muted"><span>{league.name}</span><span className="text-xs text-muted-foreground">Refresh</span></button></form>)}</div></section>
 
       <FeatureFlagControls flags={flags} />
+
+      <CatalogHealthPanel health={catalogHealth} />
 
       <MemberSeedingPanel members={members} leagues={leagues} />
 

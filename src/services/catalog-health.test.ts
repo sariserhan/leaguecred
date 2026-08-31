@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 
-import { isHealthy } from "@/services/catalog-health";
+import { TOLERATED_CATALOG_FAULTS, isHealthy } from "@/services/catalog-health";
 
 const clean = {
   duplicateClubNames: 0,
@@ -37,5 +37,31 @@ describe("isHealthy", () => {
 
   it("still fails when a tolerated count is exceeded", () => {
     expect(isHealthy({ ...clean, duplicateMatches: 3 }, { duplicateMatches: 2 })).toBe(false);
+  });
+});
+
+describe("TOLERATED_CATALOG_FAULTS", () => {
+  it("allows only the faults that are genuinely expected", () => {
+    // Anything not named here has an allowance of zero, so a new kind of fault
+    // is reported the first time it appears rather than silently permitted.
+    expect(Object.keys(TOLERATED_CATALOG_FAULTS).toSorted()).toEqual([
+      "duplicateClubNames",
+      "duplicateMatches",
+    ]);
+  });
+
+  it("reports the duplicate matches that went unseen, and stays quiet at the expected two", () => {
+    const counts = {
+      duplicateClubNames: 0,
+      duplicateMatches: 2,
+      splitGameweeks: 0,
+      orphanedClubs: 0,
+      malformedSlugs: 0,
+      clubsNamedDifferentlyByEspn: 0,
+      clubsSpanningRegions: 0,
+    };
+
+    expect(isHealthy(counts, TOLERATED_CATALOG_FAULTS)).toBe(true);
+    expect(isHealthy({ ...counts, duplicateMatches: 289 }, TOLERATED_CATALOG_FAULTS)).toBe(false);
   });
 });

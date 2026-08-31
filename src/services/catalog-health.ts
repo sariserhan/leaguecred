@@ -42,6 +42,19 @@ const EMPTY: Omit<CatalogHealth, "healthy"> = {
   clubsSpanningRegions: 0,
 };
 
+/**
+ * Faults that are expected and are not worth reporting: two clubs really are
+ * called Liverpool, and an undecided playoff tie really does appear twice under
+ * placeholder names.
+ *
+ * Shared so the nightly job and the admin panel judge the catalogue by the same
+ * standard. Kept apart, one would call healthy what the other flagged.
+ */
+export const TOLERATED_CATALOG_FAULTS = {
+  duplicateClubNames: 1,
+  duplicateMatches: 2,
+} as const satisfies Partial<Omit<CatalogHealth, "healthy">>;
+
 /** Some faults are expected and are not worth waking anyone over: two clubs
  * really are called Liverpool, and an undecided playoff tie really does appear
  * twice under placeholder names. */
