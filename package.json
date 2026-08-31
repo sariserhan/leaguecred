@@ -31,6 +31,7 @@
     "teams:dedupe": "tsx src/jobs/dedupe-teams.ts",
     "fixtures:dedupe": "tsx src/jobs/dedupe-fixtures.ts",
     "matchweeks:merge": "tsx src/jobs/merge-matchweeks.ts",
+    "teams:names": "tsx src/jobs/refresh-team-names.ts",
     "check": "pnpm lint && pnpm typecheck && pnpm test && pnpm build",
     "check:full": "pnpm check && pnpm test:integration"
   },

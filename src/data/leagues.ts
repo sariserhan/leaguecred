@@ -3,6 +3,8 @@ import "server-only";
 import { cache } from "react";
 
 import { sqlClient } from "@/db";
+import { ESPN_FIXTURE_COMPETITIONS } from "@/providers/espn-fixtures";
+import { fetchEspnStandings } from "@/providers/espn-standings";
 import type { FixtureStatus } from "@/db/schema";
 import type { League, Region } from "@/lib/league-data";
 import { MINIMUM_SETTLED_PICKS_FOR_RANK } from "@/lib/reputation";
@@ -549,16 +551,14 @@ export const getMatchweekHistory = cache(async function getMatchweekHistory(
 });
 
 
-export type LeagueStanding = { position: number; team: string; teamSlug: string; logoUrl: string | null; played: number; wins: number; draws: number; losses: number; goalsFor: number; goalsAgainst: number; goalDifference: number; points: number };
+export type LeagueStanding = { position: number; team: string; teamSlug: string | null; logoUrl: string | null; played: number; wins: number; draws: number; losses: number; goalsFor: number; goalsAgainst: number; goalDifference: number; points: number };
 
-export async function getLeagueStandings(slug: string): Promise<{ league: { name: string; slug: string; logoUrl: string | null }; standings: LeagueStanding[] } | null> {
-  const [league] = await sqlClient<Array<{ id: string; name: string; slug: string; logo_url: string | null }>>`
-    select l.id, l.name, l.slug, l.logo_url
-    from leagues l
-    where l.slug = ${slug} and l.enabled = true
-    limit 1`;
-  if (!league) return null;
-
+/**
+ * Counted from our own fixtures. Kept as the fallback for a league ESPN does
+ * not carry, and for when ESPN cannot be reached — but it is only ever as good
+ * as the fixture list, and it cannot know about a points deduction.
+ */
+async function standingsFromFixtures(leagueId: string): Promise<LeagueStanding[]> {
   const rows = await sqlClient<Array<{ team: string; team_slug: string; logo_url: string | null; played: number; wins: number; draws: number; losses: number; goals_for: number; goals_against: number }>>`
     select t.name as team, t.slug as team_slug, t.logo_url,
       count(f.id)::int as played,
@@ -572,20 +572,80 @@ export async function getLeagueStandings(slug: string): Promise<{ league: { name
     from league_team_memberships membership
     join seasons s on s.id = membership.season_id and s.is_current = true
     join teams t on t.id = membership.team_id
-    left join fixtures f on f.season_id = s.id and f.league_id = ${league.id}
+    left join fixtures f on f.season_id = s.id and f.league_id = ${leagueId}
       and f.status = 'finished' and (f.home_team_id = t.id or f.away_team_id = t.id)
-    where membership.league_id = ${league.id}
+    where membership.league_id = ${leagueId}
     group by t.id, t.name, t.slug, t.logo_url
     order by (count(f.id) filter (where f.winner_team_id = t.id) * 3 + count(f.id) filter (where f.winner_team_id is null)) desc,
       (coalesce(sum(case when f.home_team_id = t.id then f.home_score else f.away_score end), 0) - coalesce(sum(case when f.home_team_id = t.id then f.away_score else f.home_score end), 0)) desc,
       coalesce(sum(case when f.home_team_id = t.id then f.home_score else f.away_score end), 0) desc, t.name`;
 
+  return rows.map((row, index) => ({
+    position: index + 1, team: row.team, teamSlug: row.team_slug, logoUrl: row.logo_url, played: row.played,
+    wins: row.wins, draws: row.draws, losses: row.losses, goalsFor: row.goals_for, goalsAgainst: row.goals_against,
+    goalDifference: row.goals_for - row.goals_against, points: row.wins * 3 + row.draws,
+  }));
+}
+
+/**
+ * ESPN's own table, which is authoritative in a way counting fixtures is not:
+ * it already accounts for points deductions and for each competition's own
+ * tiebreaks. Rows join our clubs on the ESPN id we store beside them, so a
+ * club whose name differs between sources still matches.
+ */
+async function standingsFromEspn(leagueSlug: string, season: string): Promise<LeagueStanding[] | null> {
+  const competition = ESPN_FIXTURE_COMPETITIONS.find((entry) => entry.leagueSlug === leagueSlug);
+  if (!competition) return null;
+
+  let rows;
+  try {
+    rows = await fetchEspnStandings({ leagueExternalId: competition.externalId, season });
+  } catch {
+    return null;
+  }
+  if (rows.length === 0) return null;
+
+  const known = await sqlClient<Array<{ external_id: string; slug: string; name: string; logo_url: string | null }>>`
+    select a.provider_external_id as external_id, t.slug, t.name, t.logo_url
+    from team_provider_aliases a join teams t on t.id = a.team_id
+    where a.provider = 'espn-web' and a.provider_external_id = any(${rows.map((row) => row.teamExternalId)})`;
+  const bySlug = new Map(known.map((row) => [row.external_id, row]));
+
+  return rows.map((row, index) => {
+    // A club we have not catalogued still belongs in the table; it simply has
+    // no page to link to yet.
+    const ours = bySlug.get(row.teamExternalId);
+    return {
+      position: row.rank || index + 1,
+      // Our own spelling wins: ESPN writes the table in plain ASCII, so taking
+      // its wording here would undo the accents everywhere else keeps.
+      team: ours?.name ?? row.name,
+      teamSlug: ours?.slug ?? null,
+      logoUrl: ours?.logo_url ?? row.logoUrl,
+      played: row.played, wins: row.wins, draws: row.draws, losses: row.losses,
+      goalsFor: row.goalsFor, goalsAgainst: row.goalsAgainst,
+      goalDifference: row.goalsFor - row.goalsAgainst,
+      points: row.points,
+    };
+  });
+}
+
+export async function getLeagueStandings(slug: string): Promise<{ league: { name: string; slug: string; logoUrl: string | null }; standings: LeagueStanding[]; source: "espn" | "fixtures" } | null> {
+  const [league] = await sqlClient<Array<{ id: string; name: string; slug: string; logo_url: string | null; provider_season: string | null }>>`
+    select l.id, l.name, l.slug, l.logo_url, s.provider_season
+    from leagues l
+    left join seasons s on s.league_id = l.id and s.is_current = true
+    where l.slug = ${slug} and l.enabled = true
+    limit 1`;
+  if (!league) return null;
+
+  const fromEspn = league.provider_season
+    ? await standingsFromEspn(league.slug, league.provider_season)
+    : null;
+
   return {
     league: { name: league.name, slug: league.slug, logoUrl: league.logo_url },
-    standings: rows.map((row, index) => ({
-      position: index + 1, team: row.team, teamSlug: row.team_slug, logoUrl: row.logo_url, played: row.played,
-      wins: row.wins, draws: row.draws, losses: row.losses, goalsFor: row.goals_for, goalsAgainst: row.goals_against,
-      goalDifference: row.goals_for - row.goals_against, points: row.wins * 3 + row.draws,
-    })),
+    standings: fromEspn ?? await standingsFromFixtures(league.id),
+    source: fromEspn ? "espn" : "fixtures",
   };
 }
