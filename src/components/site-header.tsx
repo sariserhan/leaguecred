@@ -78,7 +78,12 @@ export function SiteHeader({
             <DialogTrigger render={<Button variant="ghost" size="icon" className="md:hidden" aria-label="Open navigation" />}><MenuIcon /></DialogTrigger>
             <DialogContent className="inset-y-0 left-0 h-dvh max-w-[min(88vw,380px)] translate-x-0 translate-y-0 content-start rounded-none p-0 sm:max-w-[380px]" showCloseButton>
               <DialogHeader className="border-b p-5">
-                <DialogTitle className="flex items-center gap-2.5 font-heading text-3xl font-extrabold uppercase"><BrandMark size={28} /><span>League<span className="text-primary">Cred</span></span></DialogTitle>
+                <DialogTitle className="font-heading text-3xl font-extrabold uppercase">
+                  <DialogClose render={<Link href="/" className="inline-flex items-center gap-2.5 outline-none hover:opacity-90" aria-label="LeagueCred home" />}>
+                    <BrandMark size={28} />
+                    <span>League<span className="text-primary">Cred</span></span>
+                  </DialogClose>
+                </DialogTitle>
                 <DialogDescription>Navigate your football network.</DialogDescription>
               </DialogHeader>
               <nav className="divide-y" aria-label="Mobile navigation">
@@ -91,7 +96,14 @@ export function SiteHeader({
               </nav>
             </DialogContent>
           </Dialog>
-          <Link href="/" className="flex items-center gap-2.5 font-heading text-3xl leading-none font-extrabold tracking-[-0.04em] uppercase sm:text-4xl" aria-label="LeagueCred home"><BrandMark size={32} className="size-7 sm:size-8" /><span>League<span className="text-primary">Cred</span></span></Link>
+          <Link
+            href="/"
+            className="group flex items-center gap-2.5 rounded-sm font-heading text-3xl leading-none font-extrabold tracking-[-0.04em] uppercase transition-opacity hover:opacity-90 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring sm:text-4xl"
+            aria-label="LeagueCred home"
+          >
+            <BrandMark size={32} className="size-7 transition-transform group-hover:scale-105 sm:size-8" />
+            <span>League<span className="text-primary">Cred</span></span>
+          </Link>
         </div>
 
         <nav className="hidden items-center gap-9 text-sm font-semibold md:flex" aria-label="Primary navigation">

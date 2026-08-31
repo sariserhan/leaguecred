@@ -8,10 +8,19 @@ const globalDatabase = globalThis as typeof globalThis & {
   leagueCredSql?: ReturnType<typeof postgres>;
 };
 
+const isBuildPhase = process.env.NEXT_PHASE === "phase-production-build";
+const maxConnections = isBuildPhase
+  ? 1
+  : process.env.DB_MAX_CONNECTIONS
+    ? Number(process.env.DB_MAX_CONNECTIONS)
+    : process.env.NODE_ENV === "production"
+      ? 5
+      : 3;
+
 const client =
   globalDatabase.leagueCredSql ??
   postgres(serverEnv.databaseUrl, {
-    max: process.env.NODE_ENV === "production" ? 10 : 3,
+    max: maxConnections,
     idle_timeout: 20,
     connect_timeout: 10,
     prepare: false,
