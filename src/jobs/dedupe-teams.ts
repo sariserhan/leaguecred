@@ -31,7 +31,8 @@ type Merge = TeamMerge<TeamRow>;
 
 async function loadTeams() {
   return sqlClient<TeamRow[]>`
-    select t.id, t.name, t.slug, t.country_id, t.logo_url, t.logo_provider,
+    select t.id, t.name, t.slug, t.country_id, coalesce(tc.is_region, false) as country_is_region,
+      t.logo_url, t.logo_provider,
       t.sports_db_external_id, t.provider, t.provider_external_id,
       extract(epoch from t.created_at)::float8 as created_at,
       coalesce(array_agg(distinct l.region) filter (where l.region is not null), '{}') as regions,
@@ -41,10 +42,11 @@ async function loadTeams() {
       count(l.id)::int as memberships,
       count(*) filter (where c.is_region = false)::int as domestic_memberships
     from teams t
+    left join countries tc on tc.id = t.country_id
     left join league_team_memberships membership on membership.team_id = t.id
     left join leagues l on l.id = membership.league_id and l.enabled = true
     left join countries c on c.id = l.country_id
-    group by t.id
+    group by t.id, tc.is_region
     order by t.created_at`;
 }
 

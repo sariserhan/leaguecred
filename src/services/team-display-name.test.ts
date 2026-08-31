@@ -1,6 +1,7 @@
 import { describe, expect, it } from "vitest";
 
 import { chooseDisambiguatingName, chooseDisplayName } from "@/services/team-display-name";
+import { normalizeTeamName } from "@/services/team-names";
 
 describe("chooseDisplayName", () => {
   it.each([
@@ -77,5 +78,21 @@ describe("chooseDisambiguatingName", () => {
   it("prefers the most specific spelling available", () => {
     expect(chooseDisambiguatingName("Rangers", ["Rangers FC", "Queens Park Rangers"], taken("rangers")))
       .toBe("Queens Park Rangers");
+  });
+});
+
+describe("football-data.org spellings", () => {
+  // Each of these had its own club row in production, and with it a duplicate
+  // of every fixture the club appeared in.
+  it.each([
+    ["AZ", "AZ Alkmaar"],
+    ["Atalanta BC", "Atalanta"],
+    ["Bayer 04 Leverkusen", "Bayer Leverkusen"],
+    ["Bologna FC 1909", "Bologna"],
+    ["Hamburger SV", "Hamburg SV"],
+    ["SS Lazio", "Lazio"],
+    ["TSG 1899 Hoffenheim", "TSG Hoffenheim"],
+  ])("resolves %s to the same club as %s", (verbose, plain) => {
+    expect(normalizeTeamName(verbose)).toBe(normalizeTeamName(plain));
   });
 });

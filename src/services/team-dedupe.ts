@@ -79,6 +79,13 @@ export type DedupeTeam = {
   name: string;
   slug: string;
   country_id: string | null;
+  /**
+   * Whether country_id names a confederation rather than a country. The
+   * countries table holds Europe and South America alongside Germany, so a row
+   * catalogued through a continental competition carries one of those, and it
+   * says nothing about where the club is from.
+   */
+  country_is_region?: boolean;
   /** Regions of the enabled leagues this row plays in. */
   regions: string[];
   memberships: number;
@@ -121,13 +128,21 @@ export function pickCanonical<Team extends DedupeTeam>(group: Team[]) {
  * region, and claims no country to agree on.
  */
 export function isSameClub(canonical: DedupeTeam, other: DedupeTeam) {
+  // A confederation is not an answer to which country a club is from, so it is
+  // read as no answer at all. Bayer 04 Leverkusen arrived through a continental
+  // competition filed under Europe and Bayer Leverkusen is filed under Germany;
+  // comparing those as countries called one club two, and left a duplicate of
+  // every fixture it played.
+  const canonicalCountry = canonical.country_is_region ? null : canonical.country_id;
+  const otherCountry = other.country_is_region ? null : other.country_id;
+
   // Two countries both rows name settle it either way, and they are asked first
   // because a region is too coarse to overrule them: Santos of Brazil and Santos
   // Laguna of Mexico are both filed under the Americas, and a stray Liga MX
   // membership on the Brazilian club was otherwise enough to merge the two.
-  if (canonical.country_id && other.country_id) return canonical.country_id === other.country_id;
+  if (canonicalCountry && otherCountry) return canonicalCountry === otherCountry;
   if (other.regions.some((region) => canonical.regions.includes(region))) return true;
-  return other.memberships === 0 && (other.country_id === null || canonical.country_id === null);
+  return other.memberships === 0 && (otherCountry === null || canonicalCountry === null);
 }
 
 /**

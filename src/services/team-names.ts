@@ -158,6 +158,17 @@ const aliases: Record<string, string> = {
   svelversberg: "elversberg",
   bayerleverkusen: "leverkusen",
   tsghoffenheim: "hoffenheim",
+  // football-data.org spells these out in full, so they never matched the
+  // plain spelling every other source uses and each ended up a second club row
+  // with its own copy of the fixture. Its fixture sync is gone, but the rows it
+  // already wrote still need to resolve to one club.
+  az: "azalkmaar",
+  atalantabc: "atalanta",
+  bayer04leverkusen: "leverkusen",
+  bologna1909: "bologna",
+  hamburgersv: "hamburgsv",
+  sslazio: "lazio",
+  tsg1899hoffenheim: "hoffenheim",
   cologne: "koln",
   // A club beside a leftover catalogue entry naming the same club. Each was
   // checked one at a time: name nesting alone is not evidence, since inside a

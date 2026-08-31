@@ -200,6 +200,16 @@ describe("isSameClub with one side missing a country", () => {
     expect(isSameClub(withLeague, stub)).toBe(true);
   });
 
+  it("reads a confederation as no country, so Europe never contradicts Germany", () => {
+    // Bayer 04 Leverkusen came in through a continental competition, which files
+    // it under Europe. Comparing that with Germany as though both were countries
+    // called one club two and duplicated every fixture it played.
+    const domestic = team({ id: "bayer-leverkusen", name: "Bayer Leverkusen", country_id: "country-germany", regions: ["Europe"], memberships: 2 });
+    const continental = team({ id: "bayer-04-leverkusen", name: "Bayer 04 Leverkusen", country_id: "region-europe", country_is_region: true, regions: ["Europe"], memberships: 1 });
+
+    expect(isSameClub(domestic, continental)).toBe(true);
+  });
+
   it("still refuses when the two countries disagree", () => {
     const spain = team({ id: "a", name: "Cordoba", country_id: "country-spain", memberships: 1 });
     const argentina = team({ id: "b", name: "Cordoba", country_id: "country-argentina" });

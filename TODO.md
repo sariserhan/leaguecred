@@ -7,7 +7,9 @@ None.
 ## Next
 
 - [ ] Clean up the duplicate clubs and fixtures football-data.org left in
-      production. The source is unwired now, so this is a one-off:
+      production. The source is unwired now, so this is a one-off. The first
+      pass removed 254; the eight clubs it could not match then are matched
+      now, so run both again:
       `DATABASE_URL="$(grep -m1 '^PROD_DATABASE_URL_UNPOOLED=' .env.local | cut -d= -f2-)" pnpm teams:dedupe --apply`
       then the same with `pnpm fixtures:dedupe --apply`. Teams must go first —
       the duplicate fixtures point at different club rows, so fixture dedupe
