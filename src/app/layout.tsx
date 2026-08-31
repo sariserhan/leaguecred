@@ -12,6 +12,7 @@ import { getSession } from "@/lib/auth-session";
 import { getNotificationCenter } from "@/data/notifications";
 import { Toaster } from "@/components/ui/toast";
 import { MobileMemberNav } from "@/components/mobile-member-nav";
+import { ThemeProvider } from "@/components/theme-provider";
 import { JsonLd } from "@/lib/json-ld";
 
 import "./globals.css";
@@ -62,31 +63,41 @@ export default async function RootLayout({ children }: LayoutProps<"/">) {
   return (
     <html
       lang="en"
+      suppressHydrationWarning
       data-scroll-behavior="smooth"
       className={inter.variable + " " + barlowCondensed.variable + " antialiased"}
     >
-      <body suppressHydrationWarning className="flex min-h-screen flex-col bg-background text-foreground">
-        <a href="#main-content" className="sr-only z-[100] bg-foreground px-4 py-3 font-semibold text-background focus:not-sr-only focus:fixed focus:top-2 focus:left-2">Skip to main content</a>
-        <JsonLd
-          data={{
-            "@context": "https://schema.org",
-            "@type": "WebSite",
-            name: "LeagueCred",
-            url: "https://leaguecred.com",
-            description,
+      <head>
+        <script
+          dangerouslySetInnerHTML={{
+            __html: `(function(){try{var t=localStorage.getItem('leaguecred-theme');var d=t==='dark'||(!t&&window.matchMedia('(prefers-color-scheme: dark)').matches);if(d){document.documentElement.classList.add('dark');document.documentElement.style.colorScheme='dark';}else{document.documentElement.classList.remove('dark');document.documentElement.style.colorScheme='light';}}catch(e){}})()`,
           }}
         />
-        <SiteBanner />
-        <SiteHeader isAdmin={isAdmin} leagues={leagues} notificationCenter={notificationCenter} />
-        <main id="main-content" tabIndex={-1} className={session ? "flex-1 pb-16 md:pb-0" : "flex-1"}>{children}</main>
-        <SiteFooter />
-        {session ? <MobileMemberNav userId={session.user.id} /> : null}
-        <Toaster timeout={4500} />
-        <Script
-          src="https://cdn.visitorping.com/site/vp_RJPP6CJD.js"
-          strategy="afterInteractive"
-          crossOrigin="anonymous"
-        />
+      </head>
+      <body suppressHydrationWarning className="flex min-h-screen flex-col bg-background text-foreground">
+        <ThemeProvider>
+          <a href="#main-content" className="sr-only z-[100] bg-foreground px-4 py-3 font-semibold text-background focus:not-sr-only focus:fixed focus:top-2 focus:left-2">Skip to main content</a>
+          <JsonLd
+            data={{
+              "@context": "https://schema.org",
+              "@type": "WebSite",
+              name: "LeagueCred",
+              url: "https://leaguecred.com",
+              description,
+            }}
+          />
+          <SiteBanner />
+          <SiteHeader isAdmin={isAdmin} leagues={leagues} notificationCenter={notificationCenter} />
+          <main id="main-content" tabIndex={-1} className={session ? "flex-1 pb-16 md:pb-0" : "flex-1"}>{children}</main>
+          <SiteFooter />
+          {session ? <MobileMemberNav userId={session.user.id} /> : null}
+          <Toaster timeout={4500} />
+          <Script
+            src="https://cdn.visitorping.com/site/vp_RJPP6CJD.js"
+            strategy="afterInteractive"
+            crossOrigin="anonymous"
+          />
+        </ThemeProvider>
       </body>
     </html>
   );

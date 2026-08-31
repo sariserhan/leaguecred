@@ -1,5 +1,6 @@
 import Link from "next/link";
 import { BrandMark } from "@/components/brand-logo";
+import { ThemeToggle } from "@/components/theme-toggle";
 
 const footerGroups = [
   {
@@ -44,7 +45,13 @@ export function SiteFooter() {
         ))}
       </div>
       <div className="border-t border-background/20">
-        <div className="page-shell py-4 text-xs text-background/60">© {new Date().getFullYear()} LeagueCred. Built on independent records.</div>
+        <div className="page-shell flex flex-col items-start justify-between gap-3 py-4 text-xs text-background/60 sm:flex-row sm:items-center">
+          <div>© {new Date().getFullYear()} LeagueCred. Built on independent records.</div>
+          <div className="flex items-center gap-2 text-background/80">
+            <span>Theme:</span>
+            <ThemeToggle variant="dropdown" className="size-8 text-background/80 hover:text-background" />
+          </div>
+        </div>
       </div>
     </footer>
   );

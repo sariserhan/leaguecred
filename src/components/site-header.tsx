@@ -13,6 +13,7 @@ import {
   MenuIcon,
   ShieldCheckIcon,
   Settings2Icon,
+  SunIcon,
   TrophyIcon,
   UsersRoundIcon,
 } from "lucide-react";
@@ -28,6 +29,7 @@ import type { LeagueNavOption, TeamNavTeam } from "@/data/teams";
 import { BrandMark } from "@/components/brand-logo";
 import { NotificationCenter } from "@/components/notification-center";
 import { GlobalSearch } from "@/components/global-search";
+import { ThemeToggle } from "@/components/theme-toggle";
 import type { AppNotification, NotificationPreferences } from "@/data/notifications";
 import { HowItWorksDialog } from "@/components/how-it-works-dialog";
 
@@ -94,6 +96,10 @@ export function SiteHeader({
                 ))}
                 <HowItWorksDialog mobile />
                 {session ? <><DialogClose nativeButton={false} render={<Link href="/network" className="flex min-h-16 items-center gap-3 px-5 font-semibold hover:bg-muted" />}><Settings2Icon className="size-5 text-primary" />My network<ChevronRightIcon className="ml-auto size-5 text-muted-foreground" /></DialogClose><DialogClose nativeButton={false} render={<Link href="/slip" className="flex min-h-16 items-center gap-3 px-5 font-semibold hover:bg-muted" />}><CircleUserRoundIcon className="size-5 text-primary" />Weekly Slip<ChevronRightIcon className="ml-auto size-5 text-muted-foreground" /></DialogClose><DialogClose nativeButton={false} render={<Link href="/settings" className="flex min-h-16 items-center gap-3 px-5 font-semibold hover:bg-muted" />}><Settings2Icon className="size-5 text-primary" />Settings<ChevronRightIcon className="ml-auto size-5 text-muted-foreground" /></DialogClose></> : null}
+                <div className="flex min-h-16 items-center justify-between px-5 font-semibold">
+                  <span className="flex items-center gap-3"><SunIcon className="size-5 text-primary" />Theme</span>
+                  <ThemeToggle variant="dropdown" />
+                </div>
               </nav>
             </DialogContent>
           </Dialog>
@@ -108,7 +114,10 @@ export function SiteHeader({
         </div>
 
         <nav className="hidden items-center gap-9 text-sm font-semibold md:flex" aria-label="Primary navigation">
-          <Link href="/leagues" className={cn("relative py-2 transition-colors hover:text-foreground", pathname.startsWith("/leagues") ? "text-foreground" : "text-muted-foreground")}>Leagues{pathname.startsWith("/leagues") ? <span className="absolute inset-x-0 -bottom-[1.58rem] h-0.5 bg-primary" /> : null}</Link>
+          {navItems.map((item) => {
+            const active = item.href === "/leagues" ? pathname.startsWith("/leagues") : item.href === "/specialists" ? pathname.startsWith("/specialists") : false;
+            return <Link key={item.href} href={item.href} className={cn("relative py-2 transition-colors hover:text-foreground", active ? "text-foreground" : "text-muted-foreground")}>{item.label}{active ? <span className="absolute inset-x-0 -bottom-[1.58rem] h-0.5 bg-primary" /> : null}</Link>;
+          })}
           <Menu.Root onOpenChange={(open) => { if (!open) setSelectedLeague(null); }}>
             <Menu.Trigger
               className={cn(
@@ -181,7 +190,7 @@ export function SiteHeader({
           <HowItWorksDialog />
         </nav>
 
-        <div className="flex items-center gap-1"><GlobalSearch />{session && notificationCenter ? <NotificationCenter initialItems={notificationCenter.items} initialPreferences={notificationCenter.preferences} /> : null}{session ? (
+        <div className="flex items-center gap-1.5"><GlobalSearch /><ThemeToggle />{session && notificationCenter ? <NotificationCenter initialItems={notificationCenter.items} initialPreferences={notificationCenter.preferences} /> : null}{session ? (
           <DropdownMenu>
             <DropdownMenuTrigger render={<Button variant="outline" size="icon" className="cursor-pointer" aria-label={`Open account menu for ${session.user.name}`} />}><Avatar className="size-8"><AvatarFallback>{initials}</AvatarFallback></Avatar></DropdownMenuTrigger>
             <DropdownMenuContent align="end" className="w-56 rounded-none p-2">
