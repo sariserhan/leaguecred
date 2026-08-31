@@ -186,7 +186,6 @@ export function SiteHeader({
               </Menu.Positioner>
             </Menu.Portal>
           </Menu.Root>
-          <Link href="/specialists" className={cn("relative py-2 transition-colors hover:text-foreground", pathname.startsWith("/specialists") ? "text-foreground" : "text-muted-foreground")}>Specialists{pathname.startsWith("/specialists") ? <span className="absolute inset-x-0 -bottom-[1.58rem] h-0.5 bg-primary" /> : null}</Link>
           <HowItWorksDialog />
         </nav>
 
