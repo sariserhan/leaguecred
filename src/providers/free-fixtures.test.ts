@@ -38,7 +38,7 @@ describe("football-data.org provider", () => {
       homeTeam: { id: 1, name: "Arsenal FC", shortName: "ARS", crest: "https://example.com/arsenal.svg" },
       awayTeam: { id: 2, name: "Galatasaray SK", shortName: "GAL", crest: "https://example.com/galatasaray.svg" },
       score: { winner: "HOME_TEAM", fullTime: { home: 2, away: 0 } },
-    });
+    }, "CL");
 
     expect(fixture).toMatchObject({
       externalId: "42",
@@ -46,5 +46,23 @@ describe("football-data.org provider", () => {
       status: "finished",
       winnerExternalId: "1",
     });
+  });
+
+  // The failure this guards: every competition's round used to read "CL"
+  // regardless of which league the match was actually in, since the label was
+  // hardcoded rather than taken from the competition being fetched.
+  it("labels the round with the competition actually being fetched, not always CL", () => {
+    const fixture = mapFootballDataMatch({
+      id: 99,
+      utcDate: "2026-09-15T19:00:00Z",
+      status: "SCHEDULED",
+      stage: "REGULAR_SEASON",
+      matchday: 3,
+      homeTeam: { id: 3, name: "Bayern Munich", shortName: "FCB", crest: null },
+      awayTeam: { id: 4, name: "Union Berlin", shortName: "FCU", crest: null },
+      score: { winner: null, fullTime: { home: null, away: null } },
+    }, "BL1");
+
+    expect(fixture.round).toBe("football-data-org:BL1:Matchday 3");
   });
 });

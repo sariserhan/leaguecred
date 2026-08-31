@@ -30,6 +30,38 @@ export function namesCouldBeOneClub(left: string, right: string) {
 }
 
 /**
+ * Whether one club's name sits inside the other's, once both are normalised —
+ * "Altach" inside "SC Rheindorf Altach", "Viborg" inside "Viborg FF".
+ *
+ * On its own this is far too eager to merge on: within a single competition it
+ * also pairs LAFC with LA Galaxy, Paris Saint-Germain with Paris FC, and
+ * Atlético Junior with Boca Juniors. It is only ever half of a test — see
+ * {@link isDuplicateOfCatalogued}.
+ */
+export function namesNest(left: string, right: string) {
+  const a = normalizeTeamName(left);
+  const b = normalizeTeamName(right);
+  if (a === b || a.length < 4 || b.length < 4) return false;
+  return a.includes(b) || b.includes(a);
+}
+
+/**
+ * The other half: a club that has never appeared in a fixture is not a club, it
+ * is a catalogue entry a provider left behind. Two rivals both play, so every
+ * pair the nesting alone got wrong — LA Galaxy, Paris FC, Boca Juniors, the
+ * second Universidad Católica — is excluded by this, while a stub sitting
+ * beside the club it doubles is not.
+ */
+export function isDuplicateOfCatalogued(
+  candidate: { name: string; fixtures: number },
+  catalogued: { name: string; fixtures: number },
+) {
+  if (candidate.fixtures > 0) return false;
+  if (catalogued.fixtures === 0) return false;
+  return namesNest(candidate.name, catalogued.name);
+}
+
+/**
  * Decides which catalogued clubs are the same club.
  *
  * Team identity is keyed on (provider, provider_external_id), so one club
@@ -89,8 +121,12 @@ export function pickCanonical<Team extends DedupeTeam>(group: Team[]) {
  * region, and claims no country to agree on.
  */
 export function isSameClub(canonical: DedupeTeam, other: DedupeTeam) {
-  if (other.regions.some((region) => canonical.regions.includes(region))) return true;
+  // Two countries both rows name settle it either way, and they are asked first
+  // because a region is too coarse to overrule them: Santos of Brazil and Santos
+  // Laguna of Mexico are both filed under the Americas, and a stray Liga MX
+  // membership on the Brazilian club was otherwise enough to merge the two.
   if (canonical.country_id && other.country_id) return canonical.country_id === other.country_id;
+  if (other.regions.some((region) => canonical.regions.includes(region))) return true;
   return other.memberships === 0 && (other.country_id === null || canonical.country_id === null);
 }
 

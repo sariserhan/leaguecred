@@ -1,7 +1,7 @@
 import { sqlClient } from "@/db";
 import { describeDatabaseTarget } from "@/lib/env";
 import { teamSlug } from "@/lib/team-path";
-import { namesCouldBeOneClub, planTeamMerges, type DedupeTeam, type TeamMerge } from "@/services/team-dedupe";
+import { isDuplicateOfCatalogued, namesCouldBeOneClub, planTeamMerges, type DedupeTeam, type TeamMerge } from "@/services/team-dedupe";
 
 /**
  * Merges clubs that were catalogued twice.
@@ -86,6 +86,44 @@ async function loadFixtureEvidence() {
   return { accepted, rejected };
 }
 
+/**
+ * Pairs where one row is a club and the other is a leftover catalogue entry for
+ * it: both listed in the same competition and season, their names nesting, and
+ * one of them never once appearing in a fixture.
+ *
+ * Reported, never merged. Nesting is not evidence of anything on its own: in one
+ * competition it also pairs Atlético Junior with Boca Juniors, Paris FC with
+ * Paris Saint-Germain and LAFC with LA Galaxy. Requiring one side to have no
+ * fixture separates those on the data we happen to hold, and no further — a real
+ * club we have simply not synced yet looks exactly like a leftover. So these go
+ * to a person, and the ones that are genuine become aliases.
+ */
+async function loadStubEvidence() {
+  const rows = await sqlClient<Array<{
+    a: string; b: string; name_a: string; name_b: string; fixtures_a: number; fixtures_b: number;
+  }>>`
+    select ta.id as a, tb.id as b, ta.name as name_a, tb.name as name_b,
+      (select count(*)::int from fixtures f where f.home_team_id = ta.id or f.away_team_id = ta.id) as fixtures_a,
+      (select count(*)::int from fixtures f where f.home_team_id = tb.id or f.away_team_id = tb.id) as fixtures_b
+    from league_team_memberships ma
+    join league_team_memberships mb
+      on mb.league_id = ma.league_id and mb.season_id = ma.season_id and mb.team_id > ma.team_id
+    join seasons s on s.id = ma.season_id and s.is_current = true
+    join leagues l on l.id = ma.league_id and l.enabled = true
+    join teams ta on ta.id = ma.team_id
+    join teams tb on tb.id = mb.team_id`;
+
+  const pairs: Array<{ nameA: string; nameB: string }> = [];
+  for (const row of rows) {
+    const left = { name: row.name_a, fixtures: row.fixtures_a };
+    const right = { name: row.name_b, fixtures: row.fixtures_b };
+    if (isDuplicateOfCatalogued(left, right) || isDuplicateOfCatalogued(right, left)) {
+      pairs.push({ nameA: row.name_a, nameB: row.name_b });
+    }
+  }
+  return pairs;
+}
+
 /** Fixtures where both sides collapse to one team would break the check
  * constraint that a club cannot play itself, so they block the merge. */
 async function selfPlayingFixtures(ids: string[]) {
@@ -168,6 +206,10 @@ async function main() {
     const evidence = await loadFixtureEvidence();
     for (const pair of evidence.rejected) {
       console.warn(`FIXTURES SUGGEST ${pair.nameA} and ${pair.nameB} are one club, but the names do not agree. Left alone.`);
+    }
+    for (const pair of await loadStubEvidence()) {
+      console.warn(`SUSPECT ${pair.nameA} and ${pair.nameB} share a competition and one has never played. ` +
+        `Check them; add an alias if they are one club.`);
     }
     const planned = planTeamMerges(await loadTeams(), evidence.accepted);
     const merges = only ? planned.merges.filter((merge) => [merge.canonical.slug, ...merge.duplicates.map((team) => team.slug)].some((slug) => only.has(slug))) : planned.merges;

@@ -6,6 +6,10 @@ None.
 
 ## Next
 
+- [ ] `pnpm teams:dedupe` reports SUSPECT pairs: a club beside an entry naming
+      the same club, in one competition, one never played. They are never merged
+      because the same shape also describes Boca Juniors beside Atlético Junior.
+      Check them and add an alias where they really are one club.
 - [ ] Rotate the Neon database password and update Vercel and .env.local
 - [ ] Run `pnpm matchweeks:merge` against production. It reports by default;
       `--apply` folds each gameweek split across providers back into one and
@@ -19,6 +23,11 @@ None.
 ## Later
 
 - [ ] Additional launch leagues with current provider mappings
+- [ ] Leagues outside football-data.org's free-tier list (Liga MX, MLS,
+      Saudi Pro League, Argentina, and the rest not in FOOTBALL_DATA_ORG_
+      COMPETITIONS) still rely on ESPN alone with football-data-uk's 12-
+      league CSV feed as backup at best. Decide whether that is acceptable
+      or a fourth source is worth it for those specifically.
 - [ ] Product/web analytics (deferred; PostHog is the marketplace pick when this is picked up)
 - [ ] Decide whether expertise is scoped to clubs as well as leagues
 - [ ] Plan the first season, when no record clears the rank threshold yet

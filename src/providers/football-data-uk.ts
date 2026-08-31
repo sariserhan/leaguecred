@@ -146,6 +146,12 @@ async function downloadSeasonResults(path: string) {
   return results;
 }
 
+/**
+ * Runs after ESPN and adds only the matches ESPN did not already record, since
+ * whoever records a match first owns it. On the dev catalog that is nothing at
+ * all; on production it is a dozen upcoming fixtures ESPN has not published, so
+ * it earns its place as a fallback rather than as a second opinion.
+ */
 export class FootballDataUkProvider implements FixtureProvider {
   readonly name = "football-data-uk";
   readonly competitions = FOOTBALL_DATA_UK_COMPETITIONS;
