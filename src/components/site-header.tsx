@@ -199,7 +199,7 @@ export function SiteHeader({
 
         <div className="flex items-center gap-1.5"><GlobalSearch /><ThemeToggle className="hidden sm:inline-flex" />{session && notificationCenter ? <NotificationCenter initialItems={notificationCenter.items} initialPreferences={notificationCenter.preferences} /> : null}{session ? (
           <DropdownMenu>
-            <DropdownMenuTrigger render={<Button variant="outline" size="icon" className="cursor-pointer" aria-label={`Open account menu for ${session.user.name}`} />}><Avatar className="size-8"><AvatarFallback>{initials}</AvatarFallback></Avatar></DropdownMenuTrigger>
+            <DropdownMenuTrigger render={<Button variant="ghost" size="icon" className="cursor-pointer rounded-full" aria-label={`Open account menu for ${session.user.name}`} />}><Avatar className="size-8"><AvatarFallback>{initials}</AvatarFallback></Avatar></DropdownMenuTrigger>
             <DropdownMenuContent align="end" className="w-56 rounded-none p-2">
               <DropdownMenuGroup>
                 <DropdownMenuLabel className="px-2 py-2">{session.user.name}</DropdownMenuLabel>
