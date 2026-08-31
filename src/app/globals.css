@@ -105,6 +105,19 @@
     background: var(--primary);
     color: var(--primary-foreground);
   }
+
+  :focus-visible {
+    outline: 3px solid var(--ring);
+    outline-offset: 3px;
+  }
+}
+
+html[data-dashboard-density="compact"] [data-dashboard-section] section {
+  margin-bottom: 1rem;
+}
+
+html[data-dashboard-density="compact"] [data-dashboard-section] :is(header, article, li) {
+  padding-block: 0.65rem;
 }
 
 @layer utilities {

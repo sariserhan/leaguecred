@@ -36,6 +36,7 @@ None.
       settled results, unread counts, and direct navigation
 - [x] Add Weekly Lock timelines, dashboard activity, milestones, record sharing, global search, grouped notifications, and comparison UI
 - [x] Add the notification inbox, season archive, matchweek calendar, activation checklist, mobile member navigation, share-card tools, and UI regression coverage
+- [x] Add command navigation, dashboard customization, performance charts, richer comparisons, calendar exports, profile presentation controls, and responsive history tools
 
 - [x] Add account settings for profile, password, league, network, and notification controls
 - [x] Add founding-season and provisional specialist discovery states

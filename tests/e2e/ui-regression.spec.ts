@@ -3,7 +3,8 @@ import { expect, test } from "playwright/test";
 test("global search and specialist comparison remain usable", async ({ page }) => {
   await page.goto("/specialists");
   await page.getByRole("button", { name: "Search LeagueCred" }).click();
-  await page.getByPlaceholder(/Try Premier/).fill("Premier");
+  await expect(page.getByText("Matchweek calendar", { exact: true })).toBeVisible();
+  await page.getByPlaceholder(/Search or choose/).fill("Premier");
   await expect(page.getByText("Premier League", { exact: true })).toBeVisible();
   await page.getByRole("button", { name: "Close" }).click();
   const compare = page.getByRole("button", { name: "Compare" });

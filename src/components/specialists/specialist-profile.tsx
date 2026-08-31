@@ -16,6 +16,8 @@ import { ProvisionalProgress } from "@/components/specialists/provisional-progre
 import { DashboardActivity } from "@/components/specialists/dashboard-activity";
 import { ProfileMilestones } from "@/components/specialists/profile-milestones";
 import { ActivationChecklist } from "@/components/specialists/activation-checklist";
+import { DashboardPreferences } from "@/components/specialists/dashboard-preferences";
+import { PerformanceTrends } from "@/components/specialists/performance-trends";
 import type { SpecialistRecommendation } from "@/data/recommendations";
 
 function ResultBadge({ result }: { result: "win" | "loss" | "void" | "pending" }) {
@@ -64,13 +66,14 @@ export function SpecialistProfile({ data, recommendations = [], hasHelpPreferenc
 
   return (
     <div className="page-shell py-8 sm:py-12">
-      {data.viewer.isSelf ? <div className="mb-7"><h1 className="font-heading text-[clamp(3.5rem,7vw,6.5rem)] leading-[0.88] font-extrabold uppercase">Your football dashboard.</h1><p className="mt-4 max-w-2xl text-lg text-muted-foreground">Your independent records, followed leagues, and recent calls in one place.</p><div className="mt-6 flex flex-col gap-3 sm:flex-row"><Link href="/leagues?intent=prove" className="inline-flex h-11 items-center justify-center bg-primary px-5 font-semibold">Make a Weekly Lock</Link><Link href="/specialists" className="inline-flex h-11 items-center justify-center bg-foreground px-5 font-semibold text-background">Find specialists</Link></div></div> : null}
+      {data.viewer.isSelf ? <div className="mb-7"><h1 className="font-heading text-[clamp(3.5rem,7vw,6.5rem)] leading-[0.88] font-extrabold uppercase">Your football dashboard.</h1><p className="mt-4 max-w-2xl text-lg text-muted-foreground">Your independent records, followed leagues, and recent calls in one place.</p><div className="mt-6 flex flex-col gap-3 sm:flex-row"><Link href="/leagues?intent=prove" className="inline-flex h-11 items-center justify-center bg-primary px-5 font-semibold">Make a Weekly Lock</Link><Link href="/specialists" className="inline-flex h-11 items-center justify-center bg-foreground px-5 font-semibold text-background">Find specialists</Link><DashboardPreferences/></div></div> : null}
       {data.viewer.isSelf ? <section className="mb-7 grid border-y md:grid-cols-3" aria-label="Dashboard priorities"><div className="border-b p-5 md:border-r md:border-b-0"><span className="text-xs font-bold uppercase text-muted-foreground">Needs attention</span><strong className="mt-2 block font-heading text-3xl text-primary">{data.viewer.locksDue} locks due</strong><Link href="/leagues?intent=prove" className="mt-2 inline-block text-sm font-semibold underline">Review leagues</Link></div><div className="border-b p-5 md:border-r md:border-b-0"><span className="text-xs font-bold uppercase text-muted-foreground">Active this week</span><strong className="mt-2 block font-heading text-3xl">Weekly Slip</strong><Link href="/slip" className="mt-2 inline-block text-sm font-semibold underline">Open active calls</Link></div><div className="p-5"><span className="text-xs font-bold uppercase text-muted-foreground">Results</span><strong className="mt-2 block font-heading text-3xl">{data.totals.wins}–{data.totals.losses}</strong><a href="#prediction-history-heading" className="mt-2 inline-block text-sm font-semibold underline">View history</a></div></section> : null}
       {data.viewer.isSelf ? <ActivationChecklist data={data} hasPreferences={hasLeaguePreferences} /> : null}
-      {data.viewer.isSelf ? <ProvisionalProgress leagues={data.leagues} /> : null}
-      {data.viewer.isSelf ? <DashboardActivity data={data} /> : null}
-      {data.viewer.isSelf ? <ProfileMilestones data={data} /> : null}
-      {data.viewer.isSelf ? <Recommendations recommendations={recommendations} hasHelpPreferences={hasHelpPreferences} /> : null}
+      {data.viewer.isSelf ? <div data-dashboard-section="progress"><ProvisionalProgress leagues={data.leagues} /></div> : null}
+      {data.viewer.isSelf ? <div data-dashboard-section="activity"><DashboardActivity data={data} /></div> : null}
+      {data.viewer.isSelf ? <div data-dashboard-section="milestones"><ProfileMilestones data={data} /></div> : null}
+      {data.viewer.isSelf ? <div data-dashboard-section="recommendations"><Recommendations recommendations={recommendations} hasHelpPreferences={hasHelpPreferences} /></div> : null}
+      <PerformanceTrends data={data}/>
       <header className="border-b border-foreground bg-foreground px-5 py-8 text-background sm:px-8 sm:py-10">
         <p className="font-semibold text-primary">{data.viewer.isSelf ? "Your LeagueCred identity" : data.leagues.some((league) => league.followable) ? "Public specialist profile" : "Public profile"}</p>
         <div className="mt-4 flex flex-wrap items-center gap-5"><span className="flex size-20 items-center justify-center rounded-full bg-background font-heading text-3xl font-bold text-foreground">{data.specialist.initials}</span><div className="min-w-0 flex-1"><h1 className="font-heading text-5xl leading-none font-extrabold uppercase sm:text-7xl">{data.specialist.name}</h1><p className="mt-2 flex items-center gap-2 text-background/75"><UsersRoundIcon aria-hidden="true" className="size-4 text-primary" />{data.specialist.followers} follower{data.specialist.followers === 1 ? "" : "s"} · Member since {new Intl.DateTimeFormat("en", { month: "long", year: "numeric", timeZone: "UTC" }).format(new Date(data.specialist.memberSince))}</p></div><Button onClick={shareProfile}><Share2Icon data-icon="inline-start" />Share profile</Button></div>
