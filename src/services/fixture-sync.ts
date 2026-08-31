@@ -28,6 +28,9 @@ export async function synchronizeFixtures(provider: FixtureProvider, now = new D
   if (!run) throw new Error("Could not start fixture sync run.");
 
   let requestCount = 0;
+  let created = 0;
+  let updated = 0;
+  let frozenSkipped = 0;
   try {
     const availableConfigs = await sqlClient<Omit<LeagueConfig, "source_external_id">[]>`
       select l.id, l.slug, l.name, l.provider, l.provider_external_id, l.country_id, l.region,
@@ -72,24 +75,35 @@ export async function synchronizeFixtures(provider: FixtureProvider, now = new D
         fixture.status !== "scheduled" || fixture.round === nextFixture?.round,
       );
       const rounds = Map.groupBy(relevantFixtures, (fixture) => fixture.round);
-      for (const [round, fixtures] of rounds) await synchronizeRound(provider.name, config, round, fixtures);
+      for (const [round, fixtures] of rounds) {
+        const counts = await synchronizeRound(provider.name, config, round, fixtures);
+        created += counts.created;
+        updated += counts.updated;
+        frozenSkipped += counts.frozenSkipped;
+      }
     }
 
     await sqlClient`update api_sync_runs set status = 'succeeded', request_count = ${requestCount}, finished_at = now() where id = ${run.id}`;
-    return { requestCount };
+    return { requestCount, leagues: configs.length, created, updated, frozenSkipped };
   } catch (error) {
     await sqlClient`update api_sync_runs set status = 'failed', request_count = ${requestCount}, finished_at = now(), error = ${String(error)} where id = ${run.id}`;
     throw error;
   }
 }
 
-async function synchronizeRound(providerName: string, config: LeagueConfig, round: string, incoming: ProviderFixture[]) {
-  if (incoming.length === 0) return;
+type RoundCounts = { created: number; updated: number; frozenSkipped: number };
+
+const NO_CHANGES: RoundCounts = { created: 0, updated: 0, frozenSkipped: 0 };
+
+async function synchronizeRound(providerName: string, config: LeagueConfig, round: string, incoming: ProviderFixture[]): Promise<RoundCounts> {
+  if (incoming.length === 0) return NO_CHANGES;
   const ordered = incoming.toSorted((a, b) => Date.parse(a.kickoffAt) - Date.parse(b.kickoffAt));
   const startAt = ordered[0].kickoffAt;
   const endAt = new Date(Date.parse(ordered.at(-1)!.kickoffAt) + 3 * 60 * 60 * 1000).toISOString();
 
-  await sqlClient.begin(async (sql) => {
+  return sqlClient.begin(async (sql): Promise<RoundCounts> => {
+    let created = 0;
+    let updated = 0;
     const newFixtures: ProviderFixture[] = [];
     for (const fixture of ordered) {
       const [existing] = await sql<Array<{
@@ -124,8 +138,9 @@ async function synchronizeRound(providerName: string, config: LeagueConfig, roun
         status = ${fixture.status}, home_score = ${fixture.homeScore}, away_score = ${fixture.awayScore},
         winner_team_id = ${winnerId}, last_synced_at = now(), updated_at = now()
         where id = ${existing.id}`;
+      updated += 1;
     }
-    if (newFixtures.length === 0) return;
+    if (newFixtures.length === 0) return { created, updated, frozenSkipped: 0 };
 
     // A fixture is keyed by (provider, provider_external_id), so the lookup
     // above only finds this provider's own rows. Several providers cover most
@@ -146,7 +161,7 @@ async function synchronizeRound(providerName: string, config: LeagueConfig, roun
         limit 1`;
       if (!alreadyRecorded) creatable.push({ fixture, homeId, awayId });
     }
-    if (creatable.length === 0) return;
+    if (creatable.length === 0) return { created, updated, frozenSkipped: 0 };
 
     let [matchweek] = await sql<Array<{ id: string; status: string; has_participation: boolean }>>`
       select mw.id, mw.status, exists(select 1 from matchweek_participation mp where mp.matchweek_id = mw.id) as has_participation
@@ -194,7 +209,11 @@ async function synchronizeRound(providerName: string, config: LeagueConfig, roun
     }
     if (!matchweek) throw new Error("Could not upsert matchweek.");
     const frozen = matchweek.status !== "upcoming" || matchweek.has_participation;
-    if (frozen) return;
+    // Counted rather than passed over in silence. A fixture dropped here never
+    // reaches the database at all, so no later job can put it right and no
+    // result for it will ever appear - which looks from the outside like a
+    // provider that forgot a match. See the frozenSkipped total on the way out.
+    if (frozen) return { created, updated, frozenSkipped: creatable.length };
     // Widen to cover this round as well: a week another provider opened must not
     // be narrowed to whatever slice this one happens to carry. The lock stays on
     // the earliest kickoff in the week.
@@ -210,7 +229,10 @@ async function synchronizeRound(providerName: string, config: LeagueConfig, roun
       await sql`insert into fixtures (provider, provider_external_id, league_id, season_id, matchweek_id, home_team_id, away_team_id, kickoff_at, status, home_score, away_score, winner_team_id, last_synced_at)
         values (${providerName}, ${fixture.externalId}, ${config.id}, ${config.season_id}, ${matchweek.id}, ${homeId}, ${awayId}, ${fixture.kickoffAt}, ${fixture.status}, ${fixture.homeScore}, ${fixture.awayScore}, ${winnerId}, now())
         on conflict (provider, provider_external_id) do nothing`;
+      created += 1;
     }
+
+    return { created, updated, frozenSkipped: 0 };
   });
 }
 

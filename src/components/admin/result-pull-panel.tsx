@@ -2,16 +2,15 @@
 
 import { useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
-import { RefreshCwIcon, TriangleAlertIcon } from "lucide-react";
+import { RefreshCwIcon } from "lucide-react";
 
 import { pullMatchResults } from "@/app/admin/actions";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { RunLog, useRunLog } from "@/components/admin/run-log";
 import { Spinner } from "@/components/ui/spinner";
 import { toast } from "@/components/ui/toast";
 import type { LeagueNavOption } from "@/data/teams";
-
-type PullEntry = { id: string; at: string; label: string; line: string; failed: boolean };
 
 /**
  * The same pull the hourly cron makes, on demand. Distinct from Refresh league
@@ -26,14 +25,7 @@ export function ResultPullPanel({ leagues }: { leagues: LeagueNavOption[] }) {
   const router = useRouter();
   const [pending, startTransition] = useTransition();
   const [pendingSlug, setPendingSlug] = useState<string | null>(null);
-  const [log, setLog] = useState<PullEntry[]>([]);
-
-  function record(label: string, line: string, failed: boolean) {
-    setLog((current) => [
-      { id: crypto.randomUUID(), at: new Date().toLocaleTimeString(), label, line, failed },
-      ...current,
-    ].slice(0, 12));
-  }
+  const { entries, record } = useRunLog();
 
   function pull(slug: string | null, label: string) {
     setPendingSlug(slug ?? "all");
@@ -95,29 +87,10 @@ export function ResultPullPanel({ leagues }: { leagues: LeagueNavOption[] }) {
           ))}
         </div>
 
-        <section aria-label="Pull log" className="border">
-          <h3 className="border-b bg-muted px-4 py-2 text-xs font-bold tracking-[0.08em] uppercase">
-            This session
-          </h3>
-          {log.length === 0 ? (
-            <p className="px-4 py-5 text-sm text-muted-foreground">
-              Nothing pulled yet in this session. Every press is listed here with what it found.
-            </p>
-          ) : (
-            <ul className="divide-y" role="status">
-              {log.map((entry) => (
-                <li key={entry.id} className="grid gap-1 px-4 py-3 sm:grid-cols-[auto_auto_1fr] sm:items-baseline sm:gap-3">
-                  <time className="text-xs text-muted-foreground">{entry.at}</time>
-                  <strong className="text-sm">{entry.label}</strong>
-                  <span className={entry.failed ? "flex items-start gap-2 text-sm text-destructive" : "text-sm text-muted-foreground"}>
-                    {entry.failed ? <TriangleAlertIcon aria-hidden="true" className="mt-0.5 size-4 shrink-0" /> : null}
-                    {entry.line}
-                  </span>
-                </li>
-              ))}
-            </ul>
-          )}
-        </section>
+        <RunLog
+          entries={entries}
+          emptyHint="Nothing pulled yet in this session. Every press is listed here with what it found."
+        />
       </CardContent>
     </Card>
   );

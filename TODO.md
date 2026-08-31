@@ -16,7 +16,16 @@ None.
 
 ## Blocked
 
-None.
+- [ ] Decide what a fixture should do when its round lands on a matchweek that
+      is already locked or played. Today `synchronizeRound` drops it: it is
+      never written, so no later job can recover it and no result for it can
+      appear — a Süper Lig match played on Monday 2026-08-31 (Beşiktaş 6–2
+      Çorum FK) is missing from the site for what looks like this reason. The
+      count is now reported (`frozenSkipped`), so pressing Refresh on the league
+      says so out loud, but the drop itself still stands. Adding it to a locked
+      or settled week is safe — nobody can lock into a closed week — while
+      adding it to an open week somebody has already locked in is the case the
+      freeze exists for.
 
 ## Later
 

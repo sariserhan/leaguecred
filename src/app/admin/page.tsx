@@ -17,13 +17,13 @@ import { AdminManagementPanels } from "@/components/admin/management-panels";
 import { CatalogHealthPanel } from "@/components/admin/catalog-health-panel";
 import { ResultPullPanel } from "@/components/admin/result-pull-panel";
 import { AdminTabs } from "@/components/admin/admin-tabs";
+import { LeagueRefreshPanel } from "@/components/admin/league-refresh-panel";
 import { MemberSeedingPanel } from "@/components/admin/member-seeding-panel";
 import { DistributionAnalyticsPanel } from "@/components/admin/distribution-analytics";
 import { buttonVariants } from "@/components/ui/button";
 import { requireAdmin } from "@/lib/admin";
 import { getSharedIpAccounts, getSuspiciousFollows } from "@/services/abuse-signals";
 import { getAdminAuditLog } from "@/services/admin-audit-log";
-import { refreshLeagueFixtures } from "@/app/admin/actions";
 import { getLeagueNavOptions } from "@/data/teams";
 import {
   getOperationalSummary,
@@ -129,7 +129,7 @@ export default async function AdminPage() {
             content: (
               <>
                 <ResultPullPanel leagues={leagues} />
-                <section className="border p-5 sm:p-6"><h2 className="font-heading text-2xl font-bold uppercase">Refresh league data</h2><p className="mt-1 text-sm text-muted-foreground">Rebuild one league&rsquo;s fixtures and standings from the provider. Heavier than a result pull, and the only thing here that can add a fixture.</p><div className="mt-5 grid gap-2 sm:grid-cols-2 lg:grid-cols-3">{leagues.map((league) => <form key={league.slug} action={refreshLeagueFixtures.bind(null, league.slug)}><button type="submit" className="flex w-full items-center justify-between border px-4 py-3 text-left text-sm font-semibold transition-colors hover:bg-muted"><span>{league.name}</span><span className="text-xs text-muted-foreground">Refresh</span></button></form>)}</div></section>
+                <LeagueRefreshPanel leagues={leagues} />
                 <CatalogHealthPanel health={catalogHealth} />
               </>
             ),

@@ -177,4 +177,45 @@ describe("synchronizeFixtures matchweek keying", () => {
 
     expect(matchweeks).toHaveLength(2);
   });
+  // The failure this guards: a fixture whose round belongs to a matchweek that
+  // is already locked or played was dropped in silence. It is never written, so
+  // no later job can recover it and no result for it can ever appear - the
+  // league simply looks as though the provider forgot the match. Counting it is
+  // what makes that visible in the admin panel and the logs.
+  it("counts the fixtures it could not add to a frozen matchweek", async () => {
+    const suffix = crypto.randomUUID();
+    const provider = `test-frozen-${suffix}`;
+    const round = `${provider}:Round ${suffix}`;
+    const kickoffA = new Date(Date.now() + daysFromNow(1800, suffix) * 24 * 3_600_000).toISOString();
+    const kickoffB = new Date(Date.parse(kickoffA) + 2 * 3_600_000).toISOString();
+
+    const first = fixture({
+      externalId: `test-frozen-a-${suffix}`,
+      round,
+      kickoffAt: kickoffA,
+      home: team(`home-fa-${suffix}`, `Home FA ${suffix}`),
+      away: team(`away-fa-${suffix}`, `Away FA ${suffix}`),
+    });
+    const late = fixture({
+      externalId: `test-frozen-b-${suffix}`,
+      round,
+      kickoffAt: kickoffB,
+      home: team(`home-fb-${suffix}`, `Home FB ${suffix}`),
+      away: team(`away-fb-${suffix}`, `Away FB ${suffix}`),
+    });
+
+    const opened = await synchronizeFixtures(fakeProvider(provider, { requestCount: 1, fixtures: [first] }));
+    expect(opened).toMatchObject({ created: 1, frozenSkipped: 0 });
+
+    await sqlClient`
+      update matchweeks set status = 'locked' where id = (
+        select matchweek_id from fixtures where provider_external_id = ${`test-frozen-a-${suffix}`})`;
+
+    const blocked = await synchronizeFixtures(fakeProvider(provider, { requestCount: 1, fixtures: [first, late] }));
+
+    expect(blocked).toMatchObject({ created: 0, frozenSkipped: 1 });
+    const [stored] = await sqlClient<Array<{ id: string }>>`
+      select id from fixtures where provider_external_id = ${`test-frozen-b-${suffix}`}`;
+    expect(stored).toBeUndefined();
+  });
 });

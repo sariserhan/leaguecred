@@ -1,0 +1,83 @@
+"use client";
+
+import { useState, useTransition } from "react";
+import { useRouter } from "next/navigation";
+import { DownloadIcon } from "lucide-react";
+
+import { refreshLeagueFixtures } from "@/app/admin/actions";
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { RunLog, useRunLog } from "@/components/admin/run-log";
+import { toast } from "@/components/ui/toast";
+import type { LeagueNavOption } from "@/data/teams";
+
+/**
+ * The heavier of the two: this rebuilds a league's schedule from the provider
+ * and is the only control here that can add a fixture. Match results only
+ * writes scores onto fixtures this has already created.
+ */
+export function LeagueRefreshPanel({ leagues }: { leagues: LeagueNavOption[] }) {
+  const router = useRouter();
+  const [pending, startTransition] = useTransition();
+  const [pendingSlug, setPendingSlug] = useState<string | null>(null);
+  const { entries, record } = useRunLog();
+
+  function refresh(slug: string, label: string) {
+    setPendingSlug(slug);
+    startTransition(async () => {
+      const result = await refreshLeagueFixtures(slug);
+
+      if (!result.ok) {
+        record(label, result.message, true);
+        toast.add({ title: "League not refreshed", description: result.message, type: "error" });
+      } else {
+        const line = `${result.requests} request${result.requests === 1 ? "" : "s"} · ${result.created} fixture${result.created === 1 ? "" : "s"} added · ${result.updated} updated`
+          // The number worth reading. A skipped fixture is never written at all,
+          // so nothing downstream can recover it and no result for it can appear.
+          + (result.frozenSkipped > 0 ? ` · ${result.frozenSkipped} not added: their matchweek is locked or already played` : "");
+        record(label, line, result.frozenSkipped > 0);
+        toast.add({ title: `${label} refreshed`, description: line, type: result.frozenSkipped > 0 ? "error" : "success" });
+        if (result.created > 0 || result.updated > 0) router.refresh();
+      }
+
+      setPendingSlug(null);
+    });
+  }
+
+  return (
+    <Card className="rounded-sm">
+      <CardHeader>
+        <CardTitle className="flex items-center gap-2 font-heading text-2xl font-bold uppercase">
+          <DownloadIcon aria-hidden="true" className="size-5" />
+          Refresh league data
+        </CardTitle>
+        <CardDescription>
+          Rebuild one league&rsquo;s fixtures and standings from the provider. Heavier than a result
+          pull, and the only control here that can add a fixture. Every run is also recorded under
+          Fixture sync runs in Diagnostics.
+        </CardDescription>
+      </CardHeader>
+      <CardContent className="grid gap-5 border-t pt-6">
+        <div className="grid gap-2 sm:grid-cols-2 lg:grid-cols-3">
+          {leagues.map((league) => (
+            <button
+              key={league.slug}
+              type="button"
+              onClick={() => refresh(league.slug, league.name)}
+              disabled={pending}
+              className="flex w-full items-center justify-between border px-4 py-3 text-left text-sm font-semibold transition-colors hover:bg-muted disabled:opacity-60"
+            >
+              <span>{league.name}</span>
+              <span className="text-xs text-muted-foreground">
+                {pendingSlug === league.slug ? "Refreshing…" : "Refresh"}
+              </span>
+            </button>
+          ))}
+        </div>
+        <RunLog
+          entries={entries}
+          emptyHint="Nothing refreshed yet in this session. Every press is listed here with what it changed."
+        />
+      </CardContent>
+    </Card>
+  );
+}

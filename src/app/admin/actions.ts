@@ -77,19 +77,38 @@ export async function saveSiteSettings(
   return { ok: true };
 }
 
-export async function refreshLeagueFixtures(leagueSlug: string): Promise<void> {
+export type LeagueRefreshResult =
+  | { ok: true; requests: number; created: number; updated: number; frozenSkipped: number }
+  | { ok: false; message: string };
+
+/**
+ * Rebuild one league's schedule from the provider: create fixtures it does not
+ * have, update the ones it does, and refresh the standings table beside them.
+ *
+ * It reports what it did, frozen skips included. A fixture whose round lands on
+ * a matchweek that is already locked or played is not written at all, and
+ * without that number on screen the league simply looks as though the provider
+ * never had the match.
+ */
+export async function refreshLeagueFixtures(leagueSlug: string): Promise<LeagueRefreshResult> {
   const viewer = await requireAdmin();
   // This one calls a provider, so the limit is as much about their rate as ours.
-  // The action returns nothing either way, so a refusal is simply no refresh.
-  if (!await withinUserRateLimit("refreshLeagueFixtures", viewer.id)) return;
-  const parsed = z.string().min(1).max(120).regex(/^[a-z0-9-]+/).safeParse(leagueSlug);
-  if (!parsed.success) return;
+  if (!await withinUserRateLimit("refreshLeagueFixtures", viewer.id)) {
+    return { ok: false, message: "That is a lot of refreshes in a minute. Wait a moment and try again." };
+  }
+  const parsed = z.string().min(1).max(120).regex(/^[a-z0-9-]+$/).safeParse(leagueSlug);
+  if (!parsed.success) return { ok: false, message: "That league is not valid." };
+
+  let result: Awaited<ReturnType<typeof synchronizeFixtures>>;
   try {
-    await synchronizeFixtures(new EspnFixtureProvider(), new Date(), parsed.data);
+    result = await synchronizeFixtures(new EspnFixtureProvider(), new Date(), parsed.data);
   } catch (error) {
     console.error("Failed to refresh league fixtures.", error);
-    return;
+    return { ok: false, message: "The league could not be refreshed. Please try again." };
   }
+
+  console.info("Admin refreshed league fixtures.", { admin: viewer.id, league: parsed.data, ...result });
+
   // The table is fetched from ESPN and cached against its own tag, so the page
   // revalidation below does not reach it. Without this a refresh updates the
   // fixtures immediately and leaves the standings as they were. updateTag
@@ -101,6 +120,14 @@ export async function refreshLeagueFixtures(leagueSlug: string): Promise<void> {
   revalidatePath(`/leagues/${parsed.data}`, "page");
   revalidatePath(`/leagues/${parsed.data}/standings`, "page");
   revalidatePath("/", "layout");
+
+  return {
+    ok: true,
+    requests: result.requestCount,
+    created: result.created,
+    updated: result.updated,
+    frozenSkipped: result.frozenSkipped,
+  };
 }
 
 export type ResultPullResult =
