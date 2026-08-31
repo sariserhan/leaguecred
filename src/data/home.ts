@@ -60,7 +60,7 @@ export async function getHomeData(): Promise<HomeData> {
         order by f.kickoff_at asc limit 1
       ) fixture on true
       where l.enabled = true
-      order by l.priority desc, l.name asc limit 10
+      order by l.priority desc, l.name asc
     `,
     sqlClient<Array<{ user_id: string; name: string; league: string; league_slug: string; wins: number; settled_picks: number; current_win_streak: number }>>`
       select r.user_id, u.name, l.name as league, l.slug as league_slug,

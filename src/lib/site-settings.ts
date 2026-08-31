@@ -2,6 +2,7 @@ import type { BannerTone } from "@/db/schema";
 
 export const LEAGUE_LEADERBOARD_FLAG = "league_leaderboard";
 export const LEAGUE_TEAM_CATALOG_FLAG = "league_team_catalog";
+export const HOMEPAGE_ACTIVITY_FLAG = "homepage_activity";
 
 export const BANNER_MESSAGE_MAX_LENGTH = 280;
 /** The standard bar, and what a season settles back to once one has run. */
@@ -22,6 +23,13 @@ export type FeatureFlagDefinition = {
  * worse than no flag at all, so adding an entry means wiring it at the same time.
  */
 export const featureFlagDefinitions: readonly FeatureFlagDefinition[] = [
+  {
+    key: HOMEPAGE_ACTIVITY_FLAG,
+    label: "Homepage weekly activity",
+    description:
+      "Shows the This week on LeagueCred activity and community totals strip on the homepage.",
+    defaultEnabled: false,
+  },
   {
     key: LEAGUE_LEADERBOARD_FLAG,
     label: "League leaderboards",

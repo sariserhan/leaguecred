@@ -118,6 +118,18 @@
 
 @keyframes route-enter { from { opacity: 0; transform: translateY(4px); } to { opacity: 1; transform: none; } }
 
+@keyframes league-marquee {
+  to { transform: translateX(calc(-50% - 0.375rem)); }
+}
+
+.league-marquee-track {
+  animation: league-marquee 55s linear infinite;
+}
+
+.league-marquee:is(:hover, :focus-within) .league-marquee-track {
+  animation-play-state: paused;
+}
+
 html[data-dashboard-density="compact"] [data-dashboard-section] section {
   margin-bottom: 1rem;
 }
@@ -173,5 +185,13 @@ html[data-dashboard-density="compact"] [data-dashboard-section] :is(header, arti
     transition-duration: 0.01ms !important;
     animation-duration: 0.01ms !important;
     animation-iteration-count: 1 !important;
+  }
+
+  .league-marquee {
+    overflow-x: auto;
+  }
+
+  .league-marquee-track {
+    animation: none;
   }
 }
