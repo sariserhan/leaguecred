@@ -13,8 +13,13 @@ import { cn } from "@/lib/utils";
  * background it was designed against, which is what a printed programme or a
  * television graphic does for the same reason.
  *
- * It is deliberately the same tile in both themes. In light mode it is close
- * enough to the page to disappear; in dark mode it is the thing doing the work.
+ * The tile is dark-mode only. On a light page a dark crest is already legible,
+ * so a white square there is just a patch of paper — visible now that the page
+ * itself is a shade off white. The padding stays in both themes so a crest is
+ * the same size whichever one you are in.
+ *
+ * This does not rescue a crest drawn in white, which has nowhere to show on a
+ * white tile either. If any turn up they need a dark tile, not this one.
  */
 export function Crest({
   src,
@@ -38,7 +43,7 @@ export function Crest({
 
   return (
     <span
-      className={cn("flex shrink-0 items-center justify-center overflow-hidden bg-white", className)}
+      className={cn("flex shrink-0 items-center justify-center overflow-hidden dark:bg-white", className)}
       style={{ width: size, height: size, padding }}
     >
       {src ? (
