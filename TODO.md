@@ -12,6 +12,9 @@ None.
 - [ ] Set the founding-season rank threshold in the admin panel. It ships at the
       standard 10, which nobody can reach for 10 gameweeks; 4 opens Follow after
       about a month. Raise it back once a cohort has cleared it.
+- [ ] Dynamic OG images. The SEO pass added openGraph metadata in six places but
+      no opengraph-image route and no share image, so a shared link carries no
+      picture at all. A specialist's record is the one thing here worth sharing.
 - [ ] Rotate the Neon database password and update Vercel and .env.local
 - [ ] Design a real brand mark. `icon.tsx`/`apple-icon.tsx` currently generate
       an "LC" monogram from the theme colors as a placeholder - swap in a

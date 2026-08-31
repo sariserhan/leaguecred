@@ -6,6 +6,7 @@ import { z } from "zod";
 import { sqlClient } from "@/db";
 import { getSession } from "@/lib/auth-session";
 import { getRankThreshold } from "@/services/site-settings";
+import { withinUserRateLimit } from "@/services/rate-limit";
 
 export type LeagueActionResult = { ok: true } | { ok: false; message: string };
 
@@ -36,6 +37,9 @@ export async function submitWeeklyLock(fixtureId: string, selectedTeamId: string
 
   const userId = await authenticatedUserId();
   if (!userId) return { ok: false, message: "Sign in before submitting a Weekly Lock." };
+  if (!await withinUserRateLimit("submitWeeklyLock", userId)) {
+    return { ok: false, message: "That is a lot of requests at once. Wait a moment and try again." };
+  }
 
   try {
     const slug = await sqlClient.begin(async (sql) => {
@@ -139,6 +143,9 @@ export async function followSpecialist(specialistUserId: string, leagueId: strin
   const userId = await authenticatedUserId();
   if (!userId) return { ok: false, message: "Sign in before following a specialist." };
   if (userId === parsed.data.specialistUserId) return { ok: false, message: "You cannot follow your own record." };
+  if (!await withinUserRateLimit("followSpecialist", userId)) {
+    return { ok: false, message: "That is a lot of requests at once. Wait a moment and try again." };
+  }
 
   const rankThreshold = await getRankThreshold();
   try {

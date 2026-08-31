@@ -10,6 +10,8 @@
  * feed uses, so rows map onto our clubs by id rather than by name.
  */
 
+import { assertUnderstood } from "@/providers/upstream-shape";
+
 const STANDINGS_ENDPOINT = "https://site.api.espn.com/apis/v2/sports/soccer";
 
 type EspnStat = { name?: string; value?: number };
@@ -87,5 +89,14 @@ export async function fetchEspnStandings(input: {
   const url = `${STANDINGS_ENDPOINT}/${input.leagueExternalId}/standings?season=${input.season}`;
   const response = await fetch(url, { next: { revalidate: input.revalidate ?? 300 } });
   if (!response.ok) throw new Error(`ESPN standings responded ${response.status}.`);
-  return parseEspnStandings((await response.json()) as EspnStandingsResponse);
+
+  const payload = (await response.json()) as EspnStandingsResponse;
+  const rows = parseEspnStandings(payload);
+  // A table ESPN does not carry comes back with no entries at all, which is a
+  // different thing from entries it sent that we could not read.
+  const entries = payload.children?.length
+    ? payload.children.reduce((total, child) => total + (child.standings?.entries?.length ?? 0), 0)
+    : payload.standings?.entries?.length ?? 0;
+  assertUnderstood(`ESPN standings for ${input.leagueExternalId}`, entries, rows.length);
+  return rows;
 }
