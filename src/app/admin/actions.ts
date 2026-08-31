@@ -22,6 +22,8 @@ import {
 } from "@/services/member-seeding";
 import { setFeatureFlag, updateSiteSettings } from "@/services/site-settings";
 import { synchronizeFixtures } from "@/services/fixture-sync";
+import { synchronizeMatchResults } from "@/services/result-sync";
+import { settlePendingPicks } from "@/services/settlement";
 import { ESPN_FIXTURE_COMPETITIONS, EspnFixtureProvider } from "@/providers/espn-fixtures";
 import { espnStandingsTag } from "@/providers/espn-standings";
 import { withinUserRateLimit } from "@/services/rate-limit";
@@ -99,6 +101,53 @@ export async function refreshLeagueFixtures(leagueSlug: string): Promise<void> {
   revalidatePath(`/leagues/${parsed.data}`, "page");
   revalidatePath(`/leagues/${parsed.data}/standings`, "page");
   revalidatePath("/", "layout");
+}
+
+export type ResultPullResult =
+  | { ok: true; leagues: number; requests: number; updated: number; finished: number; settled: number; faults: string[] }
+  | { ok: false; message: string };
+
+/**
+ * The hourly results job, run by hand. Same pair as the cron - pull the scores
+ * for fixtures already waiting on one, then settle the picks they decide - so
+ * an admin never has to wait for the next hour to see a finished match land.
+ *
+ * Left without a league, it covers every league that played; named one, it asks
+ * about that league alone. Either way it asks only about matches already on the
+ * schedule, so it cannot be used to build one.
+ */
+export async function pullMatchResults(leagueSlug?: string | null): Promise<ResultPullResult> {
+  const viewer = await requireAdmin();
+  if (!await withinUserRateLimit("pullMatchResults", viewer.id)) {
+    return { ok: false, message: "That is a lot of pulls in a minute. Wait a moment and try again." };
+  }
+
+  const parsed = z.string().min(1).max(120).regex(/^[a-z0-9-]+$/).nullish().safeParse(leagueSlug ?? null);
+  if (!parsed.success) return { ok: false, message: "That league is not valid." };
+
+  try {
+    const results = await synchronizeMatchResults(new EspnFixtureProvider(), new Date(), parsed.data ?? undefined);
+    const settlement = await settlePendingPicks();
+
+    if (parsed.data) {
+      revalidatePath(`/leagues/${parsed.data}`, "page");
+    }
+    revalidatePath("/live-locks", "page");
+    revalidatePath("/", "layout");
+
+    return {
+      ok: true,
+      leagues: results.leagues,
+      requests: results.requestCount,
+      updated: results.updated,
+      finished: results.finished,
+      settled: settlement.settled,
+      faults: results.faults,
+    };
+  } catch (error) {
+    console.error("Failed to pull match results.", error);
+    return { ok: false, message: "The results could not be pulled. Please try again." };
+  }
 }
 
 export async function toggleFeatureFlag(

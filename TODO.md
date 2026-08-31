@@ -44,6 +44,8 @@ None.
 
 ## Completed
 
+- [x] Pull results on demand from the admin panel, for one league or all of
+      them, with the outcome reported rather than left silent.
 - [x] Pull match results hourly without re-syncing the schedule. `/api/jobs/results`
       reads the fixtures already waiting on a result, asks only the leagues that
       played and only for those days, updates scores in place, and settles the

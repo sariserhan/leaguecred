@@ -97,6 +97,27 @@ describe("synchronizeMatchResults", () => {
     expect(await storedFixture(provider, externalId)).toMatchObject({ status: "finished" });
   });
 
+  it("leaves other leagues alone when one league is named", async () => {
+    const suffix = crypto.randomUUID();
+    const provider = `test-results-scoped-${suffix}`;
+    const externalId = `test-scoped-${suffix}`;
+    const kickoffAt = kickoffFor(1700, suffix);
+    const match = scheduled(externalId, `${provider}:Round ${suffix}`, kickoffAt);
+
+    await synchronizeFixtures(fakeProvider(provider, async () => ({ requestCount: 1, fixtures: [match] })));
+
+    const fetchFixtures = vi.fn();
+    const result = await synchronizeMatchResults(
+      fakeProvider(provider, fetchFixtures),
+      new Date(Date.parse(kickoffAt) + 3 * 3_600_000),
+      "premier-league",
+    );
+
+    expect(fetchFixtures).not.toHaveBeenCalled();
+    expect(result).toMatchObject({ leagues: 0, updated: 0 });
+    expect(await storedFixture(provider, externalId)).toMatchObject({ status: "scheduled" });
+  });
+
   it("asks the provider for nothing when no fixture is waiting on a result", async () => {
     const fetchFixtures = vi.fn();
     const result = await synchronizeMatchResults(

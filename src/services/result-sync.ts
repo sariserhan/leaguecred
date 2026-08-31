@@ -43,6 +43,7 @@ function isoDate(date: Date) { return date.toISOString().slice(0, 10); }
 export async function synchronizeMatchResults(
   provider: FixtureProvider = new EspnFixtureProvider(),
   now = new Date(),
+  leagueSlug?: string,
 ) {
   const since = new Date(now.getTime() - LOOKBACK_DAYS * 24 * 60 * 60 * 1000);
   const pending = await sqlClient<PendingFixture[]>`
@@ -55,6 +56,7 @@ export async function synchronizeMatchResults(
       and f.status in ('scheduled', 'live')
       and f.kickoff_at <= ${now.toISOString()}::timestamptz
       and f.kickoff_at >= ${since.toISOString()}::timestamptz
+      ${leagueSlug ? sqlClient`and l.slug = ${leagueSlug}` : sqlClient``}
     order by f.kickoff_at`;
 
   if (pending.length === 0) {

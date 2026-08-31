@@ -24,6 +24,9 @@ export const RATE_LIMITS = {
   /** Calls an upstream provider, so this one is about their rate limit as much
    * as ours. Admin-only, and no admin refreshes a league twice a minute. */
   refreshLeagueFixtures: { limit: 5, windowSeconds: 60 },
+  /** The narrow results pull. Cheaper upstream than a full refresh - often no
+   * request at all - so an admin watching a match in play can press it again. */
+  pullMatchResults: { limit: 20, windowSeconds: 60 },
   /** No account required, so the actor is a cookie, not a user - generous
    * enough for someone genuinely changing their mind on several fixtures. */
   castFixtureVote: { limit: 30, windowSeconds: 60 },
