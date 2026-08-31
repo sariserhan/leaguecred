@@ -6,10 +6,9 @@ None.
 
 ## Next
 
-- [ ] Matchweeks are identified by each provider's own round name, so one real
-      gameweek can exist twice with overlapping dates (12 leagues do). A Weekly
-      Lock is per matchweek, so a player could lock twice in one real week. Key
-      a matchweek by league, season and date window instead of round name.
+- [ ] Three clubs the fixtures say are one but the names do not: Stade Rennais
+      and Rennes, Athletic Club and Athletic Bilbao, Deportivo and Deportivo de
+      A Coruña. `pnpm teams:dedupe` reports them and leaves them alone.
 - [ ] Look at the two clubs the dedupe leaves for review on production: Slavia
       Prague is split across `slavia-prague` (no league) and `sk-slavia-praha`,
       which look like one club but share no evidence the job will act on.
@@ -68,4 +67,5 @@ None.
 - [x] Add an audit trail for admin setting and flag changes
 - [x] Reconcile the two branches' migrations so both reach production in order
 - [x] Merge the clubs catalogued twice, on dev and production
+- [x] Count each match once in the standings, and each gameweek as one matchweek
 - [x] Refuse to run migrations that the database can no longer reach

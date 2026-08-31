@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 
-import { pickCanonical, planTeamMerges, type DedupeTeam } from "@/services/team-dedupe";
+import { namesCouldBeOneClub, pickCanonical, planTeamMerges, type DedupeTeam } from "@/services/team-dedupe";
 
 const SPAIN = "country-spain";
 const TURKIYE = "country-turkiye";
@@ -128,5 +128,61 @@ describe("pickCanonical", () => {
     ]);
 
     expect(chosen.id).toBe("older");
+  });
+});
+
+describe("namesCouldBeOneClub", () => {
+  it.each([
+    ["Newcastle", "Newcastle United"],
+    ["Leeds", "Leeds United"],
+    ["Ipswich", "Ipswich Town"],
+    ["Brighton & Hove Albion", "Brighton"],
+    ["OH Leuven", "Oud-Heverlee Leuven"],
+    ["1. FC Union Berlin", "Union Berlin"],
+    ["Waasland-Beveren", "Beveren"],
+  ])("accepts %s and %s", (left, right) => {
+    expect(namesCouldBeOneClub(left, right)).toBe(true);
+  });
+
+  it("rejects two clubs that merely kicked off at the same minute", () => {
+    // A seeded fixture once paired these; nothing in the names agrees.
+    expect(namesCouldBeOneClub("Antalyaspor", "Beşiktaş")).toBe(false);
+  });
+
+  it.each([
+    // "real" names neither club on its own, and half a league is "United".
+    ["Real Madrid", "Real Sociedad"],
+    ["Newcastle United", "Leeds United"],
+    // A real pair, but only a generic word agrees, so it goes to review.
+    ["Athletic Club", "Athletic Bilbao"],
+  ])("rejects %s and %s, leaving them for review", (left, right) => {
+    expect(namesCouldBeOneClub(left, right)).toBe(false);
+  });
+});
+
+describe("planTeamMerges with fixture evidence", () => {
+  it("merges a pair the names alone would never group", () => {
+    const newcastle = domestic("newcastle", "Newcastle", "country-england", "Europe");
+    const united = domestic("newcastle-united", "Newcastle United", "country-england", "Europe");
+
+    expect(planTeamMerges([newcastle, united]).merges).toHaveLength(0);
+
+    const { merges } = planTeamMerges([newcastle, united], [["newcastle", "newcastle-united"]]);
+    expect(merges).toHaveLength(1);
+    expect(merges[0].duplicates).toHaveLength(1);
+  });
+
+  it("chains evidence so three rows for one club become one group", () => {
+    const { merges } = planTeamMerges(
+      [
+        domestic("a", "Gent", "country-belgium", "Europe"),
+        domestic("b", "KAA Gent", "country-belgium", "Europe"),
+        domestic("c", "K.A.A. Gent", "country-belgium", "Europe"),
+      ],
+      [["a", "b"], ["b", "c"]],
+    );
+
+    expect(merges).toHaveLength(1);
+    expect(merges[0].duplicates).toHaveLength(2);
   });
 });

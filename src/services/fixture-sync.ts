@@ -150,6 +150,31 @@ async function synchronizeRound(providerName: string, config: LeagueConfig, roun
     let [matchweek] = await sql<Array<{ id: string; status: string; has_participation: boolean }>>`
       select mw.id, mw.status, exists(select 1 from matchweek_participation mp where mp.matchweek_id = mw.id) as has_participation
       from matchweeks mw where mw.league_id = ${config.id} and mw.provider_round_name = ${round} for update`;
+
+    // Each provider names rounds its own way, so keying a matchweek on that name
+    // gave one real gameweek a separate week per provider, each holding part of
+    // the fixtures. A Weekly Lock belongs to a matchweek, so that let a player
+    // lock twice in the same week. A round that lands on an existing week joins
+    // it instead; the one it overlaps most, since consecutive weeks share a
+    // boundary day when a round runs long.
+    if (!matchweek) {
+      [matchweek] = await sql<Array<{ id: string; status: string; has_participation: boolean }>>`
+        select mw.id, mw.status, exists(select 1 from matchweek_participation mp where mp.matchweek_id = mw.id) as has_participation
+        from matchweeks mw
+        where mw.league_id = ${config.id} and mw.season_id = ${config.season_id}
+          and mw.start_at < ${endAt}::timestamptz and ${startAt}::timestamptz < mw.end_at
+          -- Only ever join a week another provider opened. This provider's own
+          -- consecutive rounds overlap whenever one runs long, and folding those
+          -- together would merge two real gameweeks into one.
+          and (case when mw.provider_round_name like '%:%'
+                then split_part(mw.provider_round_name, ':', 1) else 'default' end)
+              <> (case when ${round} like '%:%'
+                then split_part(${round}, ':', 1) else 'default' end)
+        order by least(mw.end_at, ${endAt}::timestamptz) - greatest(mw.start_at, ${startAt}::timestamptz) desc
+        limit 1
+        for update`;
+    }
+
     if (!matchweek) {
       [matchweek] = await sql<Array<{ id: string; status: string; has_participation: boolean }>>`
         insert into matchweeks (league_id, season_id, provider_round_name, display_name, start_at, lock_at, end_at, status)
@@ -159,7 +184,15 @@ async function synchronizeRound(providerName: string, config: LeagueConfig, roun
     if (!matchweek) throw new Error("Could not upsert matchweek.");
     const frozen = matchweek.status !== "upcoming" || matchweek.has_participation;
     if (frozen) return;
-    await sql`update matchweeks set start_at = ${startAt}, lock_at = ${startAt}, end_at = ${endAt}, updated_at = now() where id = ${matchweek.id}`;
+    // Widen to cover this round as well: a week another provider opened must not
+    // be narrowed to whatever slice this one happens to carry. The lock stays on
+    // the earliest kickoff in the week.
+    await sql`update matchweeks set
+      start_at = least(start_at, ${startAt}::timestamptz),
+      lock_at = least(lock_at, ${startAt}::timestamptz),
+      end_at = greatest(end_at, ${endAt}::timestamptz),
+      updated_at = now()
+      where id = ${matchweek.id}`;
 
     for (const { fixture, homeId, awayId } of creatable) {
       const winnerId = fixture.winnerExternalId === fixture.home.externalId ? homeId : fixture.winnerExternalId === fixture.away.externalId ? awayId : null;
