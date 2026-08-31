@@ -58,7 +58,7 @@ export const getFeatureFlags = cache(async (): Promise<ResolvedFeatureFlag[]> =>
 });
 
 /**
- * Settled independent Weekly Locks a record needs before it is ranked and can
+ * Settled independent Daily Locks a record needs before it is ranked and can
  * be followed. Read from the settings rather than fixed, because a founding
  * season has nobody who can reach the standard bar for ten gameweeks.
  *

@@ -19,6 +19,13 @@ async function createUser(id: string) {
   await sqlClient`insert into "user" (id, name, email, email_verified) values (${id}, ${id}, ${`${id}@test.local`}, true)`;
 }
 
+// A lock now belongs to a day, and only one can be held per league per day, so
+// each of these has to fall on its own. They also have to be made while the
+// match is still to be played, which the old shortcut of inserting a pick
+// against an already-finished fixture no longer allows — so this follows the
+// real sequence instead: a scheduled match, a lock, then the result.
+let matchDayOffset = 0;
+
 async function createAndSettlePick(input: {
   userId: string;
   seasonId: string;
@@ -26,37 +33,81 @@ async function createAndSettlePick(input: {
   fixtureStatus: "finished" | "cancelled";
   winnerTeamId: string | null;
 }) {
-  const kickoff = new Date().toISOString();
-  // A real matchweek's window spans hours, not years. This test never checks
-  // lock timing, but a multi-year placeholder here would overlap every other
-  // matchweek any other test in this file creates, colliding with matchweek
-  // lookup-by-date-window in fixture-sync.ts.
-  const endAt = new Date(Date.now() + 3 * 3_600_000).toISOString();
+  matchDayOffset += 1;
+  const kickoff = new Date(Date.now() + matchDayOffset * 86_400_000);
+  // A real matchweek's window spans hours, not years. A multi-year placeholder
+  // would overlap every other matchweek this file creates, colliding with the
+  // matchweek lookup by date window in fixture-sync.ts.
+  const endAt = new Date(kickoff.getTime() + 3 * 3_600_000).toISOString();
   const [createdMatchweek] = await sqlClient<Array<{ id: string }>>`
     insert into matchweeks (league_id, season_id, provider_round_name, display_name, start_at, lock_at, end_at, status)
-    values (${superLig}, ${input.seasonId}, ${input.round}, ${input.round}, ${kickoff}, ${endAt}, ${endAt}, 'upcoming') returning id`;
+    values (${superLig}, ${input.seasonId}, ${input.round}, ${input.round}, ${kickoff.toISOString()}, ${endAt}, ${endAt}, 'upcoming') returning id`;
   const [createdFixture] = await sqlClient<Array<{ id: string }>>`
-    insert into fixtures (provider, provider_external_id, league_id, season_id, matchweek_id, home_team_id, away_team_id, kickoff_at, status, winner_team_id, last_synced_at)
-    values ('settlement-test', ${input.round}, ${superLig}, ${input.seasonId}, ${createdMatchweek!.id}, ${besiktas}, ${konyaspor}, ${kickoff}, ${input.fixtureStatus}, ${input.winnerTeamId}, now()) returning id`;
+    insert into fixtures (provider, provider_external_id, league_id, season_id, matchweek_id, home_team_id, away_team_id, kickoff_at, status, last_synced_at)
+    values ('settlement-test', ${input.round}, ${superLig}, ${input.seasonId}, ${createdMatchweek!.id}, ${besiktas}, ${konyaspor}, ${kickoff.toISOString()}, 'scheduled', now()) returning id`;
   await sqlClient`insert into matchweek_participation (user_id, league_id, matchweek_id, mode)
     values (${input.userId}, ${superLig}, ${createdMatchweek!.id}, 'independent')`;
   const [pick] = await sqlClient<Array<{ id: string }>>`
     insert into picks (user_id, league_id, season_id, matchweek_id, fixture_id, selected_team_id)
     values (${input.userId}, ${superLig}, ${input.seasonId}, ${createdMatchweek!.id}, ${createdFixture!.id}, ${besiktas}) returning id`;
+
+  // The match is played.
+  await sqlClient`update fixtures set status = ${input.fixtureStatus}, winner_team_id = ${input.winnerTeamId}, updated_at = now()
+    where id = ${createdFixture!.id}`;
   expect(await settlePick(pick!.id)).toBe(true);
 }
 
 describe("LeagueCred database integrity", () => {
-  it("allows one immutable independent Weekly Lock", async () => {
+  it("allows one immutable daily lock, and only one for that day", async () => {
     const userId = `test-independent-${crypto.randomUUID()}`;
     await createUser(userId);
     await sqlClient`insert into matchweek_participation (user_id, league_id, matchweek_id, mode) values (${userId}, ${superLig}, ${matchweek}, 'independent')`;
     await sqlClient`insert into picks (user_id, league_id, season_id, matchweek_id, fixture_id, selected_team_id) values (${userId}, ${superLig}, ${season}, ${matchweek}, ${fixtureThree}, ${besiktas})`;
 
-    await expect(sqlClient`insert into picks (user_id, league_id, season_id, matchweek_id, fixture_id, selected_team_id) values (${userId}, ${superLig}, ${season}, ${matchweek}, ${fixtureThree}, ${konyaspor})`).rejects.toThrow();
+    // A second call on the same day, even on a different match, is refused.
+    await expect(sqlClient`insert into picks (user_id, league_id, season_id, matchweek_id, fixture_id, selected_team_id) values (${userId}, ${superLig}, ${season}, ${matchweek}, ${fixtureFour}, ${trabzonspor})`).rejects.toThrow();
     await expect(sqlClient`update picks set selected_team_id = ${konyaspor} where user_id = ${userId} and matchweek_id = ${matchweek}`).rejects.toThrow(/immutable/);
-    const [participation] = await sqlClient<Array<{ expert_picks_revealed_at: Date | null }>>`select expert_picks_revealed_at from matchweek_participation where user_id = ${userId}`;
-    expect(participation?.expert_picks_revealed_at).toBeTruthy();
+
+    // The date is taken from the fixture, not from whatever was passed in.
+    const [stored] = await sqlClient<Array<{ match_date: string }>>`select match_date from picks where user_id = ${userId}`;
+    const [fixture] = await sqlClient<Array<{ match_date: string }>>`select (kickoff_at at time zone 'UTC')::date as match_date from fixtures where id = ${fixtureThree}`;
+    expect(String(stored?.match_date)).toBe(String(fixture?.match_date));
+  });
+
+  it("allows a lock for another day to be held at the same time", async () => {
+    const userId = `test-daily-${crypto.randomUUID()}`;
+    await createUser(userId);
+    await sqlClient`insert into matchweek_participation (user_id, league_id, matchweek_id, mode) values (${userId}, ${superLig}, ${matchweek}, 'independent')`;
+
+    // A second match in the same week, played the following day.
+    const [tomorrow] = await sqlClient<Array<{ id: string }>>`
+      insert into fixtures (provider, provider_external_id, league_id, season_id, matchweek_id, home_team_id, away_team_id, kickoff_at, status, last_synced_at)
+      values ('daily-lock-test', ${`next-day-${crypto.randomUUID()}`}, ${superLig}, ${season}, ${matchweek}, ${trabzonspor}, ${rizespor},
+        (select kickoff_at + interval '1 day' from fixtures where id = ${fixtureThree}), 'scheduled', now())
+      returning id`;
+
+    await sqlClient`insert into picks (user_id, league_id, season_id, matchweek_id, fixture_id, selected_team_id) values (${userId}, ${superLig}, ${season}, ${matchweek}, ${fixtureThree}, ${besiktas})`;
+    await sqlClient`insert into picks (user_id, league_id, season_id, matchweek_id, fixture_id, selected_team_id) values (${userId}, ${superLig}, ${season}, ${matchweek}, ${tomorrow!.id}, ${trabzonspor})`;
+
+    const held = await sqlClient<Array<{ match_date: string }>>`select match_date from picks where user_id = ${userId} order by match_date`;
+    expect(held).toHaveLength(2);
+    expect(new Set(held.map((row) => String(row.match_date))).size).toBe(2);
+  });
+
+  it("refuses a lock once that match has kicked off", async () => {
+    const userId = `test-kickoff-${crypto.randomUUID()}`;
+    await createUser(userId);
+    await sqlClient`insert into matchweek_participation (user_id, league_id, matchweek_id, mode) values (${userId}, ${superLig}, ${matchweek}, 'independent')`;
+
+    // The deadline is the match's own kickoff, not the week's first.
+    const [started] = await sqlClient<Array<{ id: string }>>`
+      insert into fixtures (provider, provider_external_id, league_id, season_id, matchweek_id, home_team_id, away_team_id, kickoff_at, status, last_synced_at)
+      values ('daily-lock-test', ${`started-${crypto.randomUUID()}`}, ${superLig}, ${season}, ${matchweek}, ${trabzonspor}, ${rizespor},
+        now() - interval '10 minutes', 'scheduled', now())
+      returning id`;
+
+    await expect(sqlClient`insert into picks (user_id, league_id, season_id, matchweek_id, fixture_id, selected_team_id) values (${userId}, ${superLig}, ${season}, ${matchweek}, ${started!.id}, ${trabzonspor})`)
+      .rejects.toThrow(/already started/);
   });
 
   it("keeps followed guidance separate from independent expertise", async () => {
@@ -77,21 +128,31 @@ describe("LeagueCred database integrity", () => {
     const userId = `test-settlement-${crypto.randomUUID()}`;
     await createUser(userId);
     await sqlClient`insert into matchweek_participation (user_id, league_id, matchweek_id, mode) values (${userId}, ${superLig}, ${matchweek}, 'independent')`;
-    const [pick] = await sqlClient<Array<{ id: string }>>`insert into picks (user_id, league_id, season_id, matchweek_id, fixture_id, selected_team_id) values (${userId}, ${superLig}, ${season}, ${matchweek}, ${fixtureFour}, ${trabzonspor}) returning id`;
-    await sqlClient`update fixtures set status = 'finished', home_score = 2, away_score = 0, winner_team_id = ${trabzonspor} where id = ${fixtureFour}`;
+
+    // Its own fixture rather than a shared seed one: a lock can only be made
+    // before its match starts, so a test that finishes the match would stop
+    // every later test in the suite from locking it.
+    matchDayOffset += 1;
+    const [ownFixture] = await sqlClient<Array<{ id: string }>>`
+      insert into fixtures (provider, provider_external_id, league_id, season_id, matchweek_id, home_team_id, away_team_id, kickoff_at, status, last_synced_at)
+      values ('settlement-test', ${`settle-${crypto.randomUUID()}`}, ${superLig}, ${season}, ${matchweek}, ${trabzonspor}, ${rizespor},
+        now() + make_interval(days => ${matchDayOffset}), 'scheduled', now())
+      returning id`;
+    const [pick] = await sqlClient<Array<{ id: string }>>`insert into picks (user_id, league_id, season_id, matchweek_id, fixture_id, selected_team_id) values (${userId}, ${superLig}, ${season}, ${matchweek}, ${ownFixture!.id}, ${trabzonspor}) returning id`;
+    await sqlClient`update fixtures set status = 'finished', home_score = 2, away_score = 0, winner_team_id = ${trabzonspor} where id = ${ownFixture!.id}`;
 
     expect(await settlePick(pick!.id)).toBe(true);
     expect(await settlePick(pick!.id)).toBe(false);
     let [events] = await sqlClient<Array<{ count: number }>>`select count(*)::int as count from settlement_events where pick_id = ${pick!.id}`;
     expect(events?.count).toBe(1);
 
-    await sqlClient`update fixtures set home_score = 0, away_score = 1, winner_team_id = ${rizespor} where id = ${fixtureFour}`;
-    await sqlClient`update fixtures set status = 'scheduled', winner_team_id = null where id = ${fixtureFour}`;
+    await sqlClient`update fixtures set home_score = 0, away_score = 1, winner_team_id = ${rizespor} where id = ${ownFixture!.id}`;
+    await sqlClient`update fixtures set status = 'scheduled', winner_team_id = null where id = ${ownFixture!.id}`;
     await expect(correctSettlement(pick!.id, "Provider is still reconciling the result")).rejects.toThrow(/terminal fixture result/);
     [events] = await sqlClient<Array<{ count: number }>>`select count(*)::int as count from settlement_events where pick_id = ${pick!.id}`;
     expect(events?.count).toBe(1);
 
-    await sqlClient`update fixtures set status = 'finished', winner_team_id = ${rizespor} where id = ${fixtureFour}`;
+    await sqlClient`update fixtures set status = 'finished', winner_team_id = ${rizespor} where id = ${ownFixture!.id}`;
     expect(await correctSettlement(pick!.id, "Provider corrected the final score")).toBe(true);
     [events] = await sqlClient<Array<{ count: number }>>`select count(*)::int as count from settlement_events where pick_id = ${pick!.id}`;
     expect(events?.count).toBe(3);
@@ -129,17 +190,28 @@ describe("LeagueCred database integrity", () => {
   it("freezes fixture eligibility after participation while continuing score updates", async () => {
     const suffix = crypto.randomUUID();
     const round = `Integration round ${suffix}`;
-    const originalKickoff = "2026-09-03T18:00:00.000Z";
-    const delayedKickoff = "2026-09-04T20:00:00.000Z";
     const originalExternalId = `integration-fixture-${suffix}`;
+    // The team names below are fixed, not suffixed, so a rerun against a database that
+    // still has an earlier run's rows resolves to the same two teams. A fixed kickoff
+    // date would then look like the same match again to the cross-provider dedupe (same
+    // teams, same day) and get silently absorbed instead of opening a new matchweek - so
+    // the date has to vary per run too, derived from the suffix already unique to it.
+    const dayOffset = 120 + (parseInt(suffix.slice(0, 4), 16) % 300);
+    const kickoffBase = new Date(Date.UTC(2026, 0, 1) + dayOffset * 86_400_000);
+    const originalKickoff = new Date(kickoffBase.getTime() + 18 * 3_600_000).toISOString();
+    const delayedKickoff = new Date(kickoffBase.getTime() + 44 * 3_600_000).toISOString();
+    const syncNow = new Date(kickoffBase.getTime() - 2 * 86_400_000);
 
     let incoming: ProviderFixture[] = [{
       externalId: originalExternalId,
       round,
       kickoffAt: originalKickoff,
       status: "scheduled",
-      home: { externalId: `integration-home-${suffix}`, name: "Integration Home", shortName: "IHM", logoUrl: null },
-      away: { externalId: `integration-away-${suffix}`, name: "Integration Away", shortName: "IAW", logoUrl: null },
+      // Named per run, like everything else here. Two runs sharing club names
+      // produce the same match on the same day, which the sync now recognises
+      // as one another provider already recorded and skips.
+      home: { externalId: `integration-home-${suffix}`, name: `Integration Home ${suffix}`, shortName: "IHM", logoUrl: null },
+      away: { externalId: `integration-away-${suffix}`, name: `Integration Away ${suffix}`, shortName: "IAW", logoUrl: null },
       homeScore: null,
       awayScore: null,
       winnerExternalId: null,
@@ -151,7 +223,7 @@ describe("LeagueCred database integrity", () => {
       },
     };
 
-    await synchronizeFixtures(provider, new Date("2026-09-01T00:00:00.000Z"));
+    await synchronizeFixtures(provider, syncNow);
     const [created] = await sqlClient<Array<{ id: string }>>`
       select id from matchweeks where league_id = ${superLig} and provider_round_name = ${round}`;
     expect(created).toBeDefined();
@@ -175,7 +247,7 @@ describe("LeagueCred database integrity", () => {
         winnerExternalId: null,
       },
     ];
-    await synchronizeFixtures(provider, new Date("2026-09-01T01:00:00.000Z"));
+    await synchronizeFixtures(provider, new Date(syncNow.getTime() + 3_600_000));
 
     const [original] = await sqlClient<Array<{ kickoff_at: Date; status: string; home_score: number | null }>>`
       select kickoff_at, status, home_score from fixtures

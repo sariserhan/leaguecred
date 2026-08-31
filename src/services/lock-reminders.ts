@@ -31,6 +31,12 @@ type ReminderCandidate = {
   lock_at: Date;
 };
 
+// One reminder per round, not per match day, and deliberately so. Locks are
+// daily, so a round of three match days could justify three emails per league —
+// which across several leagues is more mail than the nudge is worth. This fires
+// once, before the round's first match, and only to someone who has not called
+// at all that round. Someone already playing does not need chasing.
+//
 // A user is engaged once they have participated, followed, or explicitly marked
 // a league as known during onboarding.
 export async function sendLockReminders(options: { hoursBeforeLock?: number; send?: EmailSender } = {}) {
@@ -71,7 +77,7 @@ export async function sendLockReminders(options: { hoursBeforeLock?: number; sen
 
     try {
       await sqlClient`insert into notifications(user_id,kind,title,body,href,dedupe_key)
-        select ${candidate.user_id},'lock_deadline',${`${candidate.league_name} Weekly Lock due`},${`${candidate.display_name} closes ${lockAt}.`},${`/leagues/${candidate.league_slug}`},${`lock-deadline/${candidate.matchweek_id}`}
+        select ${candidate.user_id},'lock_deadline',${`${candidate.league_name} starts soon`},${`${candidate.display_name} begins ${lockAt} and you have not made a call.`},${`/leagues/${candidate.league_slug}`},${`lock-deadline/${candidate.matchweek_id}`}
         where coalesce((select lock_deadlines from notification_preferences where user_id=${candidate.user_id}),true)
         on conflict(user_id,dedupe_key) do nothing`;
       const message = lockReminderEmail({

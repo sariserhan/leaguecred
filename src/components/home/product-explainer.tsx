@@ -41,7 +41,7 @@ const recordFields = [
   },
   {
     title: "Settled picks",
-    description: "Completed Weekly Locks with a final result.",
+    description: "Completed Daily Locks with a final result.",
     icon: ClipboardCheckIcon,
   },
   {
@@ -65,12 +65,12 @@ const questions = [
   {
     question: "Can I change my pick?",
     answer:
-      "No. A Weekly Lock is permanent once submitted, so every record reflects the call that was actually made before the deadline.",
+      "No. A Daily Lock is permanent once submitted, so every record reflects the call that was actually made before the deadline.",
   },
   {
     question: "Can I pick in multiple leagues?",
     answer:
-      "Yes. You can make one independent Weekly Lock in each league you know, for every available matchweek.",
+      "Yes. You can make one independent Daily Lock in each league you know, for every available matchweek.",
   },
   {
     question: "What happens if a match is cancelled?",

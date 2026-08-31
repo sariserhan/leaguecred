@@ -3,7 +3,7 @@
  *
  * A matchweek was identified by the round name its provider happened to use,
  * and providers name rounds differently, so one gameweek ended up stored once
- * per provider with the fixtures divided between them. A Weekly Lock belongs to
+ * per provider with the fixtures divided between them. A Daily Lock belongs to
  * a matchweek, so a player could lock twice in a single week.
  *
  * `synchronizeFixtures` no longer splits them. This plans the repair for weeks
@@ -78,7 +78,7 @@ export function clusterByOverlap<M extends MergeableMatchweek>(weeks: M[]) {
 
 /**
  * Plans one survivor per gameweek. A cluster where more than one week has been
- * committed to is left alone: merging would put two Weekly Locks from one
+ * committed to is left alone: merging would put two Daily Locks from one
  * player in the same week, which the schema forbids and the product should not
  * decide on their behalf.
  */

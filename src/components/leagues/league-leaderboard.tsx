@@ -26,7 +26,7 @@ export function LeagueLeaderboard({
     <Card className="rounded-sm">
       <CardHeader>
         <CardTitle className="font-heading text-2xl font-bold uppercase">{leagueName} leaderboard</CardTitle>
-        <CardDescription>Only proven independent Weekly Locks count. Followed calls never create a rank.</CardDescription>
+        <CardDescription>Only proven independent Daily Locks count. Followed calls never create a rank.</CardDescription>
       </CardHeader>
       <CardContent>
         <ToggleGroup value={[scope]} onValueChange={(values) => {
@@ -87,7 +87,7 @@ export function LeagueLeaderboard({
           <div className="mt-5 border bg-muted p-6">
             <TrophyIcon aria-hidden="true" className="size-8 text-primary" />
             <h3 className="mt-4 font-heading text-3xl font-bold uppercase">Founding specialists</h3>
-            <p className="mt-3 leading-7 text-muted-foreground">This league has no public rank yet. Public rank starts after {rankThreshold} settled independent Weekly Locks—no shortcuts and no borrowed record.</p>
+            <p className="mt-3 leading-7 text-muted-foreground">This league has no public rank yet. Public rank starts after {rankThreshold} settled independent Daily Locks—no shortcuts and no borrowed record.</p>
             <p className="mt-4 flex items-center gap-2 text-sm font-semibold"><ShieldCheckIcon aria-hidden="true" className="size-4 text-primary" />Your first {rankThreshold} locks build the evidence.</p>
           </div>
         )}

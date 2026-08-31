@@ -39,7 +39,7 @@ export const featureFlagDefinitions: readonly FeatureFlagDefinition[] = [
 ] as const;
 
 export type SiteSettings = {
-  /** Settled independent Weekly Locks a record needs before it is ranked and
+  /** Settled independent Daily Locks a record needs before it is ranked and
    * can be followed. A founding season has nobody who can reach the standard
    * ten for ten gameweeks, so the bar is set rather than fixed. */
   minimumSettledPicksForRank: number;

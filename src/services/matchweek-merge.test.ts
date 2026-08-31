@@ -76,7 +76,7 @@ describe("planMatchweekMerges", () => {
   });
 
   it("holds back a gameweek locked in more than one place", () => {
-    // Merging would put two of one player's Weekly Locks in a single week.
+    // Merging would put two of one player's Daily Locks in a single week.
     const { merges, committed } = planMatchweekMerges([
       matchweek({ id: "a", startAt: week(0), endAt: week(3), pickCount: 1 }),
       matchweek({ id: "b", startAt: week(1), endAt: week(2), participationCount: 1, scheme: "football-data-uk" }),

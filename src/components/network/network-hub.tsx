@@ -33,7 +33,7 @@ import type { NotificationPreferences } from "@/data/notifications";
 const preferenceOptions: Array<{ key: keyof NotificationPreferences; label: string; description: string }> = [
   { key: "lockDeadlines", label: "Lock deadlines", description: "Reminders before a matchweek closes." },
   { key: "specialistLocks", label: "Specialist locks", description: "When someone you follow submits a call." },
-  { key: "pickResults", label: "My results", description: "Results for your independent Weekly Locks." },
+  { key: "pickResults", label: "My results", description: "Results for your independent Daily Locks." },
   { key: "followedResults", label: "Followed results", description: "Results for calls copied to your Weekly Slip." },
 ];
 

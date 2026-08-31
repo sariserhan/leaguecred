@@ -110,7 +110,7 @@ export function SiteControls({ settings }: { settings: SiteSettings }) {
             Rank threshold
           </CardTitle>
           <CardDescription>
-            Settled independent Weekly Locks a record needs before it is ranked and can be
+            Settled independent Daily Locks a record needs before it is ranked and can be
             followed. The standard is {STANDARD_SETTLED_PICKS_FOR_RANK}. A founding season has
             nobody who can reach that for {STANDARD_SETTLED_PICKS_FOR_RANK} gameweeks, so it can
             open lower and be raised once a cohort has cleared it. Lowering it does not rank

@@ -153,7 +153,7 @@ async function synchronizeRound(providerName: string, config: LeagueConfig, roun
 
     // Each provider names rounds its own way, so keying a matchweek on that name
     // gave one real gameweek a separate week per provider, each holding part of
-    // the fixtures. A Weekly Lock belongs to a matchweek, so that let a player
+    // the fixtures. A Daily Lock belongs to a matchweek, so that let a player
     // lock twice in the same week. A round that lands on an existing week joins
     // it instead; the one it overlaps most, since consecutive weeks share a
     // boundary day when a round runs long.

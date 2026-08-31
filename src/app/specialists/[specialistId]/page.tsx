@@ -16,7 +16,7 @@ type SpecialistPageProps = { params: Promise<{ specialistId: string }> };
 export async function generateMetadata(props: SpecialistPageProps): Promise<Metadata> {
   const { specialistId } = await props.params;
   const data = await getSpecialistProfile(specialistId);
-  return data ? { title: data.specialist.name, description: `Verified football league record for ${data.specialist.name}.`, alternates: { canonical: `/specialists/${data.specialist.id}` }, openGraph: { title: `${data.specialist.name} · LeagueCred`, description: `${data.totals.wins}–${data.totals.losses} across ${data.totals.settledPicks} independent Weekly Locks.`, type: "profile" } } : { title: "Specialist not found" };
+  return data ? { title: data.specialist.name, description: `Verified football league record for ${data.specialist.name}.`, alternates: { canonical: `/specialists/${data.specialist.id}` }, openGraph: { title: `${data.specialist.name} · LeagueCred`, description: `${data.totals.wins}–${data.totals.losses} across ${data.totals.settledPicks} independent Daily Locks.`, type: "profile" } } : { title: "Specialist not found" };
 }
 
 export default async function SpecialistPage(props: SpecialistPageProps) {

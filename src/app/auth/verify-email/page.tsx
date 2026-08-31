@@ -27,7 +27,7 @@ export default async function VerifyEmailPage({ searchParams }: PageProps<"/auth
         </h1>
         <p className="text-lg leading-8 text-muted-foreground">
           Your account can now be recovered if you ever lose your password. That matters here: a
-          Weekly Lock record is permanent and cannot be rebuilt.
+          Daily Lock record is permanent and cannot be rebuilt.
         </p>
         <Link href={nextPath} className={buttonVariants({ size: "lg" })}>
           Continue to your league

@@ -50,7 +50,7 @@ export function pickCanonicalFixture<F extends DedupeFixture>(group: F[]) {
 /**
  * Groups rows by the match they describe. A group where a row that is not the
  * survivor carries picks is held back rather than merged: the pick is tied to
- * its own matchweek, and moving it silently would put a Weekly Lock in a week
+ * its own matchweek, and moving it silently would put a Daily Lock in a week
  * the player did not choose.
  */
 export function planFixtureMerges<F extends DedupeFixture>(fixtures: F[]) {

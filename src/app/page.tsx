@@ -15,7 +15,7 @@ import { enforceMaintenanceGate } from "@/lib/maintenance";
 export const dynamic = "force-dynamic";
 export const metadata: Metadata = {
   title: "LeagueCred — Football knowledge, proven over time",
-  description: "Make one permanent Weekly Lock in the league you know, or follow a football specialist with a transparent record.",
+  description: "Make one permanent Daily Lock in the league you know, or follow a football specialist with a transparent record.",
 };
 
 const steps = [
@@ -28,7 +28,7 @@ export default async function HomePage() {
   await enforceMaintenanceGate();
   const [session, data] = await Promise.all([getSession(), getHomeData()]);
   const returningHref = session ? "/slip" : "/leagues?intent=prove";
-  const returningLabel = session ? "Continue to your Weekly Slip" : "Make this week's call";
+  const returningLabel = session ? "Continue to your Weekly Slip" : "Make today's call";
 
   return (
     <>
