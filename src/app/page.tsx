@@ -68,13 +68,13 @@ const trustRules = [
   {
     title: "One call per league, each week",
     description:
-      "A single Weekly Lock in every league you know. There is no volume to hide behind and no quiet second guess.",
+      "A single Daily Lock in every league you know. There is no volume to hide behind and no quiet second guess.",
     icon: LockKeyholeIcon,
   },
   {
     title: "Locked the moment you submit",
     description:
-      "A Weekly Lock cannot be edited, withdrawn, or deleted once the fixture turns against it. The record is permanent.",
+      "A Daily Lock cannot be edited, withdrawn, or deleted once the fixture turns against it. The record is permanent.",
     icon: ShieldCheckIcon,
   },
   {
@@ -204,7 +204,7 @@ export default async function HomePage() {
               ))}
             </ol>
             <p className="mt-8 max-w-xl leading-7 text-background/75">
-              A Weekly Lock is one fixture, so it can be your own club&apos;s match—the week you
+              A Daily Lock is one fixture, so it can be your own club&apos;s match—the week you
               are sure they win. The record it builds belongs to that club&apos;s league, which is
               where someone looking for a specialist will find you.
             </p>

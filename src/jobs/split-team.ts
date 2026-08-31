@@ -65,7 +65,7 @@ async function main() {
     }
     const picks = moving.reduce((total, row) => total + row.picks, 0);
     if (picks > 0) {
-      // A Weekly Lock names a club. Moving it silently would rewrite what
+      // A Daily Lock names a club. Moving it silently would rewrite what
       // somebody actually predicted.
       throw new Error(`${picks} pick(s) name this club in those competitions; a person must decide where they belong.`);
     }

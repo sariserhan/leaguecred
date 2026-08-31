@@ -33,7 +33,7 @@ type NotificationCandidate = {
   lock_at: Date;
 };
 
-// A pick row only ever exists for an independent Weekly Lock (a followed call
+// A pick row only ever exists for an independent Daily Lock (a followed call
 // lives in followed_picks instead), so no participation-mode filter is needed.
 export async function sendSpecialistLockNotifications(options: { send?: EmailSender } = {}) {
   const send = options.send ?? defaultSender;
@@ -67,7 +67,7 @@ export async function sendSpecialistLockNotifications(options: { send?: EmailSen
 
     try {
       await sqlClient`insert into notifications(user_id,kind,title,body,href,dedupe_key)
-        select ${candidate.follower_user_id},'specialist_lock',${`${candidate.specialist_name} made a Weekly Lock`},${`${candidate.league_name} · ${candidate.display_name}`},${`/leagues/${candidate.league_slug}#specialists`},${`specialist-lock/${candidate.specialist_user_id}/${candidate.matchweek_id}`}
+        select ${candidate.follower_user_id},'specialist_lock',${`${candidate.specialist_name} made a Daily Lock`},${`${candidate.league_name} · ${candidate.display_name}`},${`/leagues/${candidate.league_slug}#specialists`},${`specialist-lock/${candidate.specialist_user_id}/${candidate.matchweek_id}`}
         where coalesce((select specialist_locks from notification_preferences where user_id=${candidate.follower_user_id}),true)
         on conflict(user_id,dedupe_key) do nothing`;
       const message = specialistLockedEmail({

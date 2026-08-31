@@ -122,7 +122,7 @@ export function passwordResetEmail(input: { name: string; url: string }): EmailM
   const htmlGreeting = input.name ? `${escapeHtml(input.name)}, ` : "";
   const body =
     "Use the button below to choose a new password. The link expires in one hour and can only be " +
-    "used once. Your Weekly Lock record is not affected.";
+    "used once. Your Daily Lock record is not affected.";
 
   return {
     subject: "Reset your LeagueCred password",
@@ -148,14 +148,14 @@ export function verificationEmail(input: { name: string; url: string }): EmailMe
   const htmlGreeting = input.name ? `${escapeHtml(input.name)}, ` : "";
   const body =
     "Confirm this address so your account stays recoverable. A verified address is the only way " +
-    "back in, and a Weekly Lock record cannot be rebuilt.";
+    "back in, and a Daily Lock record cannot be rebuilt.";
 
   return {
     subject: "Confirm your LeagueCred address",
     from: emailSenders.welcome,
     text:
       `${greeting}confirm your LeagueCred address with this link:\n\n${input.url}\n\n` +
-      "A verified address is the only way back into your account, and a Weekly Lock record cannot be rebuilt.",
+      "A verified address is the only way back into your account, and a Daily Lock record cannot be rebuilt.",
     html: layout({
       preheader: "Confirm your address so your record stays recoverable.",
       heading: "Confirm your address",
@@ -187,14 +187,14 @@ export function specialistLockedEmail(input: {
     subject: `${input.specialistName} just locked their ${input.leagueName} call`,
     from: emailSenders.notification,
     text:
-      `${greeting}${input.specialistName} just made their independent Weekly Lock for ${where}. ` +
+      `${greeting}${input.specialistName} just made their independent Daily Lock for ${where}. ` +
       `Reveal specialist calls before locks close ${input.lockAt} to see it.\n\n${input.url}\n\n` +
       "Revealing specialist calls forfeits your own independent record for this matchweek.",
     html: layout({
       preheader: "A specialist you follow just locked in. See their call before it closes.",
       heading: "A specialist just locked in",
       body:
-        `${htmlGreeting}${specialist} just made their independent Weekly Lock for ${htmlWhere}. ` +
+        `${htmlGreeting}${specialist} just made their independent Daily Lock for ${htmlWhere}. ` +
         `Reveal specialist calls before locks close ${closes} to see it.`,
       actionUrl: input.url,
       actionLabel: "See specialist calls",
@@ -217,22 +217,24 @@ export function lockReminderEmail(input: {
   const closes = escapeHtml(input.lockAt);
 
   return {
-    subject: `Your ${input.leagueName} Weekly Lock closes ${input.lockAt}`,
+    // The first match of the round is the moment worth naming: each lock closes
+    // when its own match starts, so this is when the earliest of them goes.
+    subject: `${input.leagueName} starts ${input.lockAt} — no call from you yet`,
     from: emailSenders.notification,
     text:
-      `${greeting}you have not made your independent Weekly Lock for ${where}. ` +
-      `Locks close ${input.lockAt}.\n\n${input.url}\n\n` +
-      "One call, locked for good. Miss the deadline and the matchweek simply passes.",
+      `${greeting}you have not made a Daily Lock in ${where}. ` +
+      `The first match starts ${input.lockAt}, and each call closes when its own match does.\n\n${input.url}\n\n` +
+      "One call a day, locked for good. Miss a match and it simply passes.",
     html: layout({
-      preheader: `Locks close ${input.lockAt}. One independent call.`,
-      heading: "Your lock closes soon",
+      preheader: `${input.leagueName} starts ${input.lockAt}. One call a day.`,
+      heading: "No call from you yet",
       body:
-        `${htmlGreeting}you have not made your independent Weekly Lock for ${htmlWhere}. ` +
-        `Locks close ${closes}.`,
+        `${htmlGreeting}you have not made a Daily Lock in ${htmlWhere}. ` +
+        `The first match starts ${closes}, and each call closes when its own match does.`,
       actionUrl: input.url,
-      actionLabel: "Make your pick",
+      actionLabel: "Make your call",
       footnote:
-        "One call, locked for good. Miss the deadline and the matchweek simply passes; nothing is deducted.",
+        "One call a day, locked for good. Miss a match and it simply passes; nothing is deducted.",
     }),
   };
 }

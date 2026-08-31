@@ -8,7 +8,7 @@ import { evaluateWindow, RATE_LIMITS, type RateLimitedAction } from "@/lib/rate-
  *
  * Deliberately fails open. This guards against volume, not against anything that
  * would corrupt data — the writes it covers are already unique-constrained — so
- * a database hiccup here must not stop somebody making their Weekly Lock. The
+ * a database hiccup here must not stop somebody making their Daily Lock. The
  * cost of being wrong in the other direction is far higher than the cost of
  * letting a burst through.
  */

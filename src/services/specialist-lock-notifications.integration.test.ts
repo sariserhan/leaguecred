@@ -12,7 +12,7 @@ async function createUser(id: string) {
   await sqlClient`insert into "user" (id, name, email, email_verified) values (${id}, ${id}, ${`${id}@test.local`}, true)`;
 }
 
-// Creates a matchweek, its one fixture, and an independent Weekly Lock for
+// Creates a matchweek, its one fixture, and an independent Daily Lock for
 // specialistId on that fixture, satisfying the picks-insert integrity trigger.
 async function lockAPick(specialistId: string, hoursUntilLock: number) {
   const lockAt = new Date(Date.now() + hoursUntilLock * 3_600_000).toISOString();

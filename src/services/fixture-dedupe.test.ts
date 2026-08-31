@@ -41,7 +41,7 @@ describe("planFixtureMerges", () => {
   });
 
   it("holds back a match whose picks are split across both copies", () => {
-    // Whichever row survives, the other still carries a Weekly Lock, and
+    // Whichever row survives, the other still carries a Daily Lock, and
     // moving it would drag that lock into a matchweek nobody chose.
     const { merges, withPicks } = planFixtureMerges([
       fixture({ id: "espn", pickCount: 1 }),

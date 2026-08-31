@@ -115,7 +115,7 @@ export default function OpenGraphImage() {
           }}
         >
           <div style={{ display: "flex", gap: "32px", fontSize: "18px", color: "rgba(255, 255, 255, 0.75)" }}>
-            <span>• One Immutable Weekly Lock</span>
+            <span>• One Immutable Daily Lock</span>
             <span>• Confidence-Adjusted Accuracy</span>
             <span>• 25 Global Competitions</span>
           </div>

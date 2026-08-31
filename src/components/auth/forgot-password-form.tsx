@@ -83,7 +83,7 @@ export function ForgotPasswordForm() {
           <MailIcon />
           <AlertTitle>Your record is untouched</AlertTitle>
           <AlertDescription>
-            Resetting a password never changes a settled Weekly Lock or a league record.
+            Resetting a password never changes a settled Daily Lock or a league record.
           </AlertDescription>
         </Alert>
       </CardFooter>

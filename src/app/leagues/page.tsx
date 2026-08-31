@@ -28,7 +28,7 @@ export default async function LeaguesPage({ searchParams }: PageProps<"/leagues"
           Find your league. Choose your path.
         </h1>
         <p className="text-lg text-muted-foreground sm:text-xl">
-          Prove what you know with one Weekly Lock, or follow specialists with a verified record.
+          Prove what you know with one Daily Lock, or follow specialists with a verified record.
         </p>
       </header>
 

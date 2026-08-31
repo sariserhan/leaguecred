@@ -120,7 +120,7 @@ async function applyResult(
     where source_pick_id = ${pick.id}`;
   const resultLabel = result === "win" ? "Correct" : result === "loss" ? "Missed" : "Void";
   await sql`insert into notifications(user_id,kind,title,body,href,dedupe_key)
-    select p.user_id,'pick_result',${`Weekly Lock: ${resultLabel}`},l.name || ' · ' || t.name,'/slip',${`pick-result/${pick.id}`}
+    select p.user_id,'pick_result',${`Daily Lock: ${resultLabel}`},l.name || ' · ' || t.name,'/slip',${`pick-result/${pick.id}`}
     from picks p join leagues l on l.id=p.league_id join teams t on t.id=p.selected_team_id
     where p.id=${pick.id} and coalesce((select pick_results from notification_preferences where user_id=p.user_id),true)
     on conflict(user_id,dedupe_key) do update set title=excluded.title,body=excluded.body,read_at=null,created_at=now()`;

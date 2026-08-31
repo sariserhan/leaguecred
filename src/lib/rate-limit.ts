@@ -1,7 +1,7 @@
 /**
  * What each action costs an actor.
  *
- * Most writes here are already bounded by the schema — a Weekly Lock is unique
+ * Most writes here are already bounded by the schema — a Daily Lock is unique
  * per user, league and matchweek, and a follow is unique per pair — so repeating
  * them corrupts nothing. What they still cost is work: a query, a transaction,
  * and for a fixture refresh an upstream request. These limits are set against
@@ -12,8 +12,8 @@
 export type RateLimitPolicy = { limit: number; windowSeconds: number };
 
 export const RATE_LIMITS = {
-  /** One a week is the real rate; the rest is changing your mind. */
-  submitWeeklyLock: { limit: 30, windowSeconds: 60 },
+  /** One a day is the real rate; the rest is changing your mind. */
+  submitDailyLock: { limit: 30, windowSeconds: 60 },
   followSpecialist: { limit: 60, windowSeconds: 60 },
   updateProfile: { limit: 20, windowSeconds: 60 },
   saveLeaguePreferences: { limit: 30, windowSeconds: 60 },

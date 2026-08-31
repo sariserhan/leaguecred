@@ -139,8 +139,18 @@ describe("injection", () => {
 });
 
 describe("lock reminder", () => {
-  it("keeps the subject the reminder job already sent", () => {
-    expect(remind.subject).toBe("Your Süper Lig Weekly Lock closes Saturday, 12:00 UTC");
+  it("names the league and when its first match starts", () => {
+    // Pinned loosely on purpose: the wording is copy, but a subject that omits
+    // either the league or the time gives the reader nothing to act on.
+    expect(remind.subject).toContain("Süper Lig");
+    expect(remind.subject).toContain("Saturday, 12:00 UTC");
+  });
+
+  it("does not claim the whole round closes at that time", () => {
+    // Each lock closes when its own match starts, so the first kickoff is when
+    // the earliest one goes — not a deadline for the rest.
+    expect(remind.subject).not.toMatch(/lock closes/i);
+    expect(remind.text).toContain("closes when its own match");
   });
 
   it("names the league and matchweek being missed", () => {

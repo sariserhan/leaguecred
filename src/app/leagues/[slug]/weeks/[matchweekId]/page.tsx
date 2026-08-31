@@ -35,7 +35,7 @@ export async function generateMetadata(props: MatchweekPageProps): Promise<Metad
   const { slug, matchweekId } = await props.params;
   const data = await getMatchweekHistory(slug, matchweekId);
   if (!data) return { title: "Matchweek not found" };
-  const description = `Weekly Lock results and specialist calls for ${data.league.name}.`;
+  const description = `Daily Lock results and specialist calls for ${data.league.name}.`;
   return {
     title: `${data.league.name} ${data.matchweek.displayName}`,
     description,
@@ -66,13 +66,13 @@ export default async function MatchweekHistoryPage(props: MatchweekPageProps) {
           {data.matchweek.displayName}
         </h1>
         <p className="mt-4 max-w-2xl text-background/75">
-          Every independent Weekly Lock is visible here after the week closes.
+          Every independent Daily Lock is visible here after the week closes.
         </p>
       </header>
 
       <section className="grid border-x border-b sm:grid-cols-2 xl:grid-cols-5" aria-label="Matchweek statistics">
         {[
-          ["Weekly Locks", data.summary.totalLocks],
+          ["Daily Locks", data.summary.totalLocks],
           ["Contributors", data.summary.contributors],
           ["Correct", data.summary.correctLocks],
           ["Lock accuracy", accuracy === null ? "—" : `${accuracy}%`],
@@ -121,12 +121,12 @@ export default async function MatchweekHistoryPage(props: MatchweekPageProps) {
                 );
               })}
             </div>
-          ) : <p className="p-5 text-sm text-muted-foreground">No independent Weekly Locks were made for this week.</p>}
+          ) : <p className="p-5 text-sm text-muted-foreground">No independent Daily Locks were made for this week.</p>}
         </section>
       </div>
 
       <section className="mt-7 border" aria-labelledby="locks-heading">
-        <div className="flex items-center justify-between gap-4 border-b px-5 py-4"><div><h2 id="locks-heading" className="font-heading text-2xl font-bold uppercase">Weekly Locks</h2><p className="mt-1 text-sm text-muted-foreground">Who backed which team.</p></div><UsersRoundIcon aria-hidden="true" className="size-6 text-primary" /></div>
+        <div className="flex items-center justify-between gap-4 border-b px-5 py-4"><div><h2 id="locks-heading" className="font-heading text-2xl font-bold uppercase">Daily Locks</h2><p className="mt-1 text-sm text-muted-foreground">Who backed which team.</p></div><UsersRoundIcon aria-hidden="true" className="size-6 text-primary" /></div>
         {data.locks.length > 0 ? (
           <div className="divide-y">
             {data.locks.map((lock) => (

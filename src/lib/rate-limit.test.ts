@@ -48,6 +48,6 @@ describe("the policies themselves", () => {
 
   it("is strictest on the action that calls someone else's API", () => {
     expect(RATE_LIMITS.refreshLeagueFixtures.limit)
-      .toBeLessThan(RATE_LIMITS.submitWeeklyLock.limit);
+      .toBeLessThan(RATE_LIMITS.submitDailyLock.limit);
   });
 });

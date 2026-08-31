@@ -7,7 +7,7 @@ import { planMatchweekMerges, type MergeableMatchweek } from "@/services/matchwe
  *
  * Matchweeks were identified by each provider's own round name, so one gameweek
  * was stored once per provider with the fixtures divided between them, and a
- * Weekly Lock could be made in each. `synchronizeFixtures` no longer splits
+ * Daily Lock could be made in each. `synchronizeFixtures` no longer splits
  * them; this repairs the weeks already stored.
  *
  * Reports without writing unless --apply is passed.
@@ -56,7 +56,7 @@ async function main() {
     }
     for (const cluster of committed) {
       console.warn(`HELD BACK ${cluster[0].label}: ${cluster.length} weeks and more than one is already ` +
-        `locked or played, so a person should decide which Weekly Locks stand.`);
+        `locked or played, so a person should decide which Daily Locks stand.`);
     }
 
     if (apply) {

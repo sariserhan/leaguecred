@@ -279,6 +279,9 @@ export const picks = pgTable("picks", {
   userId: text("user_id").notNull().references(() => user.id, { onDelete: "cascade" }),
   leagueId: uuid("league_id").notNull().references(() => leagues.id, { onDelete: "cascade" }),
   seasonId: uuid("season_id").notNull().references(() => seasons.id, { onDelete: "cascade" }),
+  /** The day the match is played, in UTC. Set by the insert trigger from the
+   * fixture, so it always names the real day rather than whatever was passed. */
+  matchDate: date("match_date").notNull(),
   matchweekId: uuid("matchweek_id").notNull().references(() => matchweeks.id, { onDelete: "cascade" }),
   fixtureId: uuid("fixture_id").notNull().references(() => fixtures.id),
   selectedTeamId: uuid("selected_team_id").notNull().references(() => teams.id),
@@ -289,7 +292,7 @@ export const picks = pgTable("picks", {
   createdAt,
   updatedAt,
 }, (table) => [
-  uniqueIndex("picks_user_league_matchweek_unique").on(table.userId, table.leagueId, table.matchweekId),
+  uniqueIndex("picks_user_league_date_unique").on(table.userId, table.leagueId, table.matchDate),
   index("picks_matchweek_result_idx").on(table.matchweekId, table.result),
   index("picks_fixture_result_idx").on(table.fixtureId, table.result),
   index("picks_selected_team_id_idx").on(table.selectedTeamId),
@@ -354,13 +357,14 @@ export const followedPicks = pgTable("followed_picks", {
   sourcePickId: uuid("source_pick_id").notNull().references(() => picks.id),
   leagueId: uuid("league_id").notNull().references(() => leagues.id, { onDelete: "cascade" }),
   seasonId: uuid("season_id").notNull().references(() => seasons.id, { onDelete: "cascade" }),
+  matchDate: date("match_date").notNull(),
   matchweekId: uuid("matchweek_id").notNull().references(() => matchweeks.id, { onDelete: "cascade" }),
   result: pickResultEnum("result").default("pending").notNull(),
   followedAt: timestamp("followed_at", { withTimezone: true }).defaultNow().notNull(),
   settledAt: timestamp("settled_at", { withTimezone: true }),
   createdAt,
 }, (table) => [
-  uniqueIndex("followed_picks_follower_league_matchweek_unique").on(table.followerUserId, table.leagueId, table.matchweekId),
+  uniqueIndex("followed_picks_follower_league_date_unique").on(table.followerUserId, table.leagueId, table.matchDate),
   index("followed_picks_source_pick_id_idx").on(table.sourcePickId),
   index("followed_picks_matchweek_result_idx").on(table.matchweekId, table.result),
   index("followed_picks_season_id_idx").on(table.seasonId),
@@ -448,7 +452,7 @@ export const appSettings = pgTable("app_settings", {
   bannerEnabled: boolean("banner_enabled").default(false).notNull(),
   bannerMessage: text("banner_message"),
   bannerTone: bannerToneEnum("banner_tone").default("info").notNull(),
-  /** Settled independent Weekly Locks a record needs before it is ranked and
+  /** Settled independent Daily Locks a record needs before it is ranked and
    * can be followed. Lowered for a founding season, raised once one has run. */
   minimumSettledPicksForRank: integer("minimum_settled_picks_for_rank").default(10).notNull(),
   updatedByUserId: text("updated_by_user_id").references(() => user.id, { onDelete: "set null" }),

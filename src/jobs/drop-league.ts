@@ -8,7 +8,7 @@ import { describeDatabaseTarget } from "@/lib/env";
  * fixtures, memberships, and also picks, follows and records. That makes a
  * league row a dangerous thing to delete casually, so this refuses outright
  * when anyone has played in the competition. Dropping a league nobody has
- * touched is tidying; dropping one with Weekly Locks in it destroys a record
+ * touched is tidying; dropping one with Daily Locks in it destroys a record
  * somebody earned, and no flag here will do that.
  *
  * Clubs left behind with no league and no fixture go too, since a catalog entry

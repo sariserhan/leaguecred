@@ -20,24 +20,24 @@ async function authenticatedUserId() {
 function actionError(error: unknown): LeagueActionResult {
   const databaseError = error as { code?: string; message?: string };
   if (databaseError.code === "23505") {
-    return { ok: false, message: "You already made a choice for this league and matchweek." };
+    return { ok: false, message: "You have already locked a match for that day in this league. One call a day." };
   }
-  if (databaseError.message?.includes("matchweek is locked")) {
-    return { ok: false, message: "This matchweek is already locked." };
+  if (databaseError.message?.includes("already started")) {
+    return { ok: false, message: "That match has already kicked off." };
   }
   if (databaseError.message?.includes("independent participation")) {
-    return { ok: false, message: "Expert calls were already revealed, so an independent lock is no longer available." };
+    return { ok: false, message: "You are following a specialist in this league this week, so an independent lock is not available." };
   }
   return { ok: false, message: "The choice could not be saved. Please refresh and try again." };
 }
 
-export async function submitWeeklyLock(fixtureId: string, selectedTeamId: string): Promise<LeagueActionResult> {
+export async function submitDailyLock(fixtureId: string, selectedTeamId: string): Promise<LeagueActionResult> {
   const parsed = z.object({ fixtureId: uuid, selectedTeamId: uuid }).safeParse({ fixtureId, selectedTeamId });
   if (!parsed.success) return { ok: false, message: "That fixture or team is invalid." };
 
   const userId = await authenticatedUserId();
-  if (!userId) return { ok: false, message: "Sign in before submitting a Weekly Lock." };
-  if (!await withinUserRateLimit("submitWeeklyLock", userId)) {
+  if (!userId) return { ok: false, message: "Sign in before submitting a Daily Lock." };
+  if (!await withinUserRateLimit("submitDailyLock", userId)) {
     return { ok: false, message: "That is a lot of requests at once. Wait a moment and try again." };
   }
 
@@ -48,9 +48,9 @@ export async function submitWeeklyLock(fixtureId: string, selectedTeamId: string
         from fixtures f join leagues l on l.id = f.league_id join matchweeks mw on mw.id = f.matchweek_id
         where f.id = ${parsed.data.fixtureId}
           and f.status = 'scheduled'
+          -- A lock closes when its own match starts, not when the week's first
+          -- one does, so a Wednesday call stays open after Saturday kicks off.
           and f.kickoff_at > now()
-          and mw.status = 'upcoming'
-          and mw.lock_at > now()
           and (f.home_team_id = ${parsed.data.selectedTeamId} or f.away_team_id = ${parsed.data.selectedTeamId})
         for update of mw, f`;
       if (!fixture) throw new Error("fixture is not eligible");

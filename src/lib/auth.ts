@@ -29,7 +29,7 @@ export const auth = betterAuth({
   emailAndPassword: {
     enabled: true,
     minPasswordLength: 10,
-    // Sign-in is deliberately not gated on verification. A Weekly Lock record
+    // Sign-in is deliberately not gated on verification. A Daily Lock record
     // is permanent and cannot be rebuilt, so locking people out of an account
     // they can still prove they own would do more damage than an unverified
     // address does. Verification exists to keep the account recoverable.
@@ -64,7 +64,7 @@ export const auth = betterAuth({
         before: async (user) => {
           if (isDisposableEmailDomain(user.email)) {
             throw new APIError("BAD_REQUEST", {
-              message: "Use a permanent email address. A Weekly Lock record cannot be rebuilt under a new account.",
+              message: "Use a permanent email address. A Daily Lock record cannot be rebuilt under a new account.",
             });
           }
         },

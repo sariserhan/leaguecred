@@ -13,7 +13,7 @@ export const metadata: Metadata = {
 };
 
 const defaultMessage =
-  "LeagueCred is briefly unavailable while we finish scheduled work. Weekly Locks, records, and settlement history are untouched.";
+  "LeagueCred is briefly unavailable while we finish scheduled work. Daily Locks, records, and settlement history are untouched.";
 
 export default async function MaintenancePage() {
   const [settings, isAdmin] = await Promise.all([getSiteSettings(), viewerIsAdmin()]);

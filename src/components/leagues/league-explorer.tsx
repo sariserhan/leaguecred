@@ -13,19 +13,19 @@ import type { League, Region } from "@/lib/league-data";
 import { cn } from "@/lib/utils";
 
 const regions = ["All", "Europe", "Americas", "Asia", "Africa", "Oceania"] as const;
-const availabilityOptions = ["All leagues", "Weekly Lock ready", "Team catalog"] as const;
+const availabilityOptions = ["All leagues", "Daily Lock ready", "Team catalog"] as const;
 type RegionFilter = (typeof regions)[number];
 type AvailabilityFilter = (typeof availabilityOptions)[number];
 type Intent = "prove" | "follow";
 
 function PersonalStatus({ league, authenticated }: { league: League; authenticated: boolean }) {
   if (!authenticated) return <span className="text-muted-foreground">No activity yet</span>;
-  return <span className={cn("flex items-center gap-2", league.lockDue && "font-semibold")}><CircleDotIcon aria-hidden="true" className="size-4 shrink-0 text-primary" />{league.lockDue ? "Weekly Lock due" : league.status}</span>;
+  return <span className={cn("flex items-center gap-2", league.lockDue && "font-semibold")}><CircleDotIcon aria-hidden="true" className="size-4 shrink-0 text-primary" />{league.lockDue ? "Daily Lock due" : league.status}</span>;
 }
 
 function LeagueRow({ league, intent, authenticated }: { league: League; intent: Intent; authenticated: boolean }) {
   const isReady = league.hasExperience;
-  const action = intent === "prove" ? (isReady ? "Make a Weekly Lock" : "Explore teams") : (isReady ? "Find specialists" : "Explore teams");
+  const action = intent === "prove" ? (isReady ? "Make a Daily Lock" : "Explore teams") : (isReady ? "Find specialists" : "Explore teams");
   return (
     <li className="grid gap-4 border-b px-4 py-5 transition-colors last:border-b-0 hover:bg-muted/60 md:grid-cols-[1fr_1.35fr_1.25fr_1.2fr_auto] md:items-center md:gap-5">
       <span className="flex items-center gap-3 text-sm">
@@ -73,7 +73,7 @@ export function LeagueExplorer({ leagues, authenticated, initialIntent }: { leag
     return leagues.filter((league) => {
       const matchesRegion = region === "All" || league.region === (region as Region);
       const matchesQuery = !normalizedQuery || league.name.toLocaleLowerCase().includes(normalizedQuery) || league.country.toLocaleLowerCase().includes(normalizedQuery);
-      const matchesAvailability = availability === "All leagues" || (availability === "Weekly Lock ready" ? league.hasExperience : league.hasTeamCatalog);
+      const matchesAvailability = availability === "All leagues" || (availability === "Daily Lock ready" ? league.hasExperience : league.hasTeamCatalog);
       return matchesRegion && matchesQuery && matchesAvailability;
     });
   }, [availability, leagues, query, region]);
@@ -94,7 +94,7 @@ export function LeagueExplorer({ leagues, authenticated, initialIntent }: { leag
           <Button variant="outline" className="mt-4 w-full sm:hidden" onClick={() => setFiltersOpen(true)}><SlidersHorizontalIcon data-icon="inline-start" />Filters{region !== "All" || availability !== "All leagues" ? " · Active" : ""}</Button>
           <div className="mt-5 hidden gap-5 sm:grid"><FilterRow label="Region"><ToggleGroup value={[region]} onValueChange={(values) => values[0] && setRegion(values[0] as RegionFilter)} variant="outline" spacing={0} aria-label="Filter leagues by region" className="w-max">{regions.map((item) => <ToggleGroupItem key={item} value={item} className="rounded-none px-4">{item}</ToggleGroupItem>)}</ToggleGroup></FilterRow><FilterRow label="Availability"><ToggleGroup value={[availability]} onValueChange={(values) => values[0] && setAvailability(values[0] as AvailabilityFilter)} variant="outline" spacing={0} aria-label="Filter leagues by availability" className="w-max">{availabilityOptions.map((item) => <ToggleGroupItem key={item} value={item} className="rounded-none px-4">{item}</ToggleGroupItem>)}</ToggleGroup></FilterRow></div>
         </div>
-        {filteredLeagues.length ? <div className="mt-8"><LeagueSection title="Ready for a Weekly Lock" leagues={ready} intent={intent} authenticated={authenticated} /><LeagueSection title="Explore team catalogs" leagues={catalogs} intent={intent} authenticated={authenticated} /></div> : (
+        {filteredLeagues.length ? <div className="mt-8"><LeagueSection title="Ready for a Daily Lock" leagues={ready} intent={intent} authenticated={authenticated} /><LeagueSection title="Explore team catalogs" leagues={catalogs} intent={intent} authenticated={authenticated} /></div> : (
           <div className="mt-8 flex min-h-72 flex-col items-center justify-center border-y px-6 text-center"><SearchIcon aria-hidden="true" className="size-10" strokeWidth={1.5} /><h2 className="mt-5 font-heading text-3xl font-bold uppercase">No leagues found</h2><p className="mt-2 text-sm text-muted-foreground">Try adjusting your filters or search terms.</p><button type="button" onClick={resetFilters} className="mt-6 inline-flex h-10 items-center gap-2 border border-foreground px-4 text-sm font-semibold hover:bg-foreground hover:text-background"><RotateCcwIcon className="size-4" />Reset filters</button></div>
         )}
       </div>

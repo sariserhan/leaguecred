@@ -5,7 +5,7 @@ import type { SpecialistProfileData } from "@/data/specialists";
 
 export function DashboardActivity({ data }: { data: SpecialistProfileData }) {
   const activity = [
-    ...data.recentLocks.map((lock) => ({ id: `lock-${lock.id}`, at: lock.submittedAt, icon: CheckCircle2Icon, title: `${lock.team} · ${lock.result === "win" ? "Correct" : lock.result === "loss" ? "Missed" : "Void"}`, body: `Independent Weekly Lock in ${lock.leagueName}`, href: `/leagues/${lock.leagueSlug}` })),
+    ...data.recentLocks.map((lock) => ({ id: `lock-${lock.id}`, at: lock.submittedAt, icon: CheckCircle2Icon, title: `${lock.team} · ${lock.result === "win" ? "Correct" : lock.result === "loss" ? "Missed" : "Void"}`, body: `Independent Daily Lock in ${lock.leagueName}`, href: `/leagues/${lock.leagueSlug}` })),
     ...data.followedHistory.map((entry) => ({ id: `followed-${entry.id}`, at: entry.followedAt, icon: UserRoundCheckIcon, title: `Followed ${entry.specialistName}'s ${entry.team} call`, body: `${entry.leagueName} · ${entry.result}`, href: `/specialists/${entry.specialistId}` })),
   ].toSorted((left, right) => Date.parse(right.at) - Date.parse(left.at)).slice(0, 10);
 

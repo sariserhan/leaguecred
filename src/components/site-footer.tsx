@@ -29,7 +29,7 @@ export function SiteFooter() {
             <span>League<span className="text-primary">Cred</span></span>
           </Link>
           <p className="mt-3 max-w-sm text-sm leading-6 text-background/70">
-            One near-certain Weekly Lock from the league you know. Proven expertise everywhere else.
+            One near-certain Daily Lock from the league you know. Proven expertise everywhere else.
           </p>
         </div>
         {footerGroups.map((group) => (
