@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 
-import { chooseDisplayName } from "@/services/team-display-name";
+import { chooseDisambiguatingName, chooseDisplayName } from "@/services/team-display-name";
 
 describe("chooseDisplayName", () => {
   it.each([
@@ -49,5 +49,33 @@ describe("chooseDisplayName", () => {
     // names, and the accented spelling would be replaced by the plain one.
     expect(chooseDisplayName("Kasımpaşa", "Kasimpasa")).toBeNull();
     expect(chooseDisplayName("Preußen Münster", "Preussen Munster")).toBeNull();
+  });
+});
+
+describe("chooseDisambiguatingName", () => {
+  const taken = (...names: string[]) => new Set(names.map((n) => n.toLowerCase()));
+
+  it("gives the Mexican club back the name that tells it apart", () => {
+    expect(chooseDisambiguatingName("Santos", ["Santos", "Santos Laguna"], taken("santos")))
+      .toBe("Santos Laguna");
+  });
+
+  it("leaves a club alone when its name is its own", () => {
+    expect(chooseDisambiguatingName("Everton", ["Everton FC"], taken("liverpool"))).toBeNull();
+  });
+
+  it("returns null when nothing on offer is any clearer", () => {
+    expect(chooseDisambiguatingName("Santos", ["Santos"], taken("santos"))).toBeNull();
+    expect(chooseDisambiguatingName("Santos", [], taken("santos"))).toBeNull();
+  });
+
+  it("never offers a name another club already holds", () => {
+    expect(chooseDisambiguatingName("Santos", ["Santos", "Boca Juniors"], taken("santos", "boca juniors")))
+      .toBeNull();
+  });
+
+  it("prefers the most specific spelling available", () => {
+    expect(chooseDisambiguatingName("Rangers", ["Rangers FC", "Queens Park Rangers"], taken("rangers")))
+      .toBe("Queens Park Rangers");
   });
 });

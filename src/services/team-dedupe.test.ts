@@ -220,33 +220,35 @@ describe("isDuplicateOfCatalogued", () => {
   const stub = (name: string) => ({ name, fixtures: 0 });
 
   it.each([
-    ["Altach", "SC Rheindorf Altach"],
-    ["Hartberg", "TSV Hartberg"],
-    ["Viborg", "Viborg FF"],
-    ["Celje", "NK Celje"],
-    ["Omonia", "Omonia Nicosia"],
-    ["NEOM Sports Club", "Neom SC"],
-  ])("treats the unplayed %s as a duplicate of %s", (candidate, catalogued) => {
+    ["Genk", "Racing Genk"],
+    ["Sturm", "SK Sturm Graz"],
+  ])("flags the unplayed %s beside %s for review", (candidate, catalogued) => {
     expect(isDuplicateOfCatalogued(stub(candidate), played(catalogued))).toBe(true);
   });
 
   it.each([
-    // Both play, so both are real — whatever their names share.
+    // Why this only ever flags, and never merges: both halves of a real
+    // rivalry can nest, and one of them may simply not be synced yet.
     ["LAFC", "LA Galaxy"],
     ["Paris Saint-Germain", "Paris FC"],
     ["Atlético Junior", "Boca Juniors"],
     ["Universidad Católica", "Universidad Católica (Quito)"],
-  ])("never pairs %s with %s", (left, right) => {
+  ])("cannot tell %s from %s once both play, so it stays quiet", (left, right) => {
     expect(isDuplicateOfCatalogued(played(left, 14), played(right, 15))).toBe(false);
     expect(isDuplicateOfCatalogued(played(right, 15), played(left, 14))).toBe(false);
   });
 
-  it("will not fold one empty entry into another", () => {
-    expect(isDuplicateOfCatalogued(stub("Altach"), stub("SC Rheindorf Altach"))).toBe(false);
+  it("will not pair one empty entry with another", () => {
+    expect(isDuplicateOfCatalogued(stub("Genk"), stub("Racing Genk"))).toBe(false);
   });
 
   it("needs the names to nest, not merely to be unplayed", () => {
     expect(isDuplicateOfCatalogued(stub("Everton"), played("Liverpool"))).toBe(false);
+  });
+
+  it("says nothing about a pair an alias already settles", () => {
+    // Aliased pairs match by name outright and never reach this rule.
+    expect(isDuplicateOfCatalogued(stub("Altach"), played("SC Rheindorf Altach"))).toBe(false);
   });
 });
 

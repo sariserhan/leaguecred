@@ -6,6 +6,14 @@ None.
 
 ## Next
 
+- [ ] Decide whether football-data still supplies fixtures. It was retired on
+      the evidence of dev, where it held nothing ESPN lacked — but production
+      currently has 12 upcoming matches only it carries (Lecce v Roma, Genk v
+      Beveren and others). Re-adding it is one line in free-fixture-sync.
+- [ ] `pnpm teams:dedupe` reports SUSPECT pairs: a club beside an entry naming
+      the same club, in one competition, one never played. They are never merged
+      because the same shape also describes Boca Juniors beside Atlético Junior.
+      Check them and add an alias where they really are one club.
 - [ ] Rotate the Neon database password and update Vercel and .env.local
 - [ ] Run `pnpm matchweeks:merge` against production. It reports by default;
       `--apply` folds each gameweek split across providers back into one and

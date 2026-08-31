@@ -68,3 +68,32 @@ export function chooseDisplayName(current: string, espnName: string | null | und
 
   return candidate;
 }
+
+/**
+ * A name for a club whose current one is already answered to by a different
+ * club. ESPN calls both Santos of Brazil and Santos Laguna of Mexico "Santos",
+ * so adopting its wording for the second left two clubs indistinguishable in
+ * every table and link. Another provider usually kept them apart, and the most
+ * specific of those spellings is the one that does.
+ *
+ * @param taken names already held by other clubs
+ * @returns a clearer name, or null when nothing on offer is any clearer
+ */
+export function chooseDisambiguatingName(
+  current: string,
+  candidates: Array<string | null | undefined>,
+  taken: ReadonlySet<string>,
+) {
+  const isTaken = (name: string) => taken.has(name.trim().toLowerCase());
+  if (!isTaken(current)) return null;
+
+  const usable = candidates
+    .map((candidate) => candidate?.trim())
+    .filter((candidate): candidate is string =>
+      isMeaningful(candidate) && candidate !== current.trim() && !isTaken(candidate));
+  if (usable.length === 0) return null;
+
+  // The longest spelling is the one carrying the distinguishing part.
+  return usable.sort((left, right) =>
+    right.length - left.length || left.localeCompare(right))[0];
+}

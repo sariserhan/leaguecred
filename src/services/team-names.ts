@@ -159,6 +159,22 @@ const aliases: Record<string, string> = {
   bayerleverkusen: "leverkusen",
   tsghoffenheim: "hoffenheim",
   cologne: "koln",
+  // A club beside a leftover catalogue entry naming the same club. Each was
+  // checked one at a time: name nesting alone is not evidence, since inside a
+  // single competition it also pairs Atlético Junior with Boca Juniors and
+  // Paris FC with Paris Saint-Germain.
+  rheindorfaltach: "altach",
+  tsvhartberg: "hartberg",
+  rapidvienna: "rapid",
+  viborgff: "viborg",
+  nkcelje: "celje",
+  mjallbyaif: "mjallby",
+  omonianicosia: "omonia",
+  hapoelbeersheva: "hapoelbeer",
+  jagielloniabialystok: "jagiellonia",
+  neomsportsclub: "neom",
+  institutocordoba: "instituto",
+  argentinosjrs: "argentinosjuniors",
 };
 
 export function normalizeTeamName(value: string) {

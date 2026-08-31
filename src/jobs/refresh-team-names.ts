@@ -1,7 +1,7 @@
 import { sqlClient } from "@/db";
 import { describeDatabaseTarget } from "@/lib/env";
 import { teamSlug } from "@/lib/team-path";
-import { chooseDisplayName } from "@/services/team-display-name";
+import { chooseDisambiguatingName, chooseDisplayName } from "@/services/team-display-name";
 
 /**
  * Renames clubs to what ESPN calls them.
@@ -18,13 +18,22 @@ import { chooseDisplayName } from "@/services/team-display-name";
  * Reports without writing unless --apply is passed.
  */
 
-type Row = { id: string; name: string; slug: string; espn_name: string | null };
+type Row = { id: string; name: string; slug: string; espn_name: string | null; collides: number; alias_names: string[] };
 
 async function loadTeams() {
   return sqlClient<Row[]>`
     select t.id, t.name, t.slug,
       (select a.source_name from team_provider_aliases a
-        where a.team_id = t.id and a.provider = 'espn-web' limit 1) as espn_name
+        where a.team_id = t.id and a.provider = 'espn-web' limit 1) as espn_name,
+      -- ESPN calls both Santos of Brazil and Santos Laguna of Mexico "Santos".
+      -- Adopting that for the second leaves two different clubs under one name,
+      -- so a rename that would collide with another club is refused.
+      (select count(*)::int from teams other
+        where other.id <> t.id
+          and lower(other.name) = lower((select a.source_name from team_provider_aliases a
+            where a.team_id = t.id and a.provider = 'espn-web' limit 1))) as collides,
+      coalesce((select array_agg(distinct a.source_name) from team_provider_aliases a
+        where a.team_id = t.id), '{}') as alias_names
     from teams t
     order by t.name`;
 }
@@ -37,11 +46,40 @@ async function main() {
 
   try {
     const teams = await loadTeams();
+
+    // Names held by more than one club, and who holds each, so a club can be
+    // asked to move off a name it shares rather than onto one.
+    const holders = new Map<string, string[]>();
+    for (const team of teams) {
+      const key = team.name.trim().toLowerCase();
+      holders.set(key, [...(holders.get(key) ?? []), team.id]);
+    }
+    const sharedNames = new Set([...holders].filter(([, ids]) => ids.length > 1).map(([name]) => name));
+    const otherClubNames = (team: Row) => new Set(
+      teams.filter((other) => other.id !== team.id).map((other) => other.name.trim().toLowerCase()));
+
     let renamed = 0;
     let reslugged = 0;
 
     for (const team of teams) {
-      const best = chooseDisplayName(team.name, team.espn_name);
+      // Two separate questions, and a collision answers neither on its own:
+      // whether ESPN's name is an improvement, and whether this club's current
+      // name says which club it is.
+      const proposed = chooseDisplayName(team.name, team.espn_name);
+      if (proposed && team.collides > 0) {
+        console.warn(`KEEPING ${team.name}: ESPN calls it "${proposed}", which another club already answers to.`);
+      }
+      const adopted = team.collides > 0 ? null : proposed;
+
+      const shared = sharedNames.has(team.name.trim().toLowerCase());
+      const clearer = adopted || !shared
+        ? null
+        : chooseDisambiguatingName(team.name, team.alias_names, otherClubNames(team));
+      if (clearer) {
+        console.warn(`SHARED NAME ${team.name} is held by another club; taking "${clearer}".`);
+      }
+
+      const best = adopted ?? clearer;
       const name = best ?? team.name;
 
       if (best) {

@@ -91,8 +91,12 @@ async function loadFixtureEvidence() {
  * it: both listed in the same competition and season, their names nesting, and
  * one of them never once appearing in a fixture.
  *
- * The fixture evidence cannot reach these, because it needs one side of a match
- * to agree and the leftover has no matches at all.
+ * Reported, never merged. Nesting is not evidence of anything on its own: in one
+ * competition it also pairs Atlético Junior with Boca Juniors, Paris FC with
+ * Paris Saint-Germain and LAFC with LA Galaxy. Requiring one side to have no
+ * fixture separates those on the data we happen to hold, and no further — a real
+ * club we have simply not synced yet looks exactly like a leftover. So these go
+ * to a person, and the ones that are genuine become aliases.
  */
 async function loadStubEvidence() {
   const rows = await sqlClient<Array<{
@@ -109,12 +113,12 @@ async function loadStubEvidence() {
     join teams ta on ta.id = ma.team_id
     join teams tb on tb.id = mb.team_id`;
 
-  const pairs: Array<[string, string]> = [];
+  const pairs: Array<{ nameA: string; nameB: string }> = [];
   for (const row of rows) {
     const left = { name: row.name_a, fixtures: row.fixtures_a };
     const right = { name: row.name_b, fixtures: row.fixtures_b };
     if (isDuplicateOfCatalogued(left, right) || isDuplicateOfCatalogued(right, left)) {
-      pairs.push([row.a, row.b]);
+      pairs.push({ nameA: row.name_a, nameB: row.name_b });
     }
   }
   return pairs;
@@ -203,8 +207,11 @@ async function main() {
     for (const pair of evidence.rejected) {
       console.warn(`FIXTURES SUGGEST ${pair.nameA} and ${pair.nameB} are one club, but the names do not agree. Left alone.`);
     }
-    const stubs = await loadStubEvidence();
-    const planned = planTeamMerges(await loadTeams(), [...evidence.accepted, ...stubs]);
+    for (const pair of await loadStubEvidence()) {
+      console.warn(`SUSPECT ${pair.nameA} and ${pair.nameB} share a competition and one has never played. ` +
+        `Check them; add an alias if they are one club.`);
+    }
+    const planned = planTeamMerges(await loadTeams(), evidence.accepted);
     const merges = only ? planned.merges.filter((merge) => [merge.canonical.slug, ...merge.duplicates.map((team) => team.slug)].some((slug) => only.has(slug))) : planned.merges;
     const unresolved = only ? [] : planned.unresolved;
 

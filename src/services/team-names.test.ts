@@ -68,3 +68,29 @@ describe("clubs both providers wrote differently on either side of one match", (
     expect(teamNamesMatch("Borussia Dortmund", "Borussia Mönchengladbach")).toBe(false);
   });
 });
+
+describe("a club beside a leftover entry naming it", () => {
+  it.each([
+    ["Altach", "SC Rheindorf Altach"],
+    ["Hartberg", "TSV Hartberg"],
+    ["SK Rapid", "Rapid Vienna"],
+    ["Viborg", "Viborg FF"],
+    ["Celje", "NK Celje"],
+    ["Mjällby", "Mjällby AIF"],
+    ["Omonia", "Omonia Nicosia"],
+    ["Hapoel Be'er", "Hapoel Be'er Sheva"],
+    ["Jagiellonia", "Jagiellonia Bialystok"],
+    ["NEOM Sports Club", "Neom SC"],
+    ["Instituto", "Instituto (Córdoba)"],
+    ["Argentinos Jrs", "Argentinos Juniors"],
+  ])("matches %s with %s", (left, right) => {
+    expect(teamNamesMatch(left, right)).toBe(true);
+  });
+
+  it("leaves the pairs that only look alike", () => {
+    expect(teamNamesMatch("Atlético Junior", "Boca Juniors")).toBe(false);
+    expect(teamNamesMatch("Atlético Junior", "Argentinos Juniors")).toBe(false);
+    expect(teamNamesMatch("Santos", "Santos Laguna")).toBe(false);
+    expect(teamNamesMatch("Universidad Católica", "Universidad Católica (Quito)")).toBe(false);
+  });
+});
