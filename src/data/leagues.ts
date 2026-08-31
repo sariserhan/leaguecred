@@ -153,6 +153,8 @@ export type DatabaseFixture = {
   kickoff: string;
   /** The real kickoff, so the page can say when this call closes. */
   kickoffAt: string;
+  /** The UTC day this match is played, which is the day a lock is spent on. */
+  matchDate: string;
   /** Whether this match can still be called. Decided here, against the
    * database clock, rather than in the browser: a lock closes on its own
    * kickoff, and the server is what will accept or refuse it. */
@@ -259,7 +261,9 @@ export type LeagueExperienceData = {
     authenticated: boolean;
     mode: "independent" | "follow" | null;
     picksRevealed: boolean;
-    lockedTeam: string | null;
+    /** The team locked on each date already called, keyed by match date. A lock
+     * is one per league per day, so a week can hold several. */
+    lockedByDate: Record<string, string>;
     followedSourcePickId: string | null;
     wins: number;
     losses: number;
@@ -352,9 +356,11 @@ export async function getLeagueExperience(slug: string, userId?: string): Promis
     sqlClient<Array<{ mode: "independent" | "follow"; expert_picks_revealed_at: Date | null }>>`
       select mode, expert_picks_revealed_at from matchweek_participation
       where user_id = ${viewerId} and league_id = ${league.id} and matchweek_id = ${matchweek.id} limit 1`,
-    sqlClient<Array<{ team: string }>>`
-      select t.name as team from picks p join teams t on t.id = p.selected_team_id
-      where p.user_id = ${viewerId} and p.league_id = ${league.id} and p.matchweek_id = ${matchweek.id} limit 1`,
+    sqlClient<Array<{ team: string; match_date: string }>>`
+      select t.name as team, p.match_date::text
+      from picks p join teams t on t.id = p.selected_team_id
+      where p.user_id = ${viewerId} and p.league_id = ${league.id} and p.matchweek_id = ${matchweek.id}
+      order by p.match_date`,
     sqlClient<Array<{ wins: number; losses: number; tier: string }>>`
       select wins, losses, tier from user_league_records where user_id = ${viewerId} and league_id = ${league.id} limit 1`,
     sqlClient<Array<{ source_pick_id: string }>>`
@@ -417,6 +423,7 @@ export async function getLeagueExperience(slug: string, userId?: string): Promis
       kickoff: new Intl.DateTimeFormat("en", { hour: "2-digit", minute: "2-digit", timeZone: "UTC", timeZoneName: "short" }).format(new Date(fixture.kickoff_at)),
       kickoffAt: new Date(fixture.kickoff_at).toISOString(),
       open: fixture.open,
+      matchDate: new Date(fixture.kickoff_at).toISOString().slice(0, 10),
       homeVotes: fixture.home_votes, awayVotes: fixture.away_votes, viewerVote: fixture.viewer_vote,
       discussion: discussionsByFixture.get(fixture.id) ?? [],
     })),
@@ -448,7 +455,7 @@ export async function getLeagueExperience(slug: string, userId?: string): Promis
       authenticated: Boolean(userId),
       mode: participation?.mode ?? null,
       picksRevealed: lockedByTime || Boolean(participation?.expert_picks_revealed_at),
-      lockedTeam: pickRows[0]?.team ?? null,
+      lockedByDate: Object.fromEntries(pickRows.map((pick) => [pick.match_date, pick.team])),
       followedSourcePickId: followedRows[0]?.source_pick_id ?? null,
       wins: record?.wins ?? 0,
       losses: record?.losses ?? 0,

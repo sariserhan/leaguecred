@@ -48,7 +48,10 @@ import { cn } from "@/lib/utils";
 import { Crest } from "@/components/ui/crest";
 
 type ParticipationMode = "prove" | "follow";
-type Selection = { fixtureId: string; teamId: string; teamName: string };
+type Selection = { fixtureId: string; teamId: string; teamName: string; matchDate: string };
+
+const dayLabel = (date: string) =>
+  new Intl.DateTimeFormat("en", { weekday: "long", timeZone: "UTC" }).format(new Date(`${date}T12:00:00Z`));
 
 function TeamMark({ code, logoUrl }: { code: string; logoUrl: string | null }) {
   return (
@@ -125,7 +128,10 @@ export function LeagueExperience({
   const router = useRouter();
   const [mode, setMode] = useState<ParticipationMode>(data.viewer.mode === "follow" ? "follow" : "prove");
   const [selection, setSelection] = useState<Selection | null>(null);
-  const [lockedTeam, setLockedTeam] = useState(data.viewer.lockedTeam);
+  // Keyed by match date, because a lock is one per league per day: a Friday
+  // call and a Saturday call are both allowed, and holding one used to close
+  // the whole week here.
+  const [lockedByDate, setLockedByDate] = useState(data.viewer.lockedByDate);
   const [picksRevealed, setPicksRevealed] = useState(data.viewer.picksRevealed);
   const [followedSourcePickId, setFollowedSourcePickId] = useState(data.viewer.followedSourcePickId);
   const [lockConfirmOpen, setLockConfirmOpen] = useState(false);
@@ -143,6 +149,9 @@ export function LeagueExperience({
   // every call in the week the moment any match in it began — which is every
   // week, once it is under way, and is why nothing anywhere could be selected.
   const openFixtures = data.fixtures.filter((fixture) => fixture.open);
+  const lockedDays = Object.entries(lockedByDate);
+  // Days with a match still to come and no call on them yet.
+  const daysLeft = new Set(openFixtures.filter((f) => !lockedByDate[f.matchDate]).map((f) => f.matchDate)).size;
   const nextDeadline = openFixtures[0]?.kickoffAt ?? null;
   const lockAt = nextDeadline
     ? new Intl.DateTimeFormat("en", {
@@ -167,7 +176,7 @@ export function LeagueExperience({
 
   function chooseMode(values: string[]) {
     const nextMode = values[0] as ParticipationMode | undefined;
-    if (!nextMode || lockedTeam || data.viewer.mode) return;
+    if (!nextMode || Object.keys(lockedByDate).length > 0 || data.viewer.mode) return;
     setError(null);
     if (nextMode === "follow") {
       if (!requireAuthentication()) return;
@@ -203,7 +212,7 @@ export function LeagueExperience({
         return;
       }
       setDecisionReason("");
-      setLockedTeam(selection.teamName);
+      setLockedByDate((current) => ({ ...current, [selection.matchDate]: selection.teamName }));
       setSuccess(`${selection.teamName} is locked. Your pick is hidden until the window closes and will then count toward your independent ${data.league.name} record.`);
       setPicksRevealed(true);
       setLockConfirmOpen(false);
@@ -265,11 +274,11 @@ export function LeagueExperience({
         {success ? <Alert className="mb-5 rounded-none border-primary bg-primary"><CheckIcon /><AlertTitle>Done — your next step is clear</AlertTitle><AlertDescription>{success} <Link href="/slip" className="font-semibold underline">Open your Weekly Slip</Link></AlertDescription></Alert> : null}
 
         <ToggleGroup value={[mode]} onValueChange={chooseMode} className="grid w-full gap-2 sm:gap-4 lg:grid-cols-2" aria-label="Choose how to participate this matchweek">
-          <ToggleGroupItem value="prove" disabled={Boolean(lockedTeam) || data.viewer.mode === "follow" || interactionLocked} className="h-auto min-h-24 w-full justify-start overflow-hidden whitespace-normal border px-4 py-4 text-left sm:px-5">
+          <ToggleGroupItem value="prove" disabled={Object.keys(lockedByDate).length > 0 || data.viewer.mode === "follow" || interactionLocked} className="h-auto min-h-24 w-full justify-start overflow-hidden whitespace-normal border px-4 py-4 text-left sm:px-5">
             <ShieldCheckIcon aria-hidden="true" className="size-7 shrink-0 text-primary sm:size-9" />
             <span className="min-w-0 flex-1"><strong className="block font-heading text-2xl uppercase">Prove your knowledge</strong><span className="block text-sm font-normal text-muted-foreground">Make your own pick before seeing specialists. This builds your {data.league.name} record.</span></span>
           </ToggleGroupItem>
-          <ToggleGroupItem value="follow" disabled={Boolean(lockedTeam) || data.viewer.mode === "independent" || interactionLocked} className="h-auto min-h-24 w-full justify-start overflow-hidden whitespace-normal border px-4 py-4 text-left sm:px-5">
+          <ToggleGroupItem value="follow" disabled={Object.keys(lockedByDate).length > 0 || data.viewer.mode === "independent" || interactionLocked} className="h-auto min-h-24 w-full justify-start overflow-hidden whitespace-normal border px-4 py-4 text-left sm:px-5">
             <UsersRoundIcon aria-hidden="true" className="size-7 shrink-0 sm:size-9" />
             <span className="min-w-0 flex-1"><strong className="block font-heading text-2xl uppercase">Follow experts</strong><span className="block text-sm font-normal text-muted-foreground">See proven specialist picks. This will not build your independent record.</span></span>
           </ToggleGroupItem>
@@ -289,15 +298,18 @@ export function LeagueExperience({
                       const awaySelected = selection?.teamId === fixture.awayTeamId;
                       // Each match closes on its own kickoff, so a Saturday
                       // result never shuts the Wednesday call beside it.
-                      const disabled = mode === "follow" || Boolean(lockedTeam) || interactionLocked || !fixture.open;
+                      // Only the day this match is on is spent, so a call made
+                      // on Friday leaves Saturday open.
+                      const lockedThatDay = lockedByDate[fixture.matchDate];
+                      const disabled = mode === "follow" || Boolean(lockedThatDay) || interactionLocked || !fixture.open;
                       return (
                         <div key={fixture.id} className="grid grid-cols-[minmax(0,1fr)_auto_minmax(0,1fr)] items-stretch gap-2 bg-background p-3 sm:items-center sm:gap-3">
-                          <button type="button" disabled={disabled} onClick={() => setSelection({ fixtureId: fixture.id, teamId: fixture.homeTeamId, teamName: fixture.home })} className={cn("col-start-1 row-start-2 flex min-w-0 flex-col items-center justify-center gap-2 rounded-sm px-2 py-3 text-center font-semibold transition-colors focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ring disabled:cursor-not-allowed disabled:opacity-60 sm:row-start-1 sm:flex-row sm:justify-start sm:py-2 sm:text-left", homeSelected ? "bg-primary text-primary-foreground" : "hover:bg-muted")} aria-pressed={homeSelected}>
+                          <button type="button" disabled={disabled} onClick={() => setSelection({ fixtureId: fixture.id, teamId: fixture.homeTeamId, teamName: fixture.home, matchDate: fixture.matchDate })} className={cn("col-start-1 row-start-2 flex min-w-0 flex-col items-center justify-center gap-2 rounded-sm px-2 py-3 text-center font-semibold transition-colors focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ring disabled:cursor-not-allowed disabled:opacity-60 sm:row-start-1 sm:flex-row sm:justify-start sm:py-2 sm:text-left", homeSelected ? "bg-primary text-primary-foreground" : "hover:bg-muted")} aria-pressed={homeSelected}>
                             <TeamMark code={fixture.homeCode} logoUrl={fixture.homeLogoUrl} /><span className="min-w-0 break-words">{fixture.home}</span>
                           </button>
                           <span className="col-span-3 row-start-1 text-center text-sm text-muted-foreground sm:col-span-1">{fixture.kickoff}</span>
                           <span className="col-start-2 row-start-2 self-center font-heading text-sm font-bold text-muted-foreground sm:hidden" aria-hidden="true">VS</span>
-                          <button type="button" disabled={disabled} onClick={() => setSelection({ fixtureId: fixture.id, teamId: fixture.awayTeamId, teamName: fixture.away })} className={cn("col-start-3 row-start-2 flex min-w-0 flex-col items-center justify-center gap-2 rounded-sm px-2 py-3 text-center font-semibold transition-colors focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ring disabled:cursor-not-allowed disabled:opacity-60 sm:row-start-1 sm:flex-row sm:justify-end sm:py-2 sm:text-right", awaySelected ? "bg-primary text-primary-foreground" : "hover:bg-muted")} aria-pressed={awaySelected}>
+                          <button type="button" disabled={disabled} onClick={() => setSelection({ fixtureId: fixture.id, teamId: fixture.awayTeamId, teamName: fixture.away, matchDate: fixture.matchDate })} className={cn("col-start-3 row-start-2 flex min-w-0 flex-col items-center justify-center gap-2 rounded-sm px-2 py-3 text-center font-semibold transition-colors focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ring disabled:cursor-not-allowed disabled:opacity-60 sm:row-start-1 sm:flex-row sm:justify-end sm:py-2 sm:text-right", awaySelected ? "bg-primary text-primary-foreground" : "hover:bg-muted")} aria-pressed={awaySelected}>
                             <span className="order-first sm:order-last"><TeamMark code={fixture.awayCode} logoUrl={fixture.awayLogoUrl} /></span><span className="min-w-0 break-words sm:order-first">{fixture.away}</span>
                           </button>
                           <FixtureVotePoll fixtureId={fixture.id} homeVotes={fixture.homeVotes} awayVotes={fixture.awayVotes} viewerVote={fixture.viewerVote} />
@@ -310,12 +322,24 @@ export function LeagueExperience({
               ))}
             </div>
             <div className="border-t bg-muted p-3">
-              {lockedTeam ? (
-                <div className="flex min-h-11 items-center justify-center gap-2 font-semibold"><CheckIcon aria-hidden="true" className="size-5 text-primary" />{lockedTeam} is your independent Daily Lock</div>
-              ) : mode === "prove" ? (
-                <Button size="lg" className="w-full" disabled={!selection || pending || interactionLocked} onClick={() => requireAuthentication() && setLockConfirmOpen(true)}>
-                  {pending ? <Spinner data-icon="inline-start" /> : <LockKeyholeIcon data-icon="inline-start" />}Lock your one pick: {selection?.teamName ?? "choose a team"}
-                </Button>
+              {lockedDays.length > 0 ? (
+                <p className="mb-3 flex flex-wrap items-center justify-center gap-x-2 gap-y-1 text-sm font-semibold">
+                  <CheckIcon aria-hidden="true" className="size-5 shrink-0 text-primary" />
+                  {lockedDays.map(([date, team]) => `${team} on ${dayLabel(date)}`).join(" · ")}
+                </p>
+              ) : null}
+              {mode === "prove" ? (
+                daysLeft > 0 ? (
+                  <Button size="lg" className="w-full" disabled={!selection || pending || interactionLocked} onClick={() => requireAuthentication() && setLockConfirmOpen(true)}>
+                    {pending ? <Spinner data-icon="inline-start" /> : <LockKeyholeIcon data-icon="inline-start" />}
+                    {/* One call per day, so what is left is days, not picks. */}
+                    Lock {selection ? `${selection.teamName} for ${dayLabel(selection.matchDate)}` : `a team — ${daysLeft} day${daysLeft === 1 ? "" : "s"} still open`}
+                  </Button>
+                ) : (
+                  <div className="flex min-h-11 items-center justify-center gap-2 text-sm text-muted-foreground">
+                    Every day in this week is called.
+                  </div>
+                )
               ) : (
                 <div className="flex min-h-11 items-center justify-center gap-2 text-sm text-muted-foreground"><UsersRoundIcon aria-hidden="true" className="size-5" />Follow mode selected — choose a specialist call</div>
               )}
@@ -356,7 +380,7 @@ export function LeagueExperience({
         </section>
       </div>
 
-      {!lockedTeam && !interactionLocked ? <div className="fixed inset-x-0 bottom-0 z-30 border-t border-primary bg-foreground p-3 text-background shadow-2xl sm:hidden"><div className="flex items-center gap-3"><div className="min-w-0 flex-1"><span className="block text-[10px] font-bold uppercase text-primary">{mode === "prove" ? "Your Daily Lock" : "Follow mode"}</span><strong className="block truncate">{mode === "prove" ? selection?.teamName ?? "Choose a team above" : "Choose a specialist call"}</strong></div>{mode === "prove" ? <Button disabled={!selection || pending} onClick={() => requireAuthentication() && setLockConfirmOpen(true)}><LockKeyholeIcon data-icon="inline-start" />Lock pick</Button> : <Button render={<a href="#specialists" />}><UsersRoundIcon data-icon="inline-start" />Specialists</Button>}</div></div> : null}
+      {daysLeft > 0 && !interactionLocked ? <div className="fixed inset-x-0 bottom-0 z-30 border-t border-primary bg-foreground p-3 text-background shadow-2xl sm:hidden"><div className="flex items-center gap-3"><div className="min-w-0 flex-1"><span className="block text-[10px] font-bold uppercase text-primary">{mode === "prove" ? "Your Daily Lock" : "Follow mode"}</span><strong className="block truncate">{mode === "prove" ? selection?.teamName ?? "Choose a team above" : "Choose a specialist call"}</strong></div>{mode === "prove" ? <Button disabled={!selection || pending} onClick={() => requireAuthentication() && setLockConfirmOpen(true)}><LockKeyholeIcon data-icon="inline-start" />Lock pick</Button> : <Button render={<a href="#specialists" />}><UsersRoundIcon data-icon="inline-start" />Specialists</Button>}</div></div> : null}
 
       <Dialog open={lockConfirmOpen} onOpenChange={setLockConfirmOpen}>
         <DialogContent><DialogHeader><DialogTitle className="font-heading text-3xl font-bold uppercase">Lock {selection?.teamName}?</DialogTitle><DialogDescription>This independent {data.league.name} prediction cannot be changed or deleted. Specialist picks reveal after confirmation.</DialogDescription><div className="space-y-2"><label htmlFor="decision-reason" className="text-sm font-semibold">Why this pick? <span className="font-normal text-muted-foreground">Optional</span></label><textarea id="decision-reason" value={decisionReason} onChange={(event) => setDecisionReason(event.target.value)} maxLength={500} rows={3} placeholder="Add a reason for your decision..." className="w-full resize-y border bg-background px-3 py-2 text-sm outline-none focus-visible:ring-2 focus-visible:ring-ring" disabled={pending} /><p className="text-xs text-muted-foreground">Up to 500 characters.</p></div></DialogHeader><DialogFooter><Button variant="outline" onClick={() => setLockConfirmOpen(false)}>Go back</Button><Button onClick={confirmLock} disabled={pending}>{pending ? <Spinner data-icon="inline-start" /> : <LockKeyholeIcon data-icon="inline-start" />}Confirm Daily Lock</Button></DialogFooter></DialogContent>
