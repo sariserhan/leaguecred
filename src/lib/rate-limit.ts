@@ -27,6 +27,7 @@ export const RATE_LIMITS = {
   /** No account required, so the actor is a cookie, not a user - generous
    * enough for someone genuinely changing their mind on several fixtures. */
   castFixtureVote: { limit: 30, windowSeconds: 60 },
+  addGameDiscussion: { limit: 10, windowSeconds: 60 },
 } as const satisfies Record<string, RateLimitPolicy>;
 
 export type RateLimitedAction = keyof typeof RATE_LIMITS;

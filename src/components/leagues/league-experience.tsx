@@ -41,6 +41,7 @@ import { Spinner } from "@/components/ui/spinner";
 import { ToggleGroup, ToggleGroupItem } from "@/components/ui/toggle-group";
 import { LeagueLeaderboard } from "@/components/leagues/league-leaderboard";
 import { FixtureVotePoll } from "@/components/fixture-vote-poll";
+import { GameDiscussion } from "@/components/leagues/game-discussion";
 import { LockCountdown } from "@/components/lock-countdown";
 import { LocalTime } from "@/components/local-time";
 import type { LeagueExperienceData, PastMatchweek } from "@/data/leagues";
@@ -128,6 +129,7 @@ export function LeagueExperience({
   const [picksRevealed, setPicksRevealed] = useState(data.viewer.picksRevealed);
   const [followedSourcePickId, setFollowedSourcePickId] = useState(data.viewer.followedSourcePickId);
   const [lockConfirmOpen, setLockConfirmOpen] = useState(false);
+  const [decisionReason, setDecisionReason] = useState("");
   const [followConfirmOpen, setFollowConfirmOpen] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [success, setSuccess] = useState<string | null>(null);
@@ -184,12 +186,13 @@ export function LeagueExperience({
   function confirmLock() {
     if (!selection || !requireAuthentication()) return;
     startTransition(async () => {
-      const result = await submitDailyLock(selection.fixtureId, selection.teamId);
+      const result = await submitDailyLock(selection.fixtureId, selection.teamId, decisionReason);
       if (!result.ok) {
         setError(result.message);
         setLockConfirmOpen(false);
         return;
       }
+      setDecisionReason("");
       setLockedTeam(selection.teamName);
       setSuccess(`${selection.teamName} is locked. Your pick is hidden until the window closes and will then count toward your independent ${data.league.name} record.`);
       setPicksRevealed(true);
@@ -285,6 +288,7 @@ export function LeagueExperience({
                             <span className="order-first sm:order-last"><TeamMark code={fixture.awayCode} logoUrl={fixture.awayLogoUrl} /></span><span className="min-w-0 break-words sm:order-first">{fixture.away}</span>
                           </button>
                           <FixtureVotePoll fixtureId={fixture.id} homeVotes={fixture.homeVotes} awayVotes={fixture.awayVotes} viewerVote={fixture.viewerVote} />
+                          <GameDiscussion fixtureId={fixture.id} initialComments={fixture.discussion} />
                         </div>
                       );
                     })}
@@ -342,7 +346,7 @@ export function LeagueExperience({
       {!lockedTeam && !interactionLocked ? <div className="fixed inset-x-0 bottom-0 z-30 border-t border-primary bg-foreground p-3 text-background shadow-2xl sm:hidden"><div className="flex items-center gap-3"><div className="min-w-0 flex-1"><span className="block text-[10px] font-bold uppercase text-primary">{mode === "prove" ? "Your Daily Lock" : "Follow mode"}</span><strong className="block truncate">{mode === "prove" ? selection?.teamName ?? "Choose a team above" : "Choose a specialist call"}</strong></div>{mode === "prove" ? <Button disabled={!selection || pending} onClick={() => requireAuthentication() && setLockConfirmOpen(true)}><LockKeyholeIcon data-icon="inline-start" />Lock pick</Button> : <Button render={<a href="#specialists" />}><UsersRoundIcon data-icon="inline-start" />Specialists</Button>}</div></div> : null}
 
       <Dialog open={lockConfirmOpen} onOpenChange={setLockConfirmOpen}>
-        <DialogContent><DialogHeader><DialogTitle className="font-heading text-3xl font-bold uppercase">Lock {selection?.teamName}?</DialogTitle><DialogDescription>This independent {data.league.name} prediction cannot be changed or deleted. Specialist picks reveal after confirmation.</DialogDescription></DialogHeader><DialogFooter><Button variant="outline" onClick={() => setLockConfirmOpen(false)}>Go back</Button><Button onClick={confirmLock} disabled={pending}>{pending ? <Spinner data-icon="inline-start" /> : <LockKeyholeIcon data-icon="inline-start" />}Confirm Daily Lock</Button></DialogFooter></DialogContent>
+        <DialogContent><DialogHeader><DialogTitle className="font-heading text-3xl font-bold uppercase">Lock {selection?.teamName}?</DialogTitle><DialogDescription>This independent {data.league.name} prediction cannot be changed or deleted. Specialist picks reveal after confirmation.</DialogDescription><div className="space-y-2"><label htmlFor="decision-reason" className="text-sm font-semibold">Why this pick? <span className="font-normal text-muted-foreground">Optional</span></label><textarea id="decision-reason" value={decisionReason} onChange={(event) => setDecisionReason(event.target.value)} maxLength={500} rows={3} placeholder="Add a reason for your decision..." className="w-full resize-y border bg-background px-3 py-2 text-sm outline-none focus-visible:ring-2 focus-visible:ring-ring" disabled={pending} /><p className="text-xs text-muted-foreground">Up to 500 characters.</p></div></DialogHeader><DialogFooter><Button variant="outline" onClick={() => setLockConfirmOpen(false)}>Go back</Button><Button onClick={confirmLock} disabled={pending}>{pending ? <Spinner data-icon="inline-start" /> : <LockKeyholeIcon data-icon="inline-start" />}Confirm Daily Lock</Button></DialogFooter></DialogContent>
       </Dialog>
 
       <Dialog open={followConfirmOpen} onOpenChange={setFollowConfirmOpen}>

@@ -276,6 +276,18 @@ export const fixtureVotes = pgTable("fixture_votes", {
   index("fixture_votes_fixture_idx").on(table.fixtureId),
 ]);
 
+export const gameDiscussions = pgTable("game_discussions", {
+  id: uuid("id").defaultRandom().primaryKey(),
+  fixtureId: uuid("fixture_id").notNull().references(() => fixtures.id, { onDelete: "cascade" }),
+  userId: text("user_id").references(() => user.id, { onDelete: "set null" }),
+  guestName: text("guest_name"),
+  body: text("body").notNull(),
+  createdAt,
+}, (table) => [
+  index("game_discussions_fixture_created_idx").on(table.fixtureId, table.createdAt),
+  check("game_discussions_author_check", sql`(${table.userId} is not null and ${table.guestName} is null) or (${table.userId} is null and ${table.guestName} is not null)` ),
+]);
+
 export const matchweekParticipation = pgTable("matchweek_participation", {
   id: uuid("id").defaultRandom().primaryKey(),
   userId: text("user_id").notNull().references(() => user.id, { onDelete: "cascade" }),
@@ -301,6 +313,7 @@ export const picks = pgTable("picks", {
   matchweekId: uuid("matchweek_id").notNull().references(() => matchweeks.id, { onDelete: "cascade" }),
   fixtureId: uuid("fixture_id").notNull().references(() => fixtures.id),
   selectedTeamId: uuid("selected_team_id").notNull().references(() => teams.id),
+  decisionReason: text("decision_reason"),
   result: pickResultEnum("result").default("pending").notNull(),
   submittedAt: timestamp("submitted_at", { withTimezone: true }).defaultNow().notNull(),
   lockedAt: timestamp("locked_at", { withTimezone: true }).defaultNow().notNull(),

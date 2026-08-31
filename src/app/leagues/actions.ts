@@ -31,8 +31,8 @@ function actionError(error: unknown): LeagueActionResult {
   return { ok: false, message: "The choice could not be saved. Please refresh and try again." };
 }
 
-export async function submitDailyLock(fixtureId: string, selectedTeamId: string): Promise<LeagueActionResult> {
-  const parsed = z.object({ fixtureId: uuid, selectedTeamId: uuid }).safeParse({ fixtureId, selectedTeamId });
+export async function submitDailyLock(fixtureId: string, selectedTeamId: string, reason?: string): Promise<LeagueActionResult> {
+  const parsed = z.object({ fixtureId: uuid, selectedTeamId: uuid, reason: z.string().trim().max(500).optional() }).safeParse({ fixtureId, selectedTeamId, reason });
   if (!parsed.success) return { ok: false, message: "That fixture or team is invalid." };
 
   const userId = await authenticatedUserId();
@@ -58,8 +58,8 @@ export async function submitDailyLock(fixtureId: string, selectedTeamId: string)
       await sql`insert into matchweek_participation (user_id, league_id, matchweek_id, mode)
         values (${userId}, ${fixture.league_id}, ${fixture.matchweek_id}, 'independent')
         on conflict (user_id, league_id, matchweek_id) do nothing`;
-      await sql`insert into picks (user_id, league_id, season_id, matchweek_id, fixture_id, selected_team_id)
-        values (${userId}, ${fixture.league_id}, ${fixture.season_id}, ${fixture.matchweek_id}, ${parsed.data.fixtureId}, ${parsed.data.selectedTeamId})`;
+      await sql`insert into picks (user_id, league_id, season_id, matchweek_id, fixture_id, selected_team_id, decision_reason)
+        values (${userId}, ${fixture.league_id}, ${fixture.season_id}, ${fixture.matchweek_id}, ${parsed.data.fixtureId}, ${parsed.data.selectedTeamId}, ${parsed.data.reason || null})`;
       return fixture.slug;
     });
 
@@ -69,6 +69,21 @@ export async function submitDailyLock(fixtureId: string, selectedTeamId: string)
   } catch (error) {
     return actionError(error);
   }
+}
+
+export async function addGameDiscussion(fixtureId: string, body: string): Promise<LeagueActionResult> {
+  const parsed = z.object({ fixtureId: uuid, body: z.string().trim().min(1).max(1000) }).safeParse({ fixtureId, body });
+  if (!parsed.success) return { ok: false, message: "Write a message up to 1,000 characters." };
+
+  const userId = await authenticatedUserId();
+  if (!await withinUserRateLimit("addGameDiscussion", userId)) return { ok: false, message: "That is a lot of messages at once. Wait a moment and try again." };
+  try {
+    const [fixture] = await sqlClient<Array<{ slug: string }>>`select l.slug from fixtures f join leagues l on l.id = f.league_id where f.id = ${parsed.data.fixtureId} and l.enabled = true limit 1`;
+    if (!fixture) return { ok: false, message: "That game is no longer available." };
+    await sqlClient`insert into game_discussions (fixture_id, user_id, guest_name, body) values (${parsed.data.fixtureId}, ${userId}, ${userId ? null : `guest${Math.floor(100 + Math.random() * 900)}`}, ${parsed.data.body})`;
+    revalidatePath(`/leagues/${fixture.slug}`);
+    return { ok: true };
+  } catch (error) { return actionError(error); }
 }
 
 export async function revealSpecialistPicks(matchweekId: string): Promise<LeagueActionResult> {

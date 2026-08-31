@@ -141,6 +141,13 @@
       "when": 1788146818967,
       "tag": "0019_thick_dakota_north",
       "breakpoints": true
+    },
+    {
+      "idx": 20,
+      "version": "7",
+      "when": 1788147077165,
+      "tag": "0020_flimsy_inhumans",
+      "breakpoints": true
     }
   ]
 }
