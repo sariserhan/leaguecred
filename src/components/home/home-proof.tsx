@@ -1,0 +1,54 @@
+import Image from "next/image";
+import Link from "next/link";
+import { ArrowRightIcon, CalendarClockIcon, CheckCircle2Icon, FlameIcon, HistoryIcon, TargetIcon, UsersRoundIcon } from "lucide-react";
+
+import type { HomeData } from "@/data/home";
+import { buttonVariants } from "@/components/ui/button";
+
+const formatNumber = new Intl.NumberFormat("en", { notation: "compact", maximumFractionDigits: 1 });
+const formatDate = new Intl.DateTimeFormat("en", { month: "short", day: "numeric", hour: "numeric", minute: "2-digit" });
+
+export function ActivityAndStats({ data }: { data: HomeData }) {
+  const stats = [
+    [data.stats.members, "members"], [data.stats.leagues, "active leagues"],
+    [data.stats.settledLocks, "settled locks"], [data.stats.activeLocks, "live locks"],
+  ] as const;
+  return (
+    <section className="border-y bg-foreground text-background" aria-labelledby="activity-heading">
+      <div className="page-shell grid gap-8 py-10 lg:grid-cols-[0.8fr_1.2fr] lg:items-center">
+        <div>
+          <div className="flex items-center gap-3 text-primary"><span className="relative flex size-3"><span className="absolute inline-flex size-full animate-ping rounded-full bg-primary opacity-50" /><span className="relative inline-flex size-3 rounded-full bg-primary" /></span><span className="text-xs font-bold tracking-[0.18em] uppercase">This week on LeagueCred</span></div>
+          <h2 id="activity-heading" className="mt-4 font-heading text-4xl font-extrabold uppercase sm:text-5xl">The record is being built now.</h2>
+          {data.nextDeadline ? <p className="mt-4 flex items-center gap-2 text-background/70"><CalendarClockIcon className="size-5 text-primary" />Next lock: {data.nextDeadline.league}, {data.nextDeadline.matchweek} · {formatDate.format(data.nextDeadline.lockAt)}</p> : <p className="mt-4 text-background/70">New matchweeks are being prepared.</p>}
+        </div>
+        <dl className="grid grid-cols-2 border border-background/20 sm:grid-cols-4">
+          {stats.map(([value, label]) => <div key={label} className="border-r border-background/20 p-5 last:border-r-0"><dt className="font-heading text-3xl font-bold text-primary sm:text-4xl">{formatNumber.format(value)}</dt><dd className="mt-1 text-xs font-semibold tracking-wide uppercase text-background/60">{label}</dd></div>)}
+        </dl>
+      </div>
+    </section>
+  );
+}
+
+export function LeagueRail({ leagues }: { leagues: HomeData["leagues"] }) {
+  return <section className="page-shell py-12" aria-labelledby="league-rail-heading"><div className="flex items-end justify-between gap-4 border-b pb-5"><div><h2 id="league-rail-heading" className="section-title">Find the league you live with.</h2><p className="mt-2 text-muted-foreground">Start with the competition you understand better than a table does.</p></div><Link href="/leagues" className="hidden text-sm font-semibold underline underline-offset-4 sm:block">Explore all leagues</Link></div><div className="flex gap-3 overflow-x-auto py-6">
+    {leagues.map((league) => <Link key={league.slug} href={`/leagues/${league.slug}`} className="group flex min-w-36 flex-1 flex-col items-center justify-center border p-4 text-center transition-colors hover:border-foreground hover:bg-muted">{league.logoUrl ? <Image src={league.logoUrl} alt="" width={48} height={48} className="size-12 object-contain" /> : <span className="flex size-12 items-center justify-center rounded-full bg-foreground font-heading font-bold text-background">{league.shortName.slice(0, 3)}</span>}<span className="mt-3 text-sm font-bold">{league.shortName}</span><ArrowRightIcon className="mt-2 size-4 transition-transform group-hover:translate-x-1" /></Link>)}
+  </div></section>;
+}
+
+export function SpecialistProof({ data }: { data: HomeData }) {
+  if (!data.specialists.length) {
+    return <section className="page-shell py-14 sm:py-20" aria-labelledby="proof-heading"><div className="grid border lg:grid-cols-[0.72fr_1.28fr]"><div className="bg-primary p-7 text-primary-foreground sm:p-10"><TargetIcon className="size-10" strokeWidth={1.5} /><h2 id="proof-heading" className="mt-8 font-heading text-5xl leading-none font-extrabold uppercase">Proof before popularity.</h2><p className="mt-5 max-w-md text-lg leading-8 text-primary-foreground/75">A percentage will never stand alone. Every leader will show their wins, losses, and complete evidence.</p></div><div className="flex flex-col justify-center p-7 sm:p-10"><p className="text-xs font-bold tracking-[0.18em] uppercase text-muted-foreground">Founding season</p><h3 className="mt-3 font-heading text-4xl font-bold uppercase">The first records are being built.</h3><p className="mt-4 max-w-xl leading-7 text-muted-foreground">No one is promoted as an expert before they have settled evidence. Make an independent Weekly Lock now and help establish the first transparent leaderboard.</p><Link href="/leagues?intent=prove" className={buttonVariants({ className: "mt-7 self-start" })}>Build the first records<ArrowRightIcon data-icon="inline-end" /></Link></div></div></section>;
+  }
+  const featured = data.specialists[0];
+  return <section className="page-shell py-14 sm:py-20" aria-labelledby="proof-heading"><div className="grid border lg:grid-cols-[0.72fr_1.28fr]"><div className="bg-primary p-7 text-primary-foreground sm:p-10"><TargetIcon className="size-10" strokeWidth={1.5} /><h2 id="proof-heading" className="mt-8 font-heading text-5xl leading-none font-extrabold uppercase">Proof before popularity.</h2><p className="mt-5 max-w-md text-lg leading-8 text-primary-foreground/75">Every specialist is judged by a visible, permanent history. A percentage never stands alone.</p><Link href="/specialists" className={buttonVariants({ variant: "secondary", className: "mt-8" })}>Compare specialists<ArrowRightIcon data-icon="inline-end" /></Link></div><div className="p-7 sm:p-10"><p className="text-xs font-bold tracking-[0.18em] uppercase text-muted-foreground">Current leaders</p><ol className="mt-4 divide-y border-y">{data.specialists.map((item, index) => <li key={`${item.userId}-${item.leagueSlug}`} className="grid grid-cols-[2.5rem_1fr_auto] items-center gap-4 py-5"><span className="font-heading text-3xl font-bold text-primary">{index + 1}</span><div><Link href={`/specialists/${item.userId}`} className="font-heading text-xl font-bold uppercase hover:underline">{item.name}</Link><p className="text-sm text-muted-foreground">{item.league} · {item.wins} wins from {item.settledPicks}</p></div><div className="text-right"><strong className="font-heading text-2xl">{item.accuracy}%</strong>{item.streak > 1 ? <span className="mt-1 flex items-center justify-end gap-1 text-xs text-muted-foreground"><FlameIcon className="size-3 text-primary" />{item.streak} streak</span> : null}</div></li>)}</ol></div></div>
+    <div className="mt-8 grid gap-6 lg:grid-cols-[0.8fr_1.2fr]"><div><HistoryIcon className="size-8 text-primary" /><h3 className="mt-4 font-heading text-3xl font-bold uppercase">A real record, result by result.</h3><p className="mt-3 leading-7 text-muted-foreground">See who made the call, what they chose, and how it settled. Losses remain visible beside wins.</p><Link href={`/specialists/${featured.userId}`} className="mt-5 inline-flex items-center gap-2 font-semibold underline underline-offset-4">Open {featured.name}&apos;s record<ArrowRightIcon className="size-4" /></Link></div><div className="divide-y border-y">{data.recentResults.slice(0, 4).map((item, index) => <div key={`${item.specialist}-${item.team}-${index}`} className="grid grid-cols-[auto_1fr_auto] items-center gap-3 py-4"><CheckCircle2Icon className={item.result === "win" ? "size-5 text-primary" : "size-5 text-muted-foreground"} /><div><strong>{item.team}</strong><p className="text-sm text-muted-foreground">{item.specialist} · {item.league}</p></div><span className="text-xs font-bold tracking-wide uppercase">{item.result}</span></div>)}</div></div>
+  </section>;
+}
+
+export function MemberVoices() {
+  return <section className="border-y bg-secondary"><div className="page-shell grid gap-8 py-14 lg:grid-cols-[0.7fr_1.3fr]"><div><UsersRoundIcon className="size-9 text-primary" /><h2 className="mt-5 section-title">Built for supporters, not tipsters.</h2></div><div className="grid gap-6 sm:grid-cols-2"><div className="border-l-4 border-primary pl-5"><h3 className="font-heading text-2xl font-bold uppercase">Depth over volume</h3><p className="mt-3 leading-7 text-muted-foreground">You never need to pretend you know every league. Build your reputation only where you have real context.</p></div><div className="border-l-4 border-primary pl-5"><h3 className="font-heading text-2xl font-bold uppercase">Evidence over hype</h3><p className="mt-3 leading-7 text-muted-foreground">Settled-pick counts sit beside accuracy, so a short lucky run never looks like long-term expertise.</p></div></div></div></section>;
+}
+
+export function FinalCallToAction() {
+  return <section className="page-shell pb-20 pt-6"><div className="grid overflow-hidden border lg:grid-cols-2"><div className="bg-foreground p-7 text-background sm:p-10"><h2 className="font-heading text-4xl font-extrabold uppercase">Know your league?</h2><p className="mt-3 text-background/70">Put one call on the record and let the results speak.</p><Link href="/leagues?intent=prove" className={buttonVariants({ className: "mt-7" })}>Prove your knowledge<ArrowRightIcon data-icon="inline-end" /></Link></div><div className="p-7 sm:p-10"><h2 className="font-heading text-4xl font-extrabold uppercase">Need another league?</h2><p className="mt-3 text-muted-foreground">Find someone whose history earns your trust.</p><Link href="/leagues?intent=follow" className={buttonVariants({ variant: "outline", className: "mt-7" })}>Find a specialist<ArrowRightIcon data-icon="inline-end" /></Link></div></div></section>;
+}
