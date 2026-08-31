@@ -52,6 +52,11 @@ export const metadata: Metadata = {
   },
 };
 
+// Analytics runs on the real site only. leaguecred.com is served by Vercel, so a
+// preview deploy and a local `next dev` are the same code on a different origin:
+// left ungated, our own building and reviewing lands in the visitor numbers.
+const isProduction = process.env.VERCEL_ENV === "production";
+
 export default async function RootLayout({ children }: LayoutProps<"/">) {
   const [isAdmin, session, leagues] = await Promise.all([
     viewerIsAdmin(),
@@ -92,25 +97,23 @@ export default async function RootLayout({ children }: LayoutProps<"/">) {
           <SiteFooter />
           {session ? <MobileMemberNav userId={session.user.id} unread={notificationCenter?.items.filter((item) => !item.readAt).length ?? 0} /> : null}
           <Toaster timeout={4500} />
-          <Script
-            src="https://cdn.visitorping.com/site/vp_RJPP6CJD.js"
-            strategy="afterInteractive"
-            crossOrigin="anonymous"
-            data-exclude="/admin*"
-          />
+          {isProduction ? (
+            <Script
+              src="https://cdn.visitorping.com/site/vp_RJPP6CJD.js"
+              strategy="afterInteractive"
+              crossOrigin="anonymous"
+              data-exclude="/admin*"
+            />
+          ) : null}
         </ThemeProvider>
 
         {/*
           Cloudflare Web Analytics. The token is a public identifier — it ships
           in the page source to every visitor — so it lives here rather than in
-          a secret.
-
-          Production only. leaguecred.com is served by Vercel and not proxied
-          through Cloudflare, so nothing is injected for us and this beacon is
-          the whole measurement; loading it in development or on a preview
-          deploy would count our own work as traffic.
+          a secret. leaguecred.com is not proxied through Cloudflare, so nothing
+          is injected for us and this beacon is the whole measurement.
         */}
-        {process.env.VERCEL_ENV === "production" ? (
+        {isProduction ? (
           <Script
             src="https://static.cloudflareinsights.com/beacon.min.js"
             strategy="afterInteractive"
