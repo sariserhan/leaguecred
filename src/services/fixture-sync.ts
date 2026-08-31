@@ -8,6 +8,7 @@ import { teamSlug } from "@/lib/team-path";
 type LeagueConfig = {
   id: string;
   slug: string;
+  name: string;
   provider: string;
   provider_external_id: string;
   country_id: string;
@@ -29,7 +30,7 @@ export async function synchronizeFixtures(provider: FixtureProvider, now = new D
   let requestCount = 0;
   try {
     const availableConfigs = await sqlClient<Omit<LeagueConfig, "source_external_id">[]>`
-      select l.id, l.slug, l.provider, l.provider_external_id, l.country_id, l.region,
+      select l.id, l.slug, l.name, l.provider, l.provider_external_id, l.country_id, l.region,
         c.is_region as country_is_region, s.provider_season, s.id as season_id,
         s.start_date as season_start_date
       from leagues l
@@ -176,9 +177,13 @@ async function synchronizeRound(providerName: string, config: LeagueConfig, roun
     }
 
     if (!matchweek) {
+      const [week] = await sql<Array<{ number: number }>>`
+        select count(*)::int + 1 as number from matchweeks
+        where league_id = ${config.id} and season_id = ${config.season_id} and start_at < ${startAt}::timestamptz`;
+      const displayName = `${config.name} — Week ${week?.number ?? 1}`;
       [matchweek] = await sql<Array<{ id: string; status: string; has_participation: boolean }>>`
         insert into matchweeks (league_id, season_id, provider_round_name, display_name, start_at, lock_at, end_at, status)
-        values (${config.id}, ${config.season_id}, ${round}, ${round}, ${startAt}, ${startAt}, ${endAt}, 'upcoming')
+        values (${config.id}, ${config.season_id}, ${round}, ${displayName}, ${startAt}, ${startAt}, ${endAt}, 'upcoming')
         returning id, status, false as has_participation`;
     }
     if (!matchweek) throw new Error("Could not upsert matchweek.");
