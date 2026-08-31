@@ -6,6 +6,13 @@ None.
 
 ## Next
 
+- [ ] Clean up the duplicate clubs and fixtures football-data.org left in
+      production. The source is unwired now, so this is a one-off:
+      `DATABASE_URL="$(grep -m1 '^PROD_DATABASE_URL_UNPOOLED=' .env.local | cut -d= -f2-)" pnpm teams:dedupe --apply`
+      then the same with `pnpm fixtures:dedupe --apply`. Teams must go first —
+      the duplicate fixtures point at different club rows, so fixture dedupe
+      finds nothing until the clubs are one. Both report before writing.
+
 - [ ] Check any SUSPECT pair `pnpm teams:dedupe` reports and add an alias where
       the two really are one club. Nothing to act on today: the only pair is Boca
       Juniors beside Atlético Junior, which is the rule working, not a fault.

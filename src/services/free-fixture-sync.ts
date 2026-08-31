@@ -1,7 +1,6 @@
 import { serverEnv } from "@/lib/env";
 import { runJobSteps } from "@/lib/job-steps";
 import { EspnFixtureProvider } from "@/providers/espn-fixtures";
-import { FootballDataOrgProvider } from "@/providers/football-data-org";
 import { synchronizeFixtures } from "@/services/fixture-sync";
 import { synchronizeCurrentRosters } from "@/services/roster-sync";
 import { synchronizeChampionsLeagueTeams } from "@/services/team-catalog-sync";
@@ -11,16 +10,24 @@ export async function synchronizeFreeFixtureSources(now = new Date()) {
 
   // Each source runs even if an earlier one failed outright (ESPN down, a
   // provider timing out) rather than one outage cancelling every other
-  // source for the night. ESPN goes first for its breadth; football-data.org
-  // is the real failover, adding whatever is still missing. football-data-uk
-  // is not wired here - it never contributed a match ESPN didn't already
-  // have, only stale duplicates that cost cleanup. It stays unwired
-  // (src/providers/football-data-uk.ts) and re-addable in one line.
+  // source for the night.
+  //
+  // ESPN is the only fixture source. football-data-uk was unwired first, for
+  // never contributing a match ESPN did not already have; football-data.org
+  // was kept on as a failover and turned out to do the same thing. It names
+  // clubs differently — Ipswich Town FC beside ESPN's Ipswich — so it could not
+  // match an existing row and created its own, and with it a second copy of a
+  // match already recorded. 315 of its 363 fixtures in production were a
+  // duplicate of an ESPN one, and every league it touched, ESPN already covered
+  // more completely. Both stay unwired and re-addable in one line, but a second
+  // fixture source needs to resolve clubs against the catalogue before it earns
+  // a place here.
+  //
+  // The team catalogue below is unaffected: it resolves against existing clubs
+  // rather than inserting blindly, and covers a competition ESPN's fixture feed
+  // does not enumerate.
   const { results } = await runJobSteps([
     ["espn-web", () => synchronizeFixtures(new EspnFixtureProvider(), now)],
-    ["football-data-org", () => serverEnv.footballDataApiKey
-      ? synchronizeFixtures(new FootballDataOrgProvider(), now)
-      : Promise.resolve({ status: "skipped" as const, reason: "FOOTBALL_DATA_API_KEY is not configured." })],
     ["football-data-org-teams", () => serverEnv.footballDataApiKey
       ? synchronizeChampionsLeagueTeams()
       : Promise.resolve({ status: "skipped" as const, reason: "FOOTBALL_DATA_API_KEY is not configured." })],
