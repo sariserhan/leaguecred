@@ -164,6 +164,12 @@ async function synchronizeRound(providerName: string, config: LeagueConfig, roun
         from matchweeks mw
         where mw.league_id = ${config.id} and mw.season_id = ${config.season_id}
           and mw.start_at < ${endAt}::timestamptz and ${startAt}::timestamptz < mw.end_at
+          -- Joining widens the week, which makes it a larger target for the next
+          -- round, which widens it again. Liga Portugal reached thirteen days and
+          -- two gameweeks that way. A week that would end up longer than a
+          -- gameweek is not the week this round belongs to.
+          and greatest(mw.end_at, ${endAt}::timestamptz)
+              - least(mw.start_at, ${startAt}::timestamptz) < interval '10 days'
           -- Only ever join a week another provider opened. This provider's own
           -- consecutive rounds overlap whenever one runs long, and folding those
           -- together would merge two real gameweeks into one.

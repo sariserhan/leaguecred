@@ -6,12 +6,10 @@ None.
 
 ## Next
 
-- [ ] One split gameweek left in production: Liga Portugal Week 3 as ESPN
-      numbers it overlaps Week 5 as football-data.co.uk did. Both providers'
-      numbering is stored and football-data.co.uk is unwired, so the stale one
-      can go, but matchweeks:merge does not pair them and deleting a matchweek
-      is not something to do by guess. Decide what should happen to matchweeks
-      left by a source no longer in use.
+- [ ] Split the Liga Portugal week that holds two gameweeks in production:
+      `DATABASE_URL="$(grep -m1 '^PROD_DATABASE_URL_UNPOOLED=' .env.local | cut -d= -f2-)" pnpm matchweeks:split primeira-liga`
+      then again with --apply. It reports before it writes and refuses any week
+      someone has already entered.
 
 - [ ] Clean up the duplicate clubs and fixtures football-data.org left in
       production. The source is unwired now, so this is a one-off. The first

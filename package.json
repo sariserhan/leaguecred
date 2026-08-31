@@ -32,6 +32,7 @@
     "teams:dedupe": "tsx src/jobs/dedupe-teams.ts",
     "fixtures:dedupe": "tsx src/jobs/dedupe-fixtures.ts",
     "matchweeks:merge": "tsx src/jobs/merge-matchweeks.ts",
+    "matchweeks:split": "tsx src/jobs/split-matchweek.ts",
     "teams:names": "tsx src/jobs/refresh-team-names.ts",
     "league:drop": "tsx src/jobs/drop-league.ts",
     "team:split": "tsx src/jobs/split-team.ts",
