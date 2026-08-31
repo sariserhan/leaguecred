@@ -6,10 +6,6 @@ None.
 
 ## Next
 
-- [ ] Decide whether football-data still supplies fixtures. It was retired on
-      the evidence of dev, where it held nothing ESPN lacked — but production
-      currently has 12 upcoming matches only it carries (Lecce v Roma, Genk v
-      Beveren and others). Re-adding it is one line in free-fixture-sync.
 - [ ] `pnpm teams:dedupe` reports SUSPECT pairs: a club beside an entry naming
       the same club, in one competition, one never played. They are never merged
       because the same shape also describes Boca Juniors beside Atlético Junior.
@@ -27,6 +23,11 @@ None.
 ## Later
 
 - [ ] Additional launch leagues with current provider mappings
+- [ ] Leagues outside football-data.org's free-tier list (Liga MX, MLS,
+      Saudi Pro League, Argentina, and the rest not in FOOTBALL_DATA_ORG_
+      COMPETITIONS) still rely on ESPN alone with football-data-uk's 12-
+      league CSV feed as backup at best. Decide whether that is acceptable
+      or a fourth source is worth it for those specifically.
 - [ ] Product/web analytics (deferred; PostHog is the marketplace pick when this is picked up)
 - [ ] Decide whether expertise is scoped to clubs as well as leagues
 - [ ] Plan the first season, when no record clears the rank threshold yet

@@ -147,11 +147,10 @@ async function downloadSeasonResults(path: string) {
 }
 
 /**
- * No longer wired into the sync: ESPN covers every enabled competition, and
- * once the clubs the two sources named differently were merged, this held no
- * match ESPN did not already have. Kept because it still works and re-adding it
- * to free-fixture-sync is one line, should ESPN ever stop carrying a league.
- * Its CSV helpers above are still used, by the roster sync.
+ * Runs after ESPN and adds only the matches ESPN did not already record, since
+ * whoever records a match first owns it. On the dev catalog that is nothing at
+ * all; on production it is a dozen upcoming fixtures ESPN has not published, so
+ * it earns its place as a fallback rather than as a second opinion.
  */
 export class FootballDataUkProvider implements FixtureProvider {
   readonly name = "football-data-uk";
