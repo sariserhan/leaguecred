@@ -190,9 +190,17 @@ describe("LeagueCred database integrity", () => {
   it("freezes fixture eligibility after participation while continuing score updates", async () => {
     const suffix = crypto.randomUUID();
     const round = `Integration round ${suffix}`;
-    const originalKickoff = "2026-09-03T18:00:00.000Z";
-    const delayedKickoff = "2026-09-04T20:00:00.000Z";
     const originalExternalId = `integration-fixture-${suffix}`;
+    // The team names below are fixed, not suffixed, so a rerun against a database that
+    // still has an earlier run's rows resolves to the same two teams. A fixed kickoff
+    // date would then look like the same match again to the cross-provider dedupe (same
+    // teams, same day) and get silently absorbed instead of opening a new matchweek - so
+    // the date has to vary per run too, derived from the suffix already unique to it.
+    const dayOffset = 120 + (parseInt(suffix.slice(0, 4), 16) % 300);
+    const kickoffBase = new Date(Date.UTC(2026, 0, 1) + dayOffset * 86_400_000);
+    const originalKickoff = new Date(kickoffBase.getTime() + 18 * 3_600_000).toISOString();
+    const delayedKickoff = new Date(kickoffBase.getTime() + 44 * 3_600_000).toISOString();
+    const syncNow = new Date(kickoffBase.getTime() - 2 * 86_400_000);
 
     let incoming: ProviderFixture[] = [{
       externalId: originalExternalId,
@@ -215,7 +223,7 @@ describe("LeagueCred database integrity", () => {
       },
     };
 
-    await synchronizeFixtures(provider, new Date("2026-09-01T00:00:00.000Z"));
+    await synchronizeFixtures(provider, syncNow);
     const [created] = await sqlClient<Array<{ id: string }>>`
       select id from matchweeks where league_id = ${superLig} and provider_round_name = ${round}`;
     expect(created).toBeDefined();
@@ -239,7 +247,7 @@ describe("LeagueCred database integrity", () => {
         winnerExternalId: null,
       },
     ];
-    await synchronizeFixtures(provider, new Date("2026-09-01T01:00:00.000Z"));
+    await synchronizeFixtures(provider, new Date(syncNow.getTime() + 3_600_000));
 
     const [original] = await sqlClient<Array<{ kickoff_at: Date; status: string; home_score: number | null }>>`
       select kickoff_at, status, home_score from fixtures
