@@ -159,8 +159,14 @@
     @apply bg-background font-sans text-foreground;
   }
 
+  /* backwards, not both: `both` keeps the final keyframe applied for good, and a
+     retained transform — even the identity one this ends on — makes <main> the
+     containing block for every position:fixed descendant. Bars meant to sit at
+     the bottom of the window were being placed at the bottom of the page
+     instead, tens of thousands of pixels down. `backwards` still applies the
+     opening frame before the animation runs, which is what stops the flash. */
   main {
-    animation: route-enter 180ms ease-out both;
+    animation: route-enter 180ms ease-out backwards;
   }
 
   button:not(:disabled),

@@ -9,6 +9,7 @@ import { submitDailyLocks } from "@/app/leagues/actions";
 import type { BoardFixture, FixtureBoard } from "@/data/fixtures";
 import { FixtureVotePoll } from "@/components/fixture-vote-poll";
 import { GameDiscussion } from "@/components/leagues/game-discussion";
+import { BackToTop } from "@/components/ui/back-to-top";
 import { Button } from "@/components/ui/button";
 import { Crest } from "@/components/ui/crest";
 import { Spinner } from "@/components/ui/spinner";
@@ -114,8 +115,17 @@ export function FixtureBoard({ board, authenticated }: { board: FixtureBoard; au
       <div className="flex flex-col gap-8 pb-28">
         {board.days.map((day) => (
           <section key={day.date} aria-labelledby={`day-${day.date}`}>
-            <h2 id={`day-${day.date}`} className="border-b pb-2 font-heading text-2xl font-bold uppercase">
+            {/* Pinned while its own day is on screen, then pushed off by the
+                next one, so a long scroll always says which day you are in.
+                The page's own header is not sticky, so top-0 is free. */}
+            <h2
+              id={`day-${day.date}`}
+              className="sticky top-0 z-20 flex items-baseline justify-between gap-3 border-b bg-background py-3 font-heading text-2xl font-bold uppercase"
+            >
               {dayHeading.format(new Date(`${day.date}T12:00:00Z`))}
+              <span className="font-sans text-xs font-semibold tracking-[.1em] text-muted-foreground">
+                {day.fixtures.length} match{day.fixtures.length === 1 ? "" : "es"}
+              </span>
             </h2>
             <ul className="mt-4 grid gap-4">
               {day.fixtures.map((fixture) => {
@@ -187,6 +197,10 @@ export function FixtureBoard({ board, authenticated }: { board: FixtureBoard; au
           </section>
         ))}
       </div>
+
+      {/* Lifted clear of the submit tray when that is showing, so the two do
+          not sit on top of each other. */}
+      <BackToTop className={chosen.length > 0 ? "bottom-24" : undefined} />
 
       {chosen.length > 0 ? (
         <div className="fixed inset-x-0 bottom-0 z-30 border-t border-primary bg-inverted p-3 text-inverted-foreground shadow-2xl">
