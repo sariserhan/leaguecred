@@ -1,6 +1,6 @@
 {
-  "id": "c6ab4f00-9dd0-4147-97ed-8bd459f5d5d3",
-  "prevId": "394d5703-55ee-4a88-9fef-0e47626c805f",
+  "id": "2c8d3f14-bdc3-40d3-a015-a1d0e40607cc",
+  "prevId": "c6ab4f00-9dd0-4147-97ed-8bd459f5d5d3",
   "version": "7",
   "dialect": "postgresql",
   "tables": {
@@ -149,6 +149,53 @@
         }
       },
       "compositePrimaryKeys": {},
+      "uniqueConstraints": {},
+      "policies": {},
+      "checkConstraints": {},
+      "isRLSEnabled": false
+    },
+    "public.action_rate_limits": {
+      "name": "action_rate_limits",
+      "schema": "",
+      "columns": {
+        "actor": {
+          "name": "actor",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "action": {
+          "name": "action",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "window_started_at": {
+          "name": "window_started_at",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "now()"
+        },
+        "attempts": {
+          "name": "attempts",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": true,
+          "default": 0
+        }
+      },
+      "indexes": {},
+      "foreignKeys": {},
+      "compositePrimaryKeys": {
+        "action_rate_limits_actor_action_pk": {
+          "name": "action_rate_limits_actor_action_pk",
+          "columns": [
+            "actor",
+            "action"
+          ]
+        }
+      },
       "uniqueConstraints": {},
       "policies": {},
       "checkConstraints": {},
