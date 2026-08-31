@@ -12,14 +12,7 @@ None.
 - [ ] Set the founding-season rank threshold in the admin panel. It ships at the
       standard 10, which nobody can reach for 10 gameweeks; 4 opens Follow after
       about a month. Raise it back once a cohort has cleared it.
-- [ ] Dynamic OG images. The SEO pass added openGraph metadata in six places but
-      no opengraph-image route and no share image, so a shared link carries no
-      picture at all. A specialist's record is the one thing here worth sharing.
 - [ ] Rotate the Neon database password and update Vercel and .env.local
-- [ ] Design a real brand mark. `icon.tsx`/`apple-icon.tsx` currently generate
-      an "LC" monogram from the theme colors as a placeholder - swap in a
-      real logo when one exists. `opengraph-image` and a web manifest still
-      have nothing to build from.
 
 ## Blocked
 
@@ -39,13 +32,13 @@ None.
 
 ## Completed
 
+- [x] Design and implement the Tactical Hex Radar brand mark across icon.tsx, apple-icon.tsx, opengraph-image.tsx, web manifest, and site header/footer
 - [x] Add live in-UI notification feedback for followed specialist locks,
       settled results, unread counts, and direct navigation
 - [x] Add Weekly Lock timelines, dashboard activity, milestones, record sharing, global search, grouped notifications, and comparison UI
 - [x] Add the notification inbox, season archive, matchweek calendar, activation checklist, mobile member navigation, share-card tools, and UI regression coverage
 - [x] Add command navigation, dashboard customization, performance charts, richer comparisons, calendar exports, profile presentation controls, and responsive history tools
 - [x] Add persisted profile customization, a contextual product tour, network activity feed, loading transitions, and automated accessibility coverage
-
 - [x] Add account settings for profile, password, league, network, and notification controls
 - [x] Add founding-season and provisional specialist discovery states
 - [x] Add management views for upcoming fixtures, recent accounts, and provisional records

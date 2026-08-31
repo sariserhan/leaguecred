@@ -1,4 +1,5 @@
 import Link from "next/link";
+import { BrandMark } from "@/components/brand-logo";
 
 const footerGroups = [
   {
@@ -23,8 +24,9 @@ export function SiteFooter() {
     <footer className="border-t bg-foreground text-background">
       <div className="page-shell grid gap-10 py-10 sm:grid-cols-[1fr_auto_auto] sm:gap-16">
         <div>
-          <Link href="/" className="font-heading text-3xl font-extrabold uppercase">
-            League<span className="text-primary">Cred</span>
+          <Link href="/" className="flex items-center gap-2.5 font-heading text-3xl font-extrabold uppercase">
+            <BrandMark size={32} className="size-8" />
+            <span>League<span className="text-primary">Cred</span></span>
           </Link>
           <p className="mt-3 max-w-sm text-sm leading-6 text-background/70">
             One near-certain Weekly Lock from the league you know. Proven expertise everywhere else.

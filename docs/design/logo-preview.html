@@ -1,0 +1,207 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>LeagueCred Logo & Favicon Options Preview</title>
+  <style>
+    :root {
+      --bg: #ffffff;
+      --fg: #050d1c;
+      --lime: #b2df00;
+      --muted: #f4f4f6;
+      --border: #e2e4e9;
+      --card: #ffffff;
+    }
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+      background-color: var(--muted);
+      color: var(--fg);
+      padding: 2rem 1rem 4rem;
+    }
+    .container {
+      max-width: 1200px;
+      margin: 0 auto;
+    }
+    header {
+      text-align: center;
+      margin-bottom: 2.5rem;
+    }
+    h1 {
+      font-size: 2.5rem;
+      font-weight: 800;
+      letter-spacing: -0.03em;
+      text-transform: uppercase;
+      margin-bottom: 0.5rem;
+    }
+    h1 span { color: #84a600; }
+    p.subtitle {
+      color: #64748b;
+      font-size: 1.1rem;
+    }
+    .grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(320px, 1fr));
+      gap: 2rem;
+    }
+    .card {
+      background: var(--card);
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      overflow: hidden;
+      box-shadow: 0 4px 12px rgba(5, 13, 28, 0.05);
+      display: flex;
+      flex-direction: column;
+      transition: transform 0.2s, box-shadow 0.2s;
+    }
+    .card:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 8px 24px rgba(5, 13, 28, 0.09);
+    }
+    .card-img-wrap {
+      background: #f8fafc;
+      padding: 1.5rem;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      border-bottom: 1px solid var(--border);
+    }
+    .card-img-wrap img {
+      width: 100%;
+      height: auto;
+      max-width: 420px;
+      border-radius: 8px;
+      display: block;
+    }
+    .card-body {
+      padding: 1.5rem;
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+    }
+    .tag {
+      display: inline-block;
+      align-self: flex-start;
+      font-size: 0.75rem;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+      padding: 0.3rem 0.6rem;
+      border-radius: 4px;
+      margin-bottom: 0.75rem;
+    }
+    .tag-recommended { background: #050d1c; color: #b2df00; }
+    .tag-standard { background: #e2e8f0; color: #334155; }
+    h2 {
+      font-size: 1.35rem;
+      font-weight: 700;
+      margin-bottom: 0.5rem;
+    }
+    p.desc {
+      font-size: 0.95rem;
+      color: #475569;
+      line-height: 1.5;
+      margin-bottom: 1rem;
+      flex: 1;
+    }
+    .features {
+      list-style: none;
+      border-top: 1px solid var(--border);
+      padding-top: 1rem;
+      font-size: 0.85rem;
+      color: #64748b;
+    }
+    .features li {
+      margin-bottom: 0.4rem;
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+    }
+    .features li::before {
+      content: "•";
+      color: #84a600;
+      font-weight: bold;
+      font-size: 1.2rem;
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <header>
+      <h1>League<span>Cred</span> Logo & Favicon Options</h1>
+      <p class="subtitle">Select the visual identity for the brand mark, header logo, and app favicons.</p>
+    </header>
+
+    <div class="grid">
+      <!-- Option 1 -->
+      <div class="card">
+        <div class="card-img-wrap">
+          <img src="logo_option_pitch_shield_1788142286093.jpg" alt="Option 1: Pitch Shield">
+        </div>
+        <div class="card-body">
+          <span class="tag tag-recommended">Option 1 (Recommended)</span>
+          <h2>The Pitch Shield</h2>
+          <p class="desc">A geometric football shield framing a kickoff center circle and verified checkmark. Ultra-clean vector lines that scale down to 16×16 favicon perfectly.</p>
+          <ul class="features">
+            <li>Balances football identity with verified reputation</li>
+            <li>High contrast in both light and dark backgrounds</li>
+            <li>Clean, authoritative, tournament-grade feel</li>
+          </ul>
+        </div>
+      </div>
+
+      <!-- Option 2 -->
+      <div class="card">
+        <div class="card-img-wrap">
+          <img src="logo_option_lc_lock_1788142297449.jpg" alt="Option 2: Interlocking LC Lock">
+        </div>
+        <div class="card-body">
+          <span class="tag tag-standard">Option 2</span>
+          <h2>Interlocking LC Lock</h2>
+          <p class="desc">Architectural monogram intertwining "L" and "C" into a padlock silhouette and tactical corner arcs.</p>
+          <ul class="features">
+            <li>Direct reference to the LC letters and "Weekly Lock"</li>
+            <li>Monogram-forward aesthetic</li>
+            <li>Sharp athletic cuts</li>
+          </ul>
+        </div>
+      </div>
+
+      <!-- Option 3 -->
+      <div class="card">
+        <div class="card-img-wrap">
+          <img src="logo_option_tactical_radar_1788142309584.jpg" alt="Option 3: Tactical Pitch Radar">
+        </div>
+        <div class="card-body">
+          <span class="tag tag-standard">Option 3</span>
+          <h2>Tactical Hex Radar</h2>
+          <p class="desc">Analytical scouting and intelligence badge featuring pitch coordinates, pass lines, and center circle in a modern hexagon.</p>
+          <ul class="features">
+            <li>Scouting / tactical data analysis feel</li>
+            <li>Geometric hexagon silhouette</li>
+            <li>Detailed pitch iconography</li>
+          </ul>
+        </div>
+      </div>
+
+      <!-- Option 4 -->
+      <div class="card">
+        <div class="card-img-wrap">
+          <img src="logo_option_shield_lock_1788142322027.jpg" alt="Option 4: Cred Shield Padlock">
+        </div>
+        <div class="card-body">
+          <span class="tag tag-standard">Option 4</span>
+          <h2>The Cred Shield Padlock</h2>
+          <p class="desc">Clean padlock body combined with the lower V-contour of a traditional football crest and an electric lime checkmark.</p>
+          <ul class="features">
+            <li>Bold vector contour</li>
+            <li>Padlock + Football Crest fusion</li>
+            <li>Decisive upward victory checkmark</li>
+          </ul>
+        </div>
+      </div>
+    </div>
+  </div>
+</body>
+</html>
