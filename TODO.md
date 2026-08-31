@@ -44,6 +44,9 @@ None.
 
 ## Completed
 
+- [x] Group the admin page into tabs, and report what a result pull found —
+      including when it found nothing, which is the usual answer between
+      matchdays and read as a dead button.
 - [x] Pull results on demand from the admin panel, for one league or all of
       them, with the outcome reported rather than left silent.
 - [x] Pull match results hourly without re-syncing the schedule. `/api/jobs/results`

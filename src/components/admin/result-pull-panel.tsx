@@ -11,37 +11,47 @@ import { Spinner } from "@/components/ui/spinner";
 import { toast } from "@/components/ui/toast";
 import type { LeagueNavOption } from "@/data/teams";
 
+type PullEntry = { id: string; at: string; label: string; line: string; failed: boolean };
+
 /**
  * The same pull the hourly cron makes, on demand. Distinct from Refresh league
- * data above it: that rebuilds a league's schedule from the provider, this one
- * only asks for scores of matches already on it, and settles what they decide.
+ * data: that rebuilds a league's schedule from the provider, this one only asks
+ * for scores of matches already on it, and settles what they decide.
+ *
+ * Every press is written into the list below the buttons, including the presses
+ * that changed nothing. "No match was waiting on a result" is the normal answer
+ * between matchdays, and without it on screen a working button looks dead.
  */
 export function ResultPullPanel({ leagues }: { leagues: LeagueNavOption[] }) {
   const router = useRouter();
   const [pending, startTransition] = useTransition();
   const [pendingSlug, setPendingSlug] = useState<string | null>(null);
-  const [summary, setSummary] = useState<string | null>(null);
-  const [error, setError] = useState<string | null>(null);
+  const [log, setLog] = useState<PullEntry[]>([]);
+
+  function record(label: string, line: string, failed: boolean) {
+    setLog((current) => [
+      { id: crypto.randomUUID(), at: new Date().toLocaleTimeString(), label, line, failed },
+      ...current,
+    ].slice(0, 12));
+  }
 
   function pull(slug: string | null, label: string) {
-    setSummary(null);
-    setError(null);
     setPendingSlug(slug ?? "all");
     startTransition(async () => {
       const result = await pullMatchResults(slug);
-      if (result.ok) {
-        // "Nothing to pull" is the normal answer between matchdays, so it is
-        // reported as an outcome rather than left looking like a dead button.
-        const line = result.updated === 0 && result.settled === 0
-          ? `${label}: nothing waiting on a result.`
-          : `${label}: ${result.updated} fixture${result.updated === 1 ? "" : "s"} updated, ${result.finished} finished, ${result.settled} pick${result.settled === 1 ? "" : "s"} settled.`;
-        setSummary(result.faults.length ? `${line} Faults: ${result.faults.join(" | ")}` : line);
-        toast.add({ title: "Results pulled", description: line, type: "success" });
-        router.refresh();
-      } else {
-        setError(result.message);
+
+      if (!result.ok) {
+        record(label, result.message, true);
         toast.add({ title: "Results not pulled", description: result.message, type: "error" });
+      } else {
+        const line = result.pending === 0
+          ? "No match was waiting on a result, so nothing was requested."
+          : `${result.pending} waiting · ${result.requests} request${result.requests === 1 ? "" : "s"} · ${result.updated} updated · ${result.finished} finished · ${result.settled} pick${result.settled === 1 ? "" : "s"} settled`;
+        record(label, result.faults.length ? `${line} · faults: ${result.faults.join(" | ")}` : line, result.faults.length > 0);
+        toast.add({ title: `${label} pulled`, description: line, type: result.faults.length ? "error" : "success" });
+        if (result.updated > 0 || result.settled > 0) router.refresh();
       }
+
       setPendingSlug(null);
     });
   }
@@ -55,24 +65,19 @@ export function ResultPullPanel({ leagues }: { leagues: LeagueNavOption[] }) {
         </CardTitle>
         <CardDescription>
           Pull scores for matches already played and settle the picks they decide. This runs hourly
-          on its own; press it to see a finished match land now. It costs one provider request per
-          league that actually played, and none where nothing is waiting.
+          on its own; press it to bring a finished match in now. It costs one provider request per
+          league that actually played, and none where nothing is waiting. Every run is also recorded
+          under Fixture sync runs in Diagnostics.
         </CardDescription>
       </CardHeader>
       <CardContent className="grid gap-5 border-t pt-6">
-        <div className="flex flex-wrap items-center gap-3">
+        <div>
           <Button onClick={() => pull(null, "All leagues")} disabled={pending}>
             {pendingSlug === "all" ? <Spinner data-icon="inline-start" /> : <RefreshCwIcon data-icon="inline-start" />}
             Pull results for every league
           </Button>
-          {summary ? <p className="text-sm font-semibold" role="status">{summary}</p> : null}
-          {error ? (
-            <p role="alert" className="flex items-center gap-2 text-sm font-semibold text-destructive">
-              <TriangleAlertIcon aria-hidden="true" className="size-4" />
-              {error}
-            </p>
-          ) : null}
         </div>
+
         <div className="grid gap-2 sm:grid-cols-2 lg:grid-cols-3">
           {leagues.map((league) => (
             <button
@@ -89,6 +94,30 @@ export function ResultPullPanel({ leagues }: { leagues: LeagueNavOption[] }) {
             </button>
           ))}
         </div>
+
+        <section aria-label="Pull log" className="border">
+          <h3 className="border-b bg-muted px-4 py-2 text-xs font-bold tracking-[0.08em] uppercase">
+            This session
+          </h3>
+          {log.length === 0 ? (
+            <p className="px-4 py-5 text-sm text-muted-foreground">
+              Nothing pulled yet in this session. Every press is listed here with what it found.
+            </p>
+          ) : (
+            <ul className="divide-y" role="status">
+              {log.map((entry) => (
+                <li key={entry.id} className="grid gap-1 px-4 py-3 sm:grid-cols-[auto_auto_1fr] sm:items-baseline sm:gap-3">
+                  <time className="text-xs text-muted-foreground">{entry.at}</time>
+                  <strong className="text-sm">{entry.label}</strong>
+                  <span className={entry.failed ? "flex items-start gap-2 text-sm text-destructive" : "text-sm text-muted-foreground"}>
+                    {entry.failed ? <TriangleAlertIcon aria-hidden="true" className="mt-0.5 size-4 shrink-0" /> : null}
+                    {entry.line}
+                  </span>
+                </li>
+              ))}
+            </ul>
+          )}
+        </section>
       </CardContent>
     </Card>
   );

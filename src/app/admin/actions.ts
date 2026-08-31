@@ -104,7 +104,7 @@ export async function refreshLeagueFixtures(leagueSlug: string): Promise<void> {
 }
 
 export type ResultPullResult =
-  | { ok: true; leagues: number; requests: number; updated: number; finished: number; settled: number; faults: string[] }
+  | { ok: true; pending: number; leagues: number; requests: number; updated: number; finished: number; settled: number; faults: string[] }
   | { ok: false; message: string };
 
 /**
@@ -135,8 +135,18 @@ export async function pullMatchResults(leagueSlug?: string | null): Promise<Resu
     revalidatePath("/live-locks", "page");
     revalidatePath("/", "layout");
 
+    // Also written to the runtime log, so a pull that changed nothing can still
+    // be traced afterwards from the Vercel logs rather than only from the panel.
+    console.info("Admin pulled match results.", {
+      admin: viewer.id,
+      league: parsed.data ?? "all",
+      ...results,
+      settled: settlement.settled,
+    });
+
     return {
       ok: true,
+      pending: results.pending,
       leagues: results.leagues,
       requests: results.requestCount,
       updated: results.updated,

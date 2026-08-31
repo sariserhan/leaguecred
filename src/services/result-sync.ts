@@ -46,6 +46,15 @@ export async function synchronizeMatchResults(
   leagueSlug?: string,
 ) {
   const since = new Date(now.getTime() - LOOKBACK_DAYS * 24 * 60 * 60 * 1000);
+
+  // Recorded before the work, and recorded even when there is none. A pull that
+  // found nothing waiting is the normal answer between matchdays, and it is
+  // also what an admin sees when they press the button and nothing visibly
+  // happens - so it belongs in the sync-run log rather than nowhere.
+  const [run] = await sqlClient<Array<{ id: string }>>`
+    insert into api_sync_runs (provider, kind) values (${provider.name}, ${leagueSlug ? `results:${leagueSlug}` : "results"}) returning id`;
+  if (!run) throw new Error("Could not start result sync run.");
+
   const pending = await sqlClient<PendingFixture[]>`
     select f.id, f.provider_external_id, f.home_team_id, f.away_team_id, f.kickoff_at,
       f.status, f.home_score, f.away_score, l.slug as league_slug, s.provider_season
@@ -60,15 +69,12 @@ export async function synchronizeMatchResults(
     order by f.kickoff_at`;
 
   if (pending.length === 0) {
-    return { leagues: 0, requestCount: 0, updated: 0, finished: 0, faults: [] as string[] };
+    await sqlClient`update api_sync_runs set status = 'succeeded', request_count = 0, finished_at = now() where id = ${run.id}`;
+    return { pending: 0, leagues: 0, requestCount: 0, updated: 0, finished: 0, faults: [] as string[] };
   }
 
   const sourceIds = new Map((provider.competitions ?? []).map((competition) => [competition.leagueSlug, competition.externalId]));
   const byLeague = Map.groupBy(pending, (fixture) => fixture.league_slug);
-
-  const [run] = await sqlClient<Array<{ id: string }>>`
-    insert into api_sync_runs (provider, kind) values (${provider.name}, 'results') returning id`;
-  if (!run) throw new Error("Could not start result sync run.");
 
   let requestCount = 0;
   let updated = 0;
@@ -140,5 +146,5 @@ export async function synchronizeMatchResults(
     throw error;
   }
 
-  return { leagues: byLeague.size, requestCount, updated, finished, faults };
+  return { pending: pending.length, leagues: byLeague.size, requestCount, updated, finished, faults };
 }
