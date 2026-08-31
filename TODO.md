@@ -44,6 +44,12 @@ None.
 
 ## Completed
 
+- [x] Pull match results hourly without re-syncing the schedule. `/api/jobs/results`
+      reads the fixtures already waiting on a result, asks only the leagues that
+      played and only for those days, updates scores in place, and settles the
+      picks they decide. No inserts, no matchweeks, no logos, and no request at
+      all on a quiet hour.
+
 - [x] Put the Community Challenge and the global active-locks board behind
       admin feature flags. Both default to on, so nothing changes until an admin
       turns one off in the panel; off means the pages 404, every link into them
