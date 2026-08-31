@@ -15,6 +15,7 @@ import { Recommendations } from "@/components/specialists/recommendations";
 import { ProvisionalProgress } from "@/components/specialists/provisional-progress";
 import { DashboardActivity } from "@/components/specialists/dashboard-activity";
 import { ProfileMilestones } from "@/components/specialists/profile-milestones";
+import { ActivationChecklist } from "@/components/specialists/activation-checklist";
 import type { SpecialistRecommendation } from "@/data/recommendations";
 
 function ResultBadge({ result }: { result: "win" | "loss" | "void" | "pending" }) {
@@ -31,7 +32,7 @@ function RecentForm({ locks }: { locks: SpecialistProfileData["recentLocks"] }) 
   return <section className="border" aria-labelledby="form-heading"><div className="border-b px-5 py-4"><h2 id="form-heading" className="font-heading text-2xl font-bold uppercase">Recent form</h2><p className="mt-1 text-sm text-muted-foreground">Last {recent.length} settled independent calls.</p></div><div className="p-5"><div className="flex h-28 items-end gap-2" role="img" aria-label={`${wins} wins from ${decisions} recent decisions`}>{recent.map((lock, index) => <span key={lock.id} className={lock.result === "win" ? "flex-1 bg-primary" : lock.result === "loss" ? "h-1/3 flex-1 bg-destructive" : "h-1/6 flex-1 bg-muted-foreground/30"} style={{ height: lock.result === "win" ? `${55 + index * 5}%` : undefined }} title={`${lock.leagueName}: ${lock.result}`} />)}</div><div className="mt-3 flex items-end justify-between gap-4"><span className="text-xs text-muted-foreground">Oldest → newest</span><strong className="font-heading text-3xl text-primary">{decisions ? Math.round((wins / decisions) * 100) : 0}%</strong></div></div></section>;
 }
 
-export function SpecialistProfile({ data, recommendations = [], hasHelpPreferences = false }: { data: SpecialistProfileData; recommendations?: SpecialistRecommendation[]; hasHelpPreferences?: boolean }) {
+export function SpecialistProfile({ data, recommendations = [], hasHelpPreferences = false, hasLeaguePreferences = false }: { data: SpecialistProfileData; recommendations?: SpecialistRecommendation[]; hasHelpPreferences?: boolean; hasLeaguePreferences?: boolean }) {
   const router = useRouter();
   const [followedLeagueIds, setFollowedLeagueIds] = useState(() => new Set(data.leagues.filter((league) => league.followedByViewer).map((league) => league.id)));
   const [pendingLeagueId, setPendingLeagueId] = useState<string | null>(null);
@@ -65,6 +66,7 @@ export function SpecialistProfile({ data, recommendations = [], hasHelpPreferenc
     <div className="page-shell py-8 sm:py-12">
       {data.viewer.isSelf ? <div className="mb-7"><h1 className="font-heading text-[clamp(3.5rem,7vw,6.5rem)] leading-[0.88] font-extrabold uppercase">Your football dashboard.</h1><p className="mt-4 max-w-2xl text-lg text-muted-foreground">Your independent records, followed leagues, and recent calls in one place.</p><div className="mt-6 flex flex-col gap-3 sm:flex-row"><Link href="/leagues?intent=prove" className="inline-flex h-11 items-center justify-center bg-primary px-5 font-semibold">Make a Weekly Lock</Link><Link href="/specialists" className="inline-flex h-11 items-center justify-center bg-foreground px-5 font-semibold text-background">Find specialists</Link></div></div> : null}
       {data.viewer.isSelf ? <section className="mb-7 grid border-y md:grid-cols-3" aria-label="Dashboard priorities"><div className="border-b p-5 md:border-r md:border-b-0"><span className="text-xs font-bold uppercase text-muted-foreground">Needs attention</span><strong className="mt-2 block font-heading text-3xl text-primary">{data.viewer.locksDue} locks due</strong><Link href="/leagues?intent=prove" className="mt-2 inline-block text-sm font-semibold underline">Review leagues</Link></div><div className="border-b p-5 md:border-r md:border-b-0"><span className="text-xs font-bold uppercase text-muted-foreground">Active this week</span><strong className="mt-2 block font-heading text-3xl">Weekly Slip</strong><Link href="/slip" className="mt-2 inline-block text-sm font-semibold underline">Open active calls</Link></div><div className="p-5"><span className="text-xs font-bold uppercase text-muted-foreground">Results</span><strong className="mt-2 block font-heading text-3xl">{data.totals.wins}–{data.totals.losses}</strong><a href="#prediction-history-heading" className="mt-2 inline-block text-sm font-semibold underline">View history</a></div></section> : null}
+      {data.viewer.isSelf ? <ActivationChecklist data={data} hasPreferences={hasLeaguePreferences} /> : null}
       {data.viewer.isSelf ? <ProvisionalProgress leagues={data.leagues} /> : null}
       {data.viewer.isSelf ? <DashboardActivity data={data} /> : null}
       {data.viewer.isSelf ? <ProfileMilestones data={data} /> : null}

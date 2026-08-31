@@ -55,3 +55,10 @@ export const getNotificationCenter = cache(async (userId: string) => {
     },
   };
 });
+
+export const getNotificationInbox = cache(async (userId: string) => {
+  const rows = await sqlClient<Array<{ id: string; kind: string; title: string; body: string; href: string; read_at: Date | string | null; created_at: Date | string }>>`
+    select id, kind, title, body, href, read_at, created_at from notifications
+    where user_id = ${userId} order by created_at desc limit 200`;
+  return rows.map((row) => ({ id: row.id, kind: row.kind, title: row.title, body: row.body, href: row.href, readAt: row.read_at ? toIsoTimestamp(row.read_at) : null, createdAt: toIsoTimestamp(row.created_at) }));
+});

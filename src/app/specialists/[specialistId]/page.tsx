@@ -26,5 +26,5 @@ export default async function SpecialistPage(props: SpecialistPageProps) {
   if (!data) notFound();
   const preferences = data.viewer.isSelf ? await getLeaguePreferences(data.specialist.id) : null;
   const recommendations = data.viewer.isSelf ? await getPersonalizedRecommendations(data.specialist.id) : [];
-  return <SpecialistProfile data={data} recommendations={recommendations} hasHelpPreferences={Boolean(preferences?.help.length)} />;
+  return <SpecialistProfile data={data} recommendations={recommendations} hasHelpPreferences={Boolean(preferences?.help.length)} hasLeaguePreferences={Boolean(preferences && (preferences.known.length || preferences.help.length))} />;
 }

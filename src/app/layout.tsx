@@ -11,6 +11,7 @@ import { getLeagueNavOptions } from "@/data/teams";
 import { getSession } from "@/lib/auth-session";
 import { getNotificationCenter } from "@/data/notifications";
 import { Toaster } from "@/components/ui/toast";
+import { MobileMemberNav } from "@/components/mobile-member-nav";
 
 import "./globals.css";
 
@@ -53,8 +54,9 @@ export default async function RootLayout({ children }: LayoutProps<"/">) {
         <a href="#main-content" className="sr-only z-[100] bg-foreground px-4 py-3 font-semibold text-background focus:not-sr-only focus:fixed focus:top-2 focus:left-2">Skip to main content</a>
         <SiteBanner />
         <SiteHeader isAdmin={isAdmin} leagues={leagues} notificationCenter={notificationCenter} />
-        <main id="main-content" tabIndex={-1} className="flex-1">{children}</main>
+        <main id="main-content" tabIndex={-1} className={session ? "flex-1 pb-16 md:pb-0" : "flex-1"}>{children}</main>
         <SiteFooter />
+        {session ? <MobileMemberNav userId={session.user.id} /> : null}
         <Toaster timeout={4500} />
         <Script
           src="https://cdn.visitorping.com/site/vp_RJPP6CJD.js"

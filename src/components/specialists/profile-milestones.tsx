@@ -1,40 +1,13 @@
 "use client";
-
-import { AwardIcon, CheckIcon, LockKeyholeIcon, Share2Icon } from "lucide-react";
-
+import { useState } from "react";
+import { AwardIcon,CheckIcon,CopyIcon,DownloadIcon,LockKeyholeIcon,Share2Icon } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { toast } from "@/components/ui/toast";
 import type { SpecialistProfileData } from "@/data/specialists";
 import { MINIMUM_SETTLED_PICKS_FOR_RANK } from "@/lib/reputation";
 
-export function ProfileMilestones({ data }: { data: SpecialistProfileData }) {
-  const earned = {
-    firstLock: data.totals.settledPicks >= 1,
-    firstWin: data.totals.wins >= 1,
-    evidence: data.totals.settledPicks >= 5,
-    ranked: data.leagues.some((league) => league.settledPicks >= MINIMUM_SETTLED_PICKS_FOR_RANK),
-    followed: data.specialist.followers >= 1,
-  };
-  const milestones = [
-    ["First lock", "Settle one independent call", earned.firstLock],
-    ["First correct call", "Put the first win on your record", earned.firstWin],
-    ["Evidence builder", "Settle five independent calls", earned.evidence],
-    ["Rank eligible", `Reach ${MINIMUM_SETTLED_PICKS_FOR_RANK} locks in one league`, earned.ranked],
-    ["Trusted voice", "Earn your first follower", earned.followed],
-  ] as const;
-  const accuracy = data.totals.settledPicks ? Math.round((data.totals.wins / data.totals.settledPicks) * 100) : 0;
-
-  async function shareRecord() {
-    const text = `${data.specialist.name} on LeagueCred: ${data.totals.wins}-${data.totals.losses}, ${accuracy}% across ${data.totals.settledPicks} independent Weekly Locks.`;
-    try {
-      if (navigator.share) await navigator.share({ title: `${data.specialist.name}'s LeagueCred record`, text, url: window.location.href });
-      else await navigator.clipboard.writeText(`${text} ${window.location.href}`);
-      toast.add({ title: "Record ready to share", description: "Your record card is ready.", type: "success" });
-    } catch (error) {
-      if (error instanceof DOMException && error.name === "AbortError") return;
-      toast.add({ title: "Could not share record", description: "Copy the profile URL and try again.", type: "error" });
-    }
-  }
-
-  return <section className="mb-8 grid border lg:grid-cols-[1fr_360px]" aria-labelledby="milestones-heading"><div><header className="border-b px-5 py-4"><h2 id="milestones-heading" className="font-heading text-3xl font-bold uppercase">Profile milestones</h2><p className="mt-1 text-sm text-muted-foreground">Visible progress without noisy celebration.</p></header><ol className="divide-y">{milestones.map(([title, description, complete]) => <li key={title} className="flex items-center gap-3 px-5 py-3"><span className={complete ? "flex size-8 items-center justify-center rounded-full bg-primary text-primary-foreground" : "flex size-8 items-center justify-center rounded-full border text-muted-foreground"}>{complete ? <CheckIcon aria-hidden="true" className="size-4" /> : <LockKeyholeIcon aria-hidden="true" className="size-3.5" />}</span><span><strong className="block">{title}</strong><span className="text-xs text-muted-foreground">{description}</span></span></li>)}</ol></div><aside className="flex flex-col justify-between bg-foreground p-6 text-background lg:border-l"><div><AwardIcon aria-hidden="true" className="size-7 text-primary" /><p className="mt-8 text-xs font-bold tracking-[0.12em] text-primary uppercase">Shareable record card</p><strong className="mt-2 block font-heading text-5xl leading-none uppercase">{data.totals.wins}–{data.totals.losses}</strong><p className="mt-2 text-background/70">{accuracy}% accuracy · {data.totals.settledPicks} independent locks</p></div><Button className="mt-8 w-full" onClick={shareRecord}><Share2Icon data-icon="inline-start" />Share record</Button></aside></section>;
-}
+export function ProfileMilestones({data}:{data:SpecialistProfileData}){const[theme,setTheme]=useState<"dark"|"light">("dark");const earned={firstLock:data.totals.settledPicks>=1,firstWin:data.totals.wins>=1,evidence:data.totals.settledPicks>=5,ranked:data.leagues.some((league)=>league.settledPicks>=MINIMUM_SETTLED_PICKS_FOR_RANK),followed:data.specialist.followers>=1};const milestones=[["First lock","Settle one independent call",earned.firstLock],["First correct call","Put the first win on your record",earned.firstWin],["Evidence builder","Settle five independent calls",earned.evidence],["Rank eligible",`Reach ${MINIMUM_SETTLED_PICKS_FOR_RANK} locks in one league`,earned.ranked],["Trusted voice","Earn your first follower",earned.followed]] as const;const accuracy=data.totals.settledPicks?Math.round(data.totals.wins/data.totals.settledPicks*100):0;const text=`${data.specialist.name} on LeagueCred: ${data.totals.wins}-${data.totals.losses}, ${accuracy}% across ${data.totals.settledPicks} independent Weekly Locks.`;
+async function share(){try{if(navigator.share)await navigator.share({title:`${data.specialist.name}'s LeagueCred record`,text,url:window.location.href});else await navigator.clipboard.writeText(`${text} ${window.location.href}`);toast.add({title:"Record ready to share",description:"Your record card is ready.",type:"success"})}catch(error){if(error instanceof DOMException&&error.name==="AbortError")return;toast.add({title:"Could not share record",description:"Copy the profile URL and try again.",type:"error"})}}
+async function copy(){await navigator.clipboard.writeText(window.location.href);toast.add({title:"Profile link copied",description:"Share it anywhere.",type:"success"})}
+function download(){const dark=theme==="dark",bg=dark?"#020b1d":"#ffffff",fg=dark?"#ffffff":"#020b1d",name=data.specialist.name.replaceAll("&","&amp;");const svg=`<svg xmlns="http://www.w3.org/2000/svg" width="1200" height="630"><rect width="1200" height="630" fill="${bg}"/><text x="72" y="100" fill="#a8e600" font-family="Arial" font-size="30" font-weight="700">LEAGUECRED VERIFIED RECORD</text><text x="72" y="230" fill="${fg}" font-family="Arial" font-size="78" font-weight="800">${name}</text><text x="72" y="410" fill="${fg}" font-family="Arial" font-size="140" font-weight="800">${data.totals.wins}–${data.totals.losses}</text><text x="72" y="510" fill="${fg}" opacity=".7" font-family="Arial" font-size="38">${accuracy}% accuracy · ${data.totals.settledPicks} independent locks</text></svg>`;const link=document.createElement("a");link.href=`data:image/svg+xml;charset=utf-8,${encodeURIComponent(svg)}`;link.download=`leaguecred-${data.specialist.name.toLowerCase().replaceAll(" ","-")}.svg`;link.click()}
+return <section className="mb-8 grid border lg:grid-cols-[1fr_390px]" aria-labelledby="milestones-heading"><div><header className="border-b px-5 py-4"><h2 id="milestones-heading" className="font-heading text-3xl font-bold uppercase">Profile milestones</h2><p className="mt-1 text-sm text-muted-foreground">Visible progress without noisy celebration.</p></header><ol className="divide-y">{milestones.map(([title,description,complete])=><li key={title} className="flex items-center gap-3 px-5 py-3"><span className={complete?"flex size-8 items-center justify-center rounded-full bg-primary text-primary-foreground":"flex size-8 items-center justify-center rounded-full border text-muted-foreground"}>{complete?<CheckIcon className="size-4"/>:<LockKeyholeIcon className="size-3.5"/>}</span><span><strong className="block">{title}</strong><span className="text-xs text-muted-foreground">{description}</span></span></li>)}</ol></div><aside className={theme==="dark"?"flex flex-col justify-between bg-foreground p-6 text-background lg:border-l":"flex flex-col justify-between bg-background p-6 text-foreground lg:border-l"}><div><AwardIcon className="size-7 text-primary"/><p className="mt-8 text-xs font-bold tracking-[.12em] text-primary uppercase">Shareable record card</p><strong className="mt-2 block font-heading text-5xl leading-none uppercase">{data.totals.wins}–{data.totals.losses}</strong><p className="mt-2 opacity-70">{accuracy}% accuracy · {data.totals.settledPicks} independent locks</p><div className="mt-5 flex gap-2"><Button size="sm" variant={theme==="dark"?"default":"outline"} onClick={()=>setTheme("dark")}>Dark</Button><Button size="sm" variant={theme==="light"?"default":"outline"} onClick={()=>setTheme("light")}>Light</Button></div></div><div className="mt-8 grid grid-cols-3 gap-2"><Button size="sm" onClick={share}><Share2Icon/><span className="sr-only sm:not-sr-only">Share</span></Button><Button size="sm" variant="outline" onClick={copy}><CopyIcon/><span className="sr-only">Copy link</span></Button><Button size="sm" variant="outline" onClick={download}><DownloadIcon/><span className="sr-only">Download SVG</span></Button></div></aside></section>}

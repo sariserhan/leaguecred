@@ -35,6 +35,7 @@ None.
 - [x] Add live in-UI notification feedback for followed specialist locks,
       settled results, unread counts, and direct navigation
 - [x] Add Weekly Lock timelines, dashboard activity, milestones, record sharing, global search, grouped notifications, and comparison UI
+- [x] Add the notification inbox, season archive, matchweek calendar, activation checklist, mobile member navigation, share-card tools, and UI regression coverage
 
 - [x] Add account settings for profile, password, league, network, and notification controls
 - [x] Add founding-season and provisional specialist discovery states
