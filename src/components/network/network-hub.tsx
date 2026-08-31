@@ -20,11 +20,13 @@ import { followSpecialist } from "@/app/leagues/actions";
 import { switchSpecialist, unfollowSpecialist } from "@/app/network/actions";
 import { saveNotificationPreferences } from "@/app/notifications/actions";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
+import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from "@/components/ui/alert-dialog";
 import { Badge } from "@/components/ui/badge";
 import { Button, buttonVariants } from "@/components/ui/button";
 import { Card, CardAction, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
 import { Separator } from "@/components/ui/separator";
 import { Toggle } from "@/components/ui/toggle";
+import { toast } from "@/components/ui/toast";
 import type { NetworkHubData, NetworkLeague, NetworkSpecialist } from "@/data/network";
 import type { NotificationPreferences } from "@/data/notifications";
 
@@ -38,6 +40,11 @@ const preferenceOptions: Array<{ key: keyof NotificationPreferences; label: stri
 function recordLabel(specialist: NetworkSpecialist) {
   const accuracy = specialist.settledPicks ? (specialist.wins / specialist.settledPicks) * 100 : 0;
   return `${accuracy.toFixed(1)}% · ${specialist.settledPicks} settled · adjusted ${(specialist.adjustedAccuracy * 100).toFixed(1)}%`;
+}
+
+function ConfirmAction({ trigger, title, description, confirmLabel, destructive = false, onConfirm }: { trigger: React.ReactElement; title: string; description: string; confirmLabel: string; destructive?: boolean; onConfirm: () => void }) {
+  const [open, setOpen] = useState(false);
+  return <AlertDialog open={open} onOpenChange={setOpen}><AlertDialogTrigger render={trigger} /><AlertDialogContent><AlertDialogHeader><AlertDialogTitle>{title}</AlertDialogTitle><AlertDialogDescription>{description}</AlertDialogDescription></AlertDialogHeader><AlertDialogFooter><AlertDialogCancel>Cancel</AlertDialogCancel><AlertDialogAction variant={destructive ? "destructive" : "default"} onClick={() => { setOpen(false); onConfirm(); }}>{confirmLabel}</AlertDialogAction></AlertDialogFooter></AlertDialogContent></AlertDialog>;
 }
 
 function FollowedSpecialist({ league, specialist, busy, onUnfollow }: {
@@ -57,9 +64,7 @@ function FollowedSpecialist({ league, specialist, busy, onUnfollow }: {
         </div>
         <p className="mt-1 text-sm text-muted-foreground">{recordLabel(specialist)} · {specialist.followers} followers</p>
       </div>
-      <Button variant="outline" size="sm" disabled={busy} onClick={() => onUnfollow(specialist)}>
-        <UserMinusIcon data-icon="inline-start" />Unfollow
-      </Button>
+      <ConfirmAction trigger={<Button variant="outline" size="sm" disabled={busy}><UserMinusIcon data-icon="inline-start" />Unfollow</Button>} title={`Unfollow ${specialist.name}?`} description={`Future ${league.name} calls from this specialist will no longer appear in your network. Existing Weekly Slip entries stay attributed.`} confirmLabel="Unfollow" destructive onConfirm={() => onUnfollow(specialist)} />
     </div>
   );
 }
@@ -91,7 +96,7 @@ function LeagueCard({ league, pendingKey, onFollow, onSwitch, onUnfollow }: {
           </div>
           {league.alternatives.length ? <div className="divide-y border">{league.alternatives.map((specialist) => {
             const key = `${league.id}:${specialist.id}`;
-            return <div key={specialist.id} className="grid gap-3 p-4 sm:grid-cols-[1fr_auto] sm:items-center"><div><Link href={`/specialists/${specialist.id}`} className="font-bold hover:text-primary">{specialist.name}</Link><p className="mt-1 text-sm text-muted-foreground">{recordLabel(specialist)} · {specialist.followers} followers</p></div><Button size="sm" disabled={Boolean(pendingKey)} onClick={() => current ? onSwitch(league, current, specialist) : onFollow(league, specialist)}><UserRoundCheckIcon data-icon="inline-start" />{pendingKey === key ? "Saving…" : current ? `Switch from ${current.name.split(" ")[0]}` : "Follow"}</Button></div>;
+            return <div key={specialist.id} className="grid gap-3 p-4 sm:grid-cols-[1fr_auto] sm:items-center"><div><Link href={`/specialists/${specialist.id}`} className="font-bold hover:text-primary">{specialist.name}</Link><p className="mt-1 text-sm text-muted-foreground">{recordLabel(specialist)} · {specialist.followers} followers</p></div>{current ? <ConfirmAction trigger={<Button size="sm" disabled={Boolean(pendingKey)}><UserRoundCheckIcon data-icon="inline-start" />{pendingKey === key ? "Saving…" : `Switch from ${current.name.split(" ")[0]}`}</Button>} title={`Switch to ${specialist.name}?`} description={`This replaces ${current.name} as your ${league.name} specialist for future calls. Existing Weekly Slip entries will not change.`} confirmLabel="Switch specialist" onConfirm={() => onSwitch(league, current, specialist)} /> : <Button size="sm" disabled={Boolean(pendingKey)} onClick={() => onFollow(league, specialist)}><UserRoundCheckIcon data-icon="inline-start" />{pendingKey === key ? "Saving…" : "Follow"}</Button>}</div>;
           })}</div> : <p className="border border-dashed p-4 text-sm text-muted-foreground">No other specialists currently meet the ranking threshold.</p>}
         </div>
       </CardContent>
@@ -116,6 +121,7 @@ export function NetworkHub({ initialData, initialPreferences }: { initialData: N
 
   function complete(result: { ok: true } | { ok: false; message: string }, success: string) {
     setMessage(result.ok ? success : result.message);
+    toast.add({ title: result.ok ? "Network updated" : "Update failed", description: result.ok ? success : result.message, type: result.ok ? "success" : "error" });
     setPendingKey("");
     if (result.ok) router.refresh();
   }
@@ -141,6 +147,7 @@ export function NetworkHub({ initialData, initialPreferences }: { initialData: N
     startTransition(async () => {
       await saveNotificationPreferences(next);
       setMessage("Notification settings saved.");
+      toast.add({ title: "Notifications updated", description: "Your notification preferences are saved.", type: "success" });
     });
   }
 

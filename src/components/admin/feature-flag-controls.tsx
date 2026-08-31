@@ -7,6 +7,7 @@ import { toggleFeatureFlag } from "@/app/admin/actions";
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { ToggleGroup, ToggleGroupItem } from "@/components/ui/toggle-group";
+import { toast } from "@/components/ui/toast";
 import type { ResolvedFeatureFlag } from "@/lib/site-settings";
 
 export function FeatureFlagControls({ flags }: { flags: ResolvedFeatureFlag[] }) {
@@ -20,6 +21,7 @@ export function FeatureFlagControls({ flags }: { flags: ResolvedFeatureFlag[] })
     startTransition(async () => {
       const result = await toggleFeatureFlag(key, enabled);
       if (!result.ok) setError({ key, message: result.message });
+      toast.add({ title: result.ok ? "Feature flag updated" : "Feature flag unchanged", description: result.ok ? `${key} is now ${enabled ? "on" : "off"}.` : result.message, type: result.ok ? "success" : "error" });
       setPendingKey(null);
     });
   }

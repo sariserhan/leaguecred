@@ -4,11 +4,23 @@ import { useState, useTransition } from "react";
 import { CircleCheckIcon, MegaphoneIcon, TriangleAlertIcon, WrenchIcon } from "lucide-react";
 
 import { saveSiteSettings } from "@/app/admin/actions";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+  AlertDialogTrigger,
+} from "@/components/ui/alert-dialog";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Label } from "@/components/ui/label";
 import { Spinner } from "@/components/ui/spinner";
 import { ToggleGroup, ToggleGroupItem } from "@/components/ui/toggle-group";
+import { toast } from "@/components/ui/toast";
 import type { BannerTone } from "@/db/schema";
 import {
   BANNER_MESSAGE_MAX_LENGTH,
@@ -61,6 +73,7 @@ export function SiteControls({ settings }: { settings: SiteSettings }) {
   const [bannerMessage, setBannerMessage] = useState(settings.bannerMessage ?? "");
   const [bannerTone, setBannerTone] = useState<BannerTone>(settings.bannerTone);
   const [status, setStatus] = useState<{ ok: boolean; message: string } | null>(null);
+  const [confirmationOpen, setConfirmationOpen] = useState(false);
   const [pending, startTransition] = useTransition();
 
   function save() {
@@ -79,6 +92,7 @@ export function SiteControls({ settings }: { settings: SiteSettings }) {
           ? { ok: true, message: "Site settings saved and live." }
           : { ok: false, message: result.message },
       );
+      toast.add({ title: result.ok ? "Site settings saved" : "Settings not saved", description: result.ok ? "The changes are live for visitors." : result.message, type: result.ok ? "success" : "error" });
     });
   }
 
@@ -182,10 +196,36 @@ export function SiteControls({ settings }: { settings: SiteSettings }) {
       </Card>
 
       <div className="flex flex-col gap-3 sm:flex-row sm:items-center lg:col-span-2">
-        <Button size="lg" onClick={save} disabled={pending}>
-          {pending ? <Spinner data-icon="inline-start" /> : <CircleCheckIcon data-icon="inline-start" />}
-          Save site settings
-        </Button>
+        <AlertDialog open={confirmationOpen} onOpenChange={setConfirmationOpen}>
+          <AlertDialogTrigger
+            render={
+              <Button size="lg" disabled={pending}>
+                {pending ? <Spinner data-icon="inline-start" /> : <CircleCheckIcon data-icon="inline-start" />}
+                Save site settings
+              </Button>
+            }
+          />
+          <AlertDialogContent>
+            <AlertDialogHeader>
+              <AlertDialogTitle>Apply these site-wide changes?</AlertDialogTitle>
+              <AlertDialogDescription>
+                Maintenance mode can prevent members from using the site, while banner changes are
+                immediately visible to every visitor.
+              </AlertDialogDescription>
+            </AlertDialogHeader>
+            <AlertDialogFooter>
+              <AlertDialogCancel>Cancel</AlertDialogCancel>
+              <AlertDialogAction
+                onClick={() => {
+                  setConfirmationOpen(false);
+                  save();
+                }}
+              >
+                Apply changes
+              </AlertDialogAction>
+            </AlertDialogFooter>
+          </AlertDialogContent>
+        </AlertDialog>
         {status ? (
           <p
             role="status"

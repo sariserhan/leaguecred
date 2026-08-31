@@ -14,6 +14,7 @@ import { Field, FieldDescription, FieldGroup, FieldLabel } from "@/components/ui
 import { Input } from "@/components/ui/input";
 import { Spinner } from "@/components/ui/spinner";
 import { Toggle } from "@/components/ui/toggle";
+import { toast } from "@/components/ui/toast";
 import type { NotificationPreferences } from "@/data/notifications";
 import { authClient } from "@/lib/auth-client";
 
@@ -36,6 +37,7 @@ export function AccountSettings({ user, initialPreferences }: { user: { id: stri
     startTransition(async () => {
       const result = await updateProfile({ name });
       setMessage(result.message);
+      toast.add({ title: result.ok ? "Profile updated" : "Profile update failed", description: result.message, type: result.ok ? "success" : "error" });
       if (result.ok) router.refresh();
     });
   }
@@ -50,6 +52,7 @@ export function AccountSettings({ user, initialPreferences }: { user: { id: stri
     startTransition(async () => {
       const result = await authClient.changePassword({ currentPassword, newPassword, revokeOtherSessions: true });
       setMessage(result.error?.message ?? "Password changed and other sessions signed out.");
+      toast.add({ title: result.error ? "Password change failed" : "Password changed", description: result.error?.message ?? "Other active sessions were signed out.", type: result.error ? "error" : "success" });
       if (!result.error) form.reset();
     });
   }
@@ -57,7 +60,7 @@ export function AccountSettings({ user, initialPreferences }: { user: { id: stri
   function togglePreference(key: keyof NotificationPreferences) {
     const next = { ...preferences, [key]: !preferences[key] };
     setPreferences(next);
-    startTransition(async () => { await saveNotificationPreferences(next); setMessage("Notification settings saved."); });
+    startTransition(async () => { await saveNotificationPreferences(next); setMessage("Notification settings saved."); toast.add({ title: "Notifications updated", description: "Your preferences are saved.", type: "success" }); });
   }
 
   return <main className="page-shell py-8 sm:py-12">

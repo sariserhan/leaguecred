@@ -8,6 +8,7 @@ import { viewerIsAdmin } from "@/lib/admin";
 import { getLeagueNavOptions } from "@/data/teams";
 import { getSession } from "@/lib/auth-session";
 import { getNotificationCenter } from "@/data/notifications";
+import { Toaster } from "@/components/ui/toast";
 
 import "./globals.css";
 
@@ -51,6 +52,7 @@ export default async function RootLayout({ children }: LayoutProps<"/">) {
         <SiteHeader isAdmin={isAdmin} leagues={leagues} notificationCenter={notificationCenter} />
         <main className="flex-1">{children}</main>
         <SiteFooter />
+        <Toaster timeout={4500} />
       </body>
     </html>
   );

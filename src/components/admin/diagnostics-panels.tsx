@@ -76,7 +76,7 @@ export function SyncRunsPanel({ runs }: { runs: SyncRunDiagnostic[] }) {
             No synchronization has been recorded yet.
           </p>
         ) : (
-          <div className="overflow-x-auto border-t">
+          <><ul className="divide-y border-t sm:hidden">{runs.map((run) => <li key={run.id} className="flex flex-col gap-3 p-4"><div className="flex items-center justify-between gap-3"><Badge variant={statusBadgeVariant(run.status)}>{run.status}</Badge><time className="text-xs text-muted-foreground">{formatMoment(run.startedAt)}</time></div><div><strong className="block">{run.provider}</strong><span className="text-sm text-muted-foreground">{run.kind} · {run.requestCount} requests · {run.durationSeconds === null ? "running" : `${run.durationSeconds}s`}</span></div>{run.error ? <p className="flex items-start gap-2 text-xs leading-5 text-destructive"><CircleAlertIcon aria-hidden="true" className="mt-0.5 size-4 shrink-0" />{run.error}</p> : null}</li>)}</ul><div className="hidden overflow-x-auto border-t sm:block">
             <table className="w-full min-w-[720px] text-left text-sm">
               <thead className="border-b bg-muted text-xs font-semibold tracking-[0.08em] text-muted-foreground uppercase">
                 <tr>
@@ -111,7 +111,7 @@ export function SyncRunsPanel({ runs }: { runs: SyncRunDiagnostic[] }) {
                 ))}
               </tbody>
             </table>
-          </div>
+          </div></>
         )}
       </CardContent>
     </Card>
