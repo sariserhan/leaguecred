@@ -76,6 +76,71 @@ export async function submitDailyLock(fixtureId: string, selectedTeamId: string,
   }
 }
 
+/**
+ * Locks several days at once — a Friday call and a Saturday call submitted
+ * together rather than one at a time.
+ *
+ * One transaction, so a set either lands whole or not at all. Locks are
+ * permanent, and a half-applied set would leave someone holding calls they did
+ * not knowingly commit to while believing the rest went with them.
+ *
+ * Every rule the single-lock path enforces still applies to each entry: the
+ * match must not have started, the team must be playing in it, and one call per
+ * league per day is the unique index's business.
+ */
+export async function submitDailyLocks(
+  entries: Array<{ fixtureId: string; selectedTeamId: string }>,
+  reason?: string,
+): Promise<LeagueActionResult> {
+  const parsed = z.object({
+    entries: z.array(z.object({ fixtureId: uuid, selectedTeamId: uuid })).min(1).max(14),
+    reason: z.string().trim().max(500).optional(),
+  }).safeParse({ entries, reason });
+  if (!parsed.success) return { ok: false, message: "Those choices are invalid." };
+
+  const userId = await authenticatedUserId();
+  if (!userId) return { ok: false, message: "Sign in before submitting a Daily Lock." };
+  if (!await withinUserRateLimit("submitDailyLock", userId)) {
+    return { ok: false, message: "That is a lot of requests at once. Wait a moment and try again." };
+  }
+
+  try {
+    const slug = await sqlClient.begin(async (sql) => {
+      let leagueSlug = "";
+      for (const entry of parsed.data.entries) {
+        const [fixture] = await sql<Array<{ league_id: string; season_id: string; matchweek_id: string; slug: string }>>`
+          select f.league_id, f.season_id, f.matchweek_id, l.slug
+          from fixtures f join leagues l on l.id = f.league_id join matchweeks mw on mw.id = f.matchweek_id
+          where f.id = ${entry.fixtureId}
+            and f.status = 'scheduled'
+            and f.kickoff_at > now()
+            and (f.home_team_id = ${entry.selectedTeamId} or f.away_team_id = ${entry.selectedTeamId})
+          for update of mw, f`;
+        if (!fixture) throw new Error("fixture is not eligible");
+        leagueSlug = fixture.slug;
+
+        await sql`insert into matchweek_participation (user_id, league_id, matchweek_id, mode)
+          values (${userId}, ${fixture.league_id}, ${fixture.matchweek_id}, 'independent')
+          on conflict (user_id, league_id, matchweek_id) do nothing`;
+        await sql`insert into picks (user_id, league_id, season_id, matchweek_id, fixture_id, selected_team_id, decision_reason)
+          values (${userId}, ${fixture.league_id}, ${fixture.season_id}, ${fixture.matchweek_id}, ${entry.fixtureId}, ${entry.selectedTeamId}, ${parsed.data.reason || null})`;
+      }
+      await sql`update referrals set activated_at=coalesce(activated_at, now()), updated_at=now()
+        where invited_user_id=${userId}`;
+      return leagueSlug;
+    });
+
+    revalidatePath(`/leagues/${slug}`);
+    revalidatePath("/leagues");
+    revalidatePath("/invite");
+    revalidatePath("/challenges");
+    revalidatePath("/recaps");
+    return { ok: true };
+  } catch (error) {
+    return actionError(error);
+  }
+}
+
 export async function addGameDiscussion(fixtureId: string, body: string): Promise<LeagueActionResult> {
   const parsed = z.object({ fixtureId: uuid, body: z.string().trim().min(1).max(1000) }).safeParse({ fixtureId, body });
   if (!parsed.success) return { ok: false, message: "Write a message up to 1,000 characters." };
