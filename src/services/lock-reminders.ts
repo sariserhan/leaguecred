@@ -31,6 +31,12 @@ type ReminderCandidate = {
   lock_at: Date;
 };
 
+// One reminder per round, not per match day, and deliberately so. Locks are
+// daily, so a round of three match days could justify three emails per league —
+// which across several leagues is more mail than the nudge is worth. This fires
+// once, before the round's first match, and only to someone who has not called
+// at all that round. Someone already playing does not need chasing.
+//
 // A user is engaged once they have participated, followed, or explicitly marked
 // a league as known during onboarding.
 export async function sendLockReminders(options: { hoursBeforeLock?: number; send?: EmailSender } = {}) {

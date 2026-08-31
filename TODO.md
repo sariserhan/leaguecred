@@ -12,11 +12,6 @@ None.
 - [ ] Set the founding-season rank threshold in the admin panel. It ships at the
       standard 10, which nobody can reach for 10 gameweeks; 4 opens Follow after
       about a month. Raise it back once a cohort has cleared it.
-- [ ] Lock reminders still fire once per round, before its first match, because
-      lock_reminders is keyed on the matchweek. With daily locks the deadlines
-      are per match, so the honest cadence is one nudge per match day for a day
-      with no call yet. Needs a new key on that table and a view on how many
-      emails a day is too many; the copy no longer claims a round-wide deadline.
 - [ ] Rotate the Neon database password and update Vercel and .env.local
 
 ## Blocked
