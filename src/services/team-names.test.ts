@@ -50,3 +50,21 @@ describe("names the fixtures proved are one club", () => {
     expect(teamNamesMatch("Deportivo Alavés", "Deportivo de A Coruña")).toBe(false);
   });
 });
+
+describe("clubs both providers wrote differently on either side of one match", () => {
+  it.each([
+    ["SV Elversberg", "Elversberg"],
+    ["Bayer Leverkusen", "Leverkusen"],
+    ["TSG Hoffenheim", "Hoffenheim"],
+    ["FC Cologne", "FC Koln"],
+  ])("matches %s with %s", (left, right) => {
+    expect(teamNamesMatch(left, right)).toBe(true);
+  });
+
+  it("keeps clubs that merely share a city or a word apart", () => {
+    expect(teamNamesMatch("Paris Saint-Germain", "Paris FC")).toBe(false);
+    expect(teamNamesMatch("LAFC", "LA Galaxy")).toBe(false);
+    expect(teamNamesMatch("Atlético Junior", "Boca Juniors")).toBe(false);
+    expect(teamNamesMatch("Borussia Dortmund", "Borussia Mönchengladbach")).toBe(false);
+  });
+});

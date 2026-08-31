@@ -1,7 +1,7 @@
 import { sqlClient } from "@/db";
 import { describeDatabaseTarget } from "@/lib/env";
 import { teamSlug } from "@/lib/team-path";
-import { namesCouldBeOneClub, planTeamMerges, type DedupeTeam, type TeamMerge } from "@/services/team-dedupe";
+import { isDuplicateOfCatalogued, namesCouldBeOneClub, planTeamMerges, type DedupeTeam, type TeamMerge } from "@/services/team-dedupe";
 
 /**
  * Merges clubs that were catalogued twice.
@@ -84,6 +84,40 @@ async function loadFixtureEvidence() {
     else rejected.push({ nameA: row.name_a, nameB: row.name_b });
   }
   return { accepted, rejected };
+}
+
+/**
+ * Pairs where one row is a club and the other is a leftover catalogue entry for
+ * it: both listed in the same competition and season, their names nesting, and
+ * one of them never once appearing in a fixture.
+ *
+ * The fixture evidence cannot reach these, because it needs one side of a match
+ * to agree and the leftover has no matches at all.
+ */
+async function loadStubEvidence() {
+  const rows = await sqlClient<Array<{
+    a: string; b: string; name_a: string; name_b: string; fixtures_a: number; fixtures_b: number;
+  }>>`
+    select ta.id as a, tb.id as b, ta.name as name_a, tb.name as name_b,
+      (select count(*)::int from fixtures f where f.home_team_id = ta.id or f.away_team_id = ta.id) as fixtures_a,
+      (select count(*)::int from fixtures f where f.home_team_id = tb.id or f.away_team_id = tb.id) as fixtures_b
+    from league_team_memberships ma
+    join league_team_memberships mb
+      on mb.league_id = ma.league_id and mb.season_id = ma.season_id and mb.team_id > ma.team_id
+    join seasons s on s.id = ma.season_id and s.is_current = true
+    join leagues l on l.id = ma.league_id and l.enabled = true
+    join teams ta on ta.id = ma.team_id
+    join teams tb on tb.id = mb.team_id`;
+
+  const pairs: Array<[string, string]> = [];
+  for (const row of rows) {
+    const left = { name: row.name_a, fixtures: row.fixtures_a };
+    const right = { name: row.name_b, fixtures: row.fixtures_b };
+    if (isDuplicateOfCatalogued(left, right) || isDuplicateOfCatalogued(right, left)) {
+      pairs.push([row.a, row.b]);
+    }
+  }
+  return pairs;
 }
 
 /** Fixtures where both sides collapse to one team would break the check
@@ -169,7 +203,8 @@ async function main() {
     for (const pair of evidence.rejected) {
       console.warn(`FIXTURES SUGGEST ${pair.nameA} and ${pair.nameB} are one club, but the names do not agree. Left alone.`);
     }
-    const planned = planTeamMerges(await loadTeams(), evidence.accepted);
+    const stubs = await loadStubEvidence();
+    const planned = planTeamMerges(await loadTeams(), [...evidence.accepted, ...stubs]);
     const merges = only ? planned.merges.filter((merge) => [merge.canonical.slug, ...merge.duplicates.map((team) => team.slug)].some((slug) => only.has(slug))) : planned.merges;
     const unresolved = only ? [] : planned.unresolved;
 

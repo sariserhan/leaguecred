@@ -153,6 +153,12 @@ const aliases: Record<string, string> = {
   athleticclub: "athleticbilbao",
   staderennais: "rennes",
   deportivo: "lacoruna",
+  // Same match, same minute, different wording on both sides — so the fixture
+  // evidence, which needs one side to agree, could never pair these.
+  svelversberg: "elversberg",
+  bayerleverkusen: "leverkusen",
+  tsghoffenheim: "hoffenheim",
+  cologne: "koln",
 };
 
 export function normalizeTeamName(value: string) {

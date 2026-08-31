@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 
-import { isSameClub, namesCouldBeOneClub, pickCanonical, planTeamMerges, type DedupeTeam } from "@/services/team-dedupe";
+import { isDuplicateOfCatalogued, isSameClub, namesCouldBeOneClub, pickCanonical, planTeamMerges, type DedupeTeam } from "@/services/team-dedupe";
 
 const SPAIN = "country-spain";
 const TURKIYE = "country-turkiye";
@@ -212,5 +212,69 @@ describe("isSameClub with one side missing a country", () => {
     const ecuador = team({ id: "barcelona-sc", name: "Barcelona SC", regions: ["Americas"], memberships: 1 });
 
     expect(isSameClub(barcelona, ecuador)).toBe(false);
+  });
+});
+
+describe("isDuplicateOfCatalogued", () => {
+  const played = (name: string, fixtures = 5) => ({ name, fixtures });
+  const stub = (name: string) => ({ name, fixtures: 0 });
+
+  it.each([
+    ["Altach", "SC Rheindorf Altach"],
+    ["Hartberg", "TSV Hartberg"],
+    ["Viborg", "Viborg FF"],
+    ["Celje", "NK Celje"],
+    ["Omonia", "Omonia Nicosia"],
+    ["NEOM Sports Club", "Neom SC"],
+  ])("treats the unplayed %s as a duplicate of %s", (candidate, catalogued) => {
+    expect(isDuplicateOfCatalogued(stub(candidate), played(catalogued))).toBe(true);
+  });
+
+  it.each([
+    // Both play, so both are real — whatever their names share.
+    ["LAFC", "LA Galaxy"],
+    ["Paris Saint-Germain", "Paris FC"],
+    ["Atlético Junior", "Boca Juniors"],
+    ["Universidad Católica", "Universidad Católica (Quito)"],
+  ])("never pairs %s with %s", (left, right) => {
+    expect(isDuplicateOfCatalogued(played(left, 14), played(right, 15))).toBe(false);
+    expect(isDuplicateOfCatalogued(played(right, 15), played(left, 14))).toBe(false);
+  });
+
+  it("will not fold one empty entry into another", () => {
+    expect(isDuplicateOfCatalogued(stub("Altach"), stub("SC Rheindorf Altach"))).toBe(false);
+  });
+
+  it("needs the names to nest, not merely to be unplayed", () => {
+    expect(isDuplicateOfCatalogued(stub("Everton"), played("Liverpool"))).toBe(false);
+  });
+});
+
+describe("a country the two rows disagree on", () => {
+  it("keeps Santos of Brazil out of Santos Laguna of Mexico", () => {
+    // The Brazilian club had picked up a stray Liga MX membership, so both sat
+    // in one competition and both are filed under the Americas.
+    const brazil = team({
+      id: "santos", name: "Santos", country_id: "country-brazil",
+      regions: ["Americas"], memberships: 2, domestic_memberships: 2,
+    });
+    const mexico = team({ id: "santos-laguna", name: "Santos Laguna", country_id: "country-mexico", regions: ["Americas"], memberships: 1 });
+
+    expect(isSameClub(brazil, mexico)).toBe(false);
+    expect(planTeamMerges([brazil, mexico], [["santos", "santos-laguna"]]).merges).toHaveLength(0);
+  });
+
+  it("still merges when the two countries agree", () => {
+    const a = team({ id: "a", name: "Altach", country_id: "country-austria", regions: ["Europe"], memberships: 1 });
+    const b = team({ id: "b", name: "SC Rheindorf Altach", country_id: "country-austria", regions: ["Europe"], memberships: 1 });
+
+    expect(isSameClub(a, b)).toBe(true);
+  });
+
+  it("still falls through to the region when only one country is known", () => {
+    const ucl = team({ id: "ucl", name: "Real Madrid", regions: ["Europe"], memberships: 1 });
+    const laLiga = team({ id: "la-liga", name: "Real Madrid", country_id: SPAIN, regions: ["Europe"], memberships: 1, domestic_memberships: 1 });
+
+    expect(isSameClub(laLiga, ucl)).toBe(true);
   });
 });
