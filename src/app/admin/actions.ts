@@ -7,6 +7,8 @@ import { requireAdmin } from "@/lib/admin";
 import {
   BANNER_MESSAGE_MAX_LENGTH,
   MAINTENANCE_MESSAGE_MAX_LENGTH,
+  MAX_SETTLED_PICKS_FOR_RANK,
+  MIN_SETTLED_PICKS_FOR_RANK,
   featureFlagDefinitions,
   normalizeAdminMessage,
 } from "@/lib/site-settings";
@@ -17,6 +19,8 @@ import { EspnFixtureProvider } from "@/providers/espn-fixtures";
 export type AdminActionResult = { ok: true } | { ok: false; message: string };
 
 const siteSettingsSchema = z.object({
+  minimumSettledPicksForRank: z.coerce.number().int()
+    .min(MIN_SETTLED_PICKS_FOR_RANK).max(MAX_SETTLED_PICKS_FOR_RANK),
   maintenanceEnabled: z.boolean(),
   maintenanceMessage: z.string().max(2000).nullable(),
   bannerEnabled: z.boolean(),
@@ -40,6 +44,7 @@ export async function saveSiteSettings(
   try {
     await updateSiteSettings(
       {
+        minimumSettledPicksForRank: parsed.data.minimumSettledPicksForRank,
         maintenanceEnabled: parsed.data.maintenanceEnabled,
         maintenanceMessage: normalizeAdminMessage(
           parsed.data.maintenanceMessage,

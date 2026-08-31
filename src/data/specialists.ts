@@ -3,8 +3,8 @@ import "server-only";
 import { cache } from "react";
 
 import { sqlClient } from "@/db";
-import { MINIMUM_SETTLED_PICKS_FOR_RANK } from "@/lib/reputation";
 import { toIsoTimestamp } from "@/lib/timestamps";
+import { getRankThreshold } from "@/services/site-settings";
 
 export type SpecialistDirectoryEntry = {
   id: string;
@@ -23,6 +23,7 @@ export type SpecialistDirectoryEntry = {
 };
 
 export async function getSpecialistDirectory(): Promise<SpecialistDirectoryEntry[]> {
+  const rankThreshold = await getRankThreshold();
   const rows = await sqlClient<Array<{
     id: string; name: string; league_id: string; league_name: string; league_slug: string;
     wins: number; losses: number; settled_picks: number; current_win_streak: number;
@@ -38,10 +39,10 @@ export async function getSpecialistDirectory(): Promise<SpecialistDirectoryEntry
         r.settled_picks, r.current_win_streak, r.confidence_adjusted_accuracy
       from user_league_records r join leagues l on l.id = r.league_id
       where r.user_id = u.id and r.settled_picks > 0 and l.enabled = true
-      order by (r.settled_picks >= ${MINIMUM_SETTLED_PICKS_FOR_RANK}) desc,
+      order by (r.settled_picks >= ${rankThreshold}) desc,
         r.confidence_adjusted_accuracy desc nulls last, r.settled_picks desc limit 1
     ) strongest on true
-    order by (strongest.settled_picks >= ${MINIMUM_SETTLED_PICKS_FOR_RANK}) desc,
+    order by (strongest.settled_picks >= ${rankThreshold}) desc,
       strongest.confidence_adjusted_accuracy desc nulls last, strongest.settled_picks desc
     limit 100`;
 
@@ -52,7 +53,7 @@ export async function getSpecialistDirectory(): Promise<SpecialistDirectoryEntry
     wins: row.wins, losses: row.losses, settledPicks: row.settled_picks,
     currentWinStreak: row.current_win_streak,
     confidenceAdjustedAccuracy: Number(row.confidence_adjusted_accuracy), followers: row.followers,
-    provisional: row.settled_picks < MINIMUM_SETTLED_PICKS_FOR_RANK,
+    provisional: row.settled_picks < rankThreshold,
   }));
 }
 
@@ -86,6 +87,7 @@ export const getSpecialistProfile = cache(async function getSpecialistProfile(
   specialistId: string,
   viewerId?: string,
 ): Promise<SpecialistProfileData | null> {
+  const rankThreshold = await getRankThreshold();
   const [specialist] = await sqlClient<Array<{
     id: string; name: string; followers: number; created_at: Date | string;
   }>>`
@@ -121,7 +123,7 @@ export const getSpecialistProfile = cache(async function getSpecialistProfile(
           from user_league_season_records sr
           join seasons s on s.id = sr.season_id and s.is_current = true
           where sr.league_id = r.league_id
-            and sr.settled_picks >= ${MINIMUM_SETTLED_PICKS_FOR_RANK}
+            and sr.settled_picks >= ${rankThreshold}
         ) ranked
         where ranked.user_id = r.user_id
       ) season_rank on true
@@ -191,7 +193,7 @@ export const getSpecialistProfile = cache(async function getSpecialistProfile(
       confidenceAdjustedAccuracy: Number(league.confidence_adjusted_accuracy), followedByViewer: league.followed_by_viewer,
       tier: league.tier, leagueFollowers: league.league_followers,
       seasonRank: league.season_rank === null ? null : Number(league.season_rank),
-      followable: league.settled_picks >= MINIMUM_SETTLED_PICKS_FOR_RANK,
+      followable: league.settled_picks >= rankThreshold,
     })),
     followedLeagues: followedLeagueRows.map((league) => ({
       id: league.id, slug: league.slug, name: league.name,

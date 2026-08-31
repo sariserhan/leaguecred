@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 
-import { teamNamesMatch } from "@/services/team-names";
+import { normalizeTeamName, teamNamesMatch } from "@/services/team-names";
 
 describe("teamNamesMatch", () => {
   it.each([
@@ -92,5 +92,22 @@ describe("a club beside a leftover entry naming it", () => {
     expect(teamNamesMatch("Atlético Junior", "Argentinos Juniors")).toBe(false);
     expect(teamNamesMatch("Santos", "Santos Laguna")).toBe(false);
     expect(teamNamesMatch("Universidad Católica", "Universidad Católica (Quito)")).toBe(false);
+  });
+});
+
+describe("clubs numbered by founding order", () => {
+  it.each([
+    ["1. FC Köln", "FC Cologne"],
+    ["1. FC Union Berlin", "Union Berlin"],
+    ["1. FSV Mainz 05", "Mainz"],
+  ])("matches %s with %s", (left, right) => {
+    expect(teamNamesMatch(left, right)).toBe(true);
+  });
+
+  it("keeps a number that is part of the name", () => {
+    // The period is what marks an ordinal. These have none.
+    expect(normalizeTeamName("2 de Mayo")).toBe("2demayo");
+    expect(normalizeTeamName("1860 Munich")).toBe("1860munich");
+    expect(teamNamesMatch("2 de Mayo", "de Mayo")).toBe(false);
   });
 });

@@ -7,16 +7,17 @@ import { ShieldCheckIcon, TrophyIcon } from "lucide-react";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { ToggleGroup, ToggleGroupItem } from "@/components/ui/toggle-group";
 import type { LeagueLeaderboardEntry } from "@/data/leagues";
-import { MINIMUM_SETTLED_PICKS_FOR_RANK } from "@/lib/reputation";
 
 type Scope = "currentSeason" | "career";
 
 export function LeagueLeaderboard({
   leagueName,
   entries,
+  rankThreshold,
 }: {
   leagueName: string;
   entries: Record<Scope, LeagueLeaderboardEntry[]>;
+  rankThreshold: number;
 }) {
   const [scope, setScope] = useState<Scope>("currentSeason");
   const leaderboard = entries[scope];
@@ -86,8 +87,8 @@ export function LeagueLeaderboard({
           <div className="mt-5 border bg-muted p-6">
             <TrophyIcon aria-hidden="true" className="size-8 text-primary" />
             <h3 className="mt-4 font-heading text-3xl font-bold uppercase">Founding specialists</h3>
-            <p className="mt-3 leading-7 text-muted-foreground">This league has no public rank yet. Public rank starts after {MINIMUM_SETTLED_PICKS_FOR_RANK} settled independent Weekly Locks—no shortcuts and no borrowed record.</p>
-            <p className="mt-4 flex items-center gap-2 text-sm font-semibold"><ShieldCheckIcon aria-hidden="true" className="size-4 text-primary" />Your first {MINIMUM_SETTLED_PICKS_FOR_RANK} locks build the evidence.</p>
+            <p className="mt-3 leading-7 text-muted-foreground">This league has no public rank yet. Public rank starts after {rankThreshold} settled independent Weekly Locks—no shortcuts and no borrowed record.</p>
+            <p className="mt-4 flex items-center gap-2 text-sm font-semibold"><ShieldCheckIcon aria-hidden="true" className="size-4 text-primary" />Your first {rankThreshold} locks build the evidence.</p>
           </div>
         )}
       </CardContent>

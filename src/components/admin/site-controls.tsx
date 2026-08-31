@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useTransition } from "react";
-import { CircleCheckIcon, MegaphoneIcon, TriangleAlertIcon, WrenchIcon } from "lucide-react";
+import { CircleCheckIcon, MegaphoneIcon, TriangleAlertIcon, TrophyIcon, WrenchIcon } from "lucide-react";
 
 import { saveSiteSettings } from "@/app/admin/actions";
 import {
@@ -25,6 +25,9 @@ import type { BannerTone } from "@/db/schema";
 import {
   BANNER_MESSAGE_MAX_LENGTH,
   MAINTENANCE_MESSAGE_MAX_LENGTH,
+  MAX_SETTLED_PICKS_FOR_RANK,
+  MIN_SETTLED_PICKS_FOR_RANK,
+  STANDARD_SETTLED_PICKS_FOR_RANK,
   type SiteSettings,
 } from "@/lib/site-settings";
 
@@ -67,6 +70,7 @@ function BooleanToggle({
 }
 
 export function SiteControls({ settings }: { settings: SiteSettings }) {
+  const [rankThreshold, setRankThreshold] = useState(String(settings.minimumSettledPicksForRank));
   const [maintenanceEnabled, setMaintenanceEnabled] = useState(settings.maintenanceEnabled);
   const [maintenanceMessage, setMaintenanceMessage] = useState(settings.maintenanceMessage ?? "");
   const [bannerEnabled, setBannerEnabled] = useState(settings.bannerEnabled);
@@ -80,6 +84,7 @@ export function SiteControls({ settings }: { settings: SiteSettings }) {
     setStatus(null);
     startTransition(async () => {
       const result = await saveSiteSettings({
+        minimumSettledPicksForRank: rankThreshold,
         maintenanceEnabled,
         maintenanceMessage: maintenanceMessage || null,
         bannerEnabled,
@@ -98,6 +103,35 @@ export function SiteControls({ settings }: { settings: SiteSettings }) {
 
   return (
     <div className="grid gap-7 lg:grid-cols-2">
+      <Card className="rounded-sm">
+        <CardHeader>
+          <CardTitle className="flex items-center gap-2 font-heading text-2xl font-bold uppercase">
+            <TrophyIcon aria-hidden="true" className="size-5 text-primary" />
+            Rank threshold
+          </CardTitle>
+          <CardDescription>
+            Settled independent Weekly Locks a record needs before it is ranked and can be
+            followed. The standard is {STANDARD_SETTLED_PICKS_FOR_RANK}. A founding season has
+            nobody who can reach that for {STANDARD_SETTLED_PICKS_FOR_RANK} gameweeks, so it can
+            open lower and be raised once a cohort has cleared it. Lowering it does not rank
+            anyone retroactively \u2014 it changes who qualifies from now on.
+          </CardDescription>
+        </CardHeader>
+        <CardContent>
+          <Label htmlFor="rank-threshold">Settled locks required</Label>
+          <input
+            id="rank-threshold"
+            type="number"
+            inputMode="numeric"
+            min={MIN_SETTLED_PICKS_FOR_RANK}
+            max={MAX_SETTLED_PICKS_FOR_RANK}
+            value={rankThreshold}
+            onChange={(event) => setRankThreshold(event.target.value)}
+            className="mt-2 h-10 w-28 rounded-sm border border-input bg-transparent px-3 text-sm outline-none transition-colors focus-visible:border-ring focus-visible:ring-3 focus-visible:ring-ring/50"
+          />
+        </CardContent>
+      </Card>
+
       <Card className="rounded-sm">
         <CardHeader>
           <CardTitle className="flex items-center gap-2 font-heading text-2xl font-bold uppercase">

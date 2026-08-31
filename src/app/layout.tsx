@@ -1,3 +1,5 @@
+import Script from "next/script";
+
 import type { Metadata } from "next";
 import { Barlow_Condensed, Inter } from "next/font/google";
 
@@ -54,6 +56,11 @@ export default async function RootLayout({ children }: LayoutProps<"/">) {
         <main id="main-content" tabIndex={-1} className="flex-1">{children}</main>
         <SiteFooter />
         <Toaster timeout={4500} />
+        <Script
+          src="https://cdn.visitorping.com/site/vp_RJPP6CJD.js"
+          strategy="afterInteractive"
+          crossOrigin="anonymous"
+        />
       </body>
     </html>
   );

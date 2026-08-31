@@ -333,7 +333,7 @@ export function LeagueExperience({
 
         <section id="leaderboard" className={leaderboardEnabled ? "mt-7 grid scroll-mt-16 gap-7 lg:grid-cols-2" : "mt-7 grid scroll-mt-16 gap-7"}>
           <Card><CardHeader><CardTitle className="font-heading text-2xl font-bold uppercase">Your {data.league.name} record</CardTitle><CardDescription>Only settled independent Weekly Locks count here.</CardDescription></CardHeader><CardContent className="grid grid-cols-3 gap-3"><div><strong className="block text-2xl">{data.viewer.wins}</strong><span className="text-sm text-muted-foreground">Wins</span></div><div><strong className="block text-2xl">{data.viewer.losses}</strong><span className="text-sm text-muted-foreground">Losses</span></div><div><strong className="block text-2xl">{decisions}</strong><span className="text-sm text-muted-foreground">Decisions</span></div></CardContent></Card>
-          {leaderboardEnabled ? <LeagueLeaderboard leagueName={data.league.name} entries={data.leaderboard} /> : null}
+          {leaderboardEnabled ? <LeagueLeaderboard leagueName={data.league.name} entries={data.leaderboard} rankThreshold={data.rankThreshold} /> : null}
         </section>
       </div>
 

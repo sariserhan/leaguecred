@@ -1,7 +1,7 @@
 import { sqlClient } from "@/db";
 import type { PickResult } from "@/db/schema";
 import { toEpochMilliseconds, toIsoTimestamp } from "@/lib/timestamps";
-import { MINIMUM_SETTLED_PICKS_FOR_RANK } from "@/lib/reputation";
+import { getRankThreshold } from "@/services/site-settings";
 
 export type SyncRunDiagnostic = {
   id: string;
@@ -41,12 +41,13 @@ export type AdminManagementSummary = {
 };
 
 export async function getAdminManagementSummary(): Promise<AdminManagementSummary> {
+  const rankThreshold = await getRankThreshold();
   const [countRows, upcomingRows, accountRows] = await Promise.all([
     sqlClient<Array<{ users: number; leagues: number; fixtures: number; provisional: number }>>`
       select (select count(*)::int from "user") users,
         (select count(*)::int from leagues where enabled = true) leagues,
         (select count(*)::int from fixtures where status = 'scheduled' and kickoff_at > now()) fixtures,
-        (select count(*)::int from user_league_records where settled_picks > 0 and settled_picks < ${MINIMUM_SETTLED_PICKS_FOR_RANK}) provisional`,
+        (select count(*)::int from user_league_records where settled_picks > 0 and settled_picks < ${rankThreshold}) provisional`,
     sqlClient<Array<{ id: string; league: string; home: string; away: string; kickoff_at: Date | string; matchweek: string }>>`
       select f.id, l.name league, h.name home, a.name away, f.kickoff_at, mw.display_name matchweek
       from fixtures f join leagues l on l.id=f.league_id join teams h on h.id=f.home_team_id

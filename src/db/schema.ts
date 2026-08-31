@@ -443,11 +443,15 @@ export const appSettings = pgTable("app_settings", {
   bannerEnabled: boolean("banner_enabled").default(false).notNull(),
   bannerMessage: text("banner_message"),
   bannerTone: bannerToneEnum("banner_tone").default("info").notNull(),
+  /** Settled independent Weekly Locks a record needs before it is ranked and
+   * can be followed. Lowered for a founding season, raised once one has run. */
+  minimumSettledPicksForRank: integer("minimum_settled_picks_for_rank").default(10).notNull(),
   updatedByUserId: text("updated_by_user_id").references(() => user.id, { onDelete: "set null" }),
   createdAt,
   updatedAt,
 }, (table) => [
   check("app_settings_singleton_check", sql`${table.id} = 'global'`),
+  check("app_settings_rank_threshold_check", sql`${table.minimumSettledPicksForRank} between 1 and 100`),
 ]);
 
 export const lockReminders = pgTable("lock_reminders", {

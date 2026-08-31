@@ -6,15 +6,13 @@ None.
 
 ## Next
 
-- [ ] `pnpm teams:dedupe` reports SUSPECT pairs: a club beside an entry naming
-      the same club, in one competition, one never played. They are never merged
-      because the same shape also describes Boca Juniors beside Atlético Junior.
-      Check them and add an alias where they really are one club.
+- [ ] Check any SUSPECT pair `pnpm teams:dedupe` reports and add an alias where
+      the two really are one club. Nothing to act on today: the only pair is Boca
+      Juniors beside Atlético Junior, which is the rule working, not a fault.
+- [ ] Set the founding-season rank threshold in the admin panel. It ships at the
+      standard 10, which nobody can reach for 10 gameweeks; 4 opens Follow after
+      about a month. Raise it back once a cohort has cleared it.
 - [ ] Rotate the Neon database password and update Vercel and .env.local
-- [ ] Run `pnpm matchweeks:merge` against production. It reports by default;
-      `--apply` folds each gameweek split across providers back into one and
-      leaves alone any cluster where more than one week already has a real
-      Weekly Lock, since deciding which one stands is a person's call.
 
 ## Blocked
 
@@ -25,17 +23,17 @@ None.
 - [ ] Additional launch leagues with current provider mappings
 - [ ] Leagues outside football-data.org's free-tier list (Liga MX, MLS,
       Saudi Pro League, Argentina, and the rest not in FOOTBALL_DATA_ORG_
-      COMPETITIONS) still rely on ESPN alone with football-data-uk's 12-
-      league CSV feed as backup at best. Decide whether that is acceptable
-      or a fourth source is worth it for those specifically.
+      COMPETITIONS) rely on ESPN alone. football-data-uk covers 12 of them
+      but is deliberately unwired (it never added a match ESPN didn't
+      already have). Decide whether ESPN-only is acceptable for those
+      leagues or a real second source is worth adding for them specifically.
 - [ ] Product/web analytics (deferred; PostHog is the marketplace pick when this is picked up)
 - [ ] Decide whether expertise is scoped to clubs as well as leagues
-- [ ] Plan the first season, when no record clears the rank threshold yet
-- [x] Add live in-UI notification feedback for followed specialist locks,
-      settled results, unread counts, and direct navigation.
 
 ## Completed
 
+- [x] Add live in-UI notification feedback for followed specialist locks,
+      settled results, unread counts, and direct navigation
 - [x] Add Weekly Lock timelines, dashboard activity, milestones, record sharing, global search, grouped notifications, and comparison UI
 
 - [x] Add account settings for profile, password, league, network, and notification controls
@@ -84,5 +82,7 @@ None.
 - [x] Merge the clubs catalogued twice, on dev and production
 - [x] Count each match once in the standings, and each gameweek as one matchweek
 - [x] Resolve the last clubs catalogued twice under names that disagree
+- [x] Match clubs numbered by founding order to their plain spelling
+- [x] Make the rank threshold a setting, so a founding season can open at a lower bar
 - [x] Refuse to run migrations that the database can no longer reach
 - [x] Block disposable-email signups and surface shared-address abuse signals to admins
