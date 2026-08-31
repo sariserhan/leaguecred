@@ -34,7 +34,7 @@ function LeagueRow({ league, intent, authenticated }: { league: League; intent: 
         <span>{league.country}</span>
       </span>
       <strong className="flex items-center gap-3">
-        {league.logoUrl ? <Crest src={league.logoUrl} size={40} /> : null}
+        {league.logoUrl ? <Crest src={league.logoUrl} size={40} plate /> : null}
         <span>{league.name}</span>
       </strong>
       <span className="flex items-center gap-2 text-sm text-muted-foreground"><UsersRoundIcon aria-hidden="true" className="size-4 shrink-0" />{league.specialistCount} ranked specialist{league.specialistCount === 1 ? "" : "s"}</span>

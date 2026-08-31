@@ -147,7 +147,7 @@ export function SiteHeader({
                         >
                           ←
                         </Menu.Item>
-                        {selectedLeague.logoUrl ? <Crest src={selectedLeague.logoUrl} size={28} /> : null}
+                        {selectedLeague.logoUrl ? <Crest src={selectedLeague.logoUrl} size={28} plate /> : null}
                         <span className="truncate text-sm font-bold">{selectedLeague.name}</span>
                       </div>
                       <Menu.LinkItem href={`/leagues/${selectedLeague.slug}/standings`} className="cursor-pointer flex items-center px-3 py-2 text-sm font-semibold text-foreground outline-none hover:bg-muted hover:text-primary">View standings</Menu.LinkItem>
@@ -180,7 +180,7 @@ export function SiteHeader({
                           onClick={() => openLeague(league)}
                           className="cursor-pointer flex items-center gap-3 px-3 py-2 text-sm font-medium outline-none transition-colors data-highlighted:bg-muted data-highlighted:text-foreground"
                         >
-                          <Crest src={league.logoUrl} size={32} fallback={<span className="text-xs font-bold text-black">{league.name.slice(0, 2).toUpperCase()}</span>} />
+                          <Crest src={league.logoUrl} size={32} plate fallback={<span className="text-xs font-bold text-black">{league.name.slice(0, 2).toUpperCase()}</span>} />
                           <span className="min-w-0 flex-1 truncate">{league.name}</span>
                           <span aria-hidden="true" className="text-muted-foreground">→</span>
                         </Menu.Item>

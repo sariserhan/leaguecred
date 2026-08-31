@@ -20,7 +20,7 @@ export function LeagueComingSoon({
         <div className="flex flex-col gap-8 md:flex-row md:items-center">
           {league.logoUrl ? (
             <span className="flex size-28 shrink-0 items-center justify-center bg-white p-3">
-              <Crest src={league.logoUrl} size={88} />
+              <Crest src={league.logoUrl} size={88} plate />
             </span>
           ) : null}
           <div>
