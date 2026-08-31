@@ -1,5 +1,4 @@
 import type { Metadata } from "next";
-import Image from "next/image";
 import Link from "next/link";
 import { ArrowRightIcon, CheckIcon, LockKeyholeIcon, UsersRoundIcon } from "lucide-react";
 import { redirect } from "next/navigation";
@@ -12,6 +11,7 @@ import type { WeeklySlipEntry } from "@/data/weekly-slip";
 import { getWeeklySlip } from "@/data/weekly-slip";
 import { getSession } from "@/lib/auth-session";
 import { cn } from "@/lib/utils";
+import { Crest } from "@/components/ui/crest";
 
 export const dynamic = "force-dynamic";
 
@@ -23,7 +23,7 @@ export const metadata: Metadata = {
 
 function TeamLogo({ entry }: { entry: WeeklySlipEntry }) {
   return entry.selectedTeam.logoUrl ? (
-    <Image src={entry.selectedTeam.logoUrl} alt="" width={40} height={40} className="size-10 object-contain" />
+    <Crest src={entry.selectedTeam.logoUrl} size={40} />
   ) : <span className="flex size-10 items-center justify-center bg-muted text-xs font-bold">{entry.selectedTeam.name.slice(0, 3).toUpperCase()}</span>;
 }
 

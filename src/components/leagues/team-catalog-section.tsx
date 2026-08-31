@@ -1,9 +1,9 @@
-import Image from "next/image";
 import Link from "next/link";
 import { ShieldAlertIcon } from "lucide-react";
 
 import type { LeagueTeamCatalog } from "@/data/leagues";
 import { teamHref } from "@/lib/team-path";
+import { Crest } from "@/components/ui/crest";
 
 export function TeamCatalogSection({ teamCatalog }: { teamCatalog: LeagueTeamCatalog }) {
   return (
@@ -28,13 +28,11 @@ export function TeamCatalogSection({ teamCatalog }: { teamCatalog: LeagueTeamCat
           {teamCatalog.teams.map((team) => (
             <li key={team.id} className="[contain-intrinsic-size:0_96px] [content-visibility:auto]">
               <Link href={teamHref(team)} className="flex min-h-24 items-center gap-4 border bg-card p-4 transition-colors hover:bg-muted">
-              <span className="flex size-14 shrink-0 items-center justify-center bg-white p-1.5">
-                {team.logoUrl ? (
-                  <Image src={team.logoUrl} alt="" width={44} height={44} className="size-11 object-contain" />
-                ) : (
-                  <span className="font-bold text-muted-foreground">{team.shortName}</span>
-                )}
-              </span>
+              <Crest
+                src={team.logoUrl}
+                size={56}
+                fallback={<span className="font-bold text-black">{team.shortName}</span>}
+              />
               <span className="font-semibold">{team.name}</span>
               </Link>
             </li>
