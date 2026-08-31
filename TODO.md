@@ -31,10 +31,8 @@ None.
 - [ ] Product/web analytics (deferred; PostHog is the marketplace pick when this is picked up)
 - [ ] Decide whether expertise is scoped to clubs as well as leagues
 - [ ] Plan the first season, when no record clears the rank threshold yet
-- [ ] Consider live in-UI feedback (toast or similar) when another user's
-      action is relevant right now - e.g. a followed specialist locking while
-      you're on the page. Today the notification bell only updates on the
-      next page load; nothing pushes while you're already looking at a page.
+- [x] Add live in-UI notification feedback for followed specialist locks,
+      settled results, unread counts, and direct navigation.
 
 ## Completed
 
