@@ -97,9 +97,11 @@ async function main() {
       const preferredSlug = teamSlug(name);
       if (preferredSlug === team.slug) continue;
 
-      reslugged += 1;
-      console.info(`${apply ? "MOVE" : "WOULD MOVE"} /teams/${team.slug} -> /teams/${preferredSlug}`);
-      if (!apply) continue;
+      if (!apply) {
+        reslugged += 1;
+        console.info(`WOULD MOVE /teams/${team.slug} -> /teams/${preferredSlug}`);
+        continue;
+      }
 
       // Only move the page if nothing else already answers to that address, and
       // keep the old one so links already shared still reach the club. The
@@ -111,7 +113,15 @@ async function main() {
           where id = ${team.id}
             and not exists (select 1 from teams other where other.slug = ${preferredSlug})
           returning id`;
-        if (moved.length === 0) return;
+        if (moved.length === 0) {
+          // Another club already answers to that address, so the page stays
+          // where it is. Saying it moved would misreport the count and, worse,
+          // imply a redirect that was never written.
+          console.info(`KEEPING /teams/${team.slug}: /teams/${preferredSlug} is already taken.`);
+          return;
+        }
+        reslugged += 1;
+        console.info(`MOVE /teams/${team.slug} -> /teams/${preferredSlug}`);
 
         // A slug can come back around — a club renamed and renamed again — so
         // the newest claim on it wins rather than colliding with an older one.

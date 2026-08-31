@@ -97,13 +97,21 @@ export async function measureCatalogHealth(
   // Not expressible in SQL: a name differing from ESPN's is only a fault when
   // the rename would actually take ESPN's. Where ESPN is offering the same name
   // with the accents stripped, ours is the right one and nothing is wrong.
-  const named = await sqlClient<Array<{ name: string; espn_name: string }>>`
-    select t.name, a.source_name as espn_name
+  //
+  // The collision is asked about for the same reason. ESPN calls both Santos of
+  // Brazil and Santos Laguna of Mexico "Santos", and refresh-team-names refuses
+  // a rename onto a name another club already answers to. Counting that as a
+  // fault reports something no job will ever clear, and a panel that always
+  // shows one thing to look at is a panel nobody looks at.
+  const named = await sqlClient<Array<{ name: string; espn_name: string; collides: number }>>`
+    select t.name, a.source_name as espn_name,
+      (select count(*)::int from teams other
+        where other.id <> t.id and lower(other.name) = lower(a.source_name)) as collides
     from teams t
     join team_provider_aliases a on a.team_id = t.id and a.provider = 'espn-web'
     where lower(a.source_name) <> lower(t.name)`;
   const clubsNamedDifferentlyByEspn = named
-    .filter((club) => chooseDisplayName(club.name, club.espn_name) !== null).length;
+    .filter((club) => club.collides === 0 && chooseDisplayName(club.name, club.espn_name) !== null).length;
 
   const counts = { ...(row ?? EMPTY), clubsNamedDifferentlyByEspn };
   return { ...counts, healthy: isHealthy(counts, tolerated) };
