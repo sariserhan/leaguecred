@@ -33,18 +33,13 @@ None.
       saying “Not tracked”. Filling it in means calling Cloudflare's GraphQL
       Analytics API, which needs an account API token held as a real secret —
       unlike the beacon token, which is public.
-- [ ] Say in the Cookie Notice and Privacy page that analytics now run.
-      `src/app/cookies/page.tsx` still promises visitors “no advertising cookies
-      or in-app analytics trackers”, and undertakes to be updated *before* any
-      such use starts; `src/app/privacy/page.tsx` lists processors without
-      naming analytics. Both went stale when visitorping shipped. Writing the
-      visitorping half accurately needs one fact — whether it stores anything in
-      the browser — which is answerable from its own source, since we are the
-      vendor rather than a third party.
 - [ ] Decide whether expertise is scoped to clubs as well as leagues
 
 ## Completed
 
+- [x] Say in the Cookie Notice and Privacy page that analytics now run, and
+      what they store. Written from the visitorping tracker source rather than
+      guessed: local storage, no cookies.
 - [x] Settle the two-analytics question: keep both. visitorping is our own
       product, not a third-party vendor, so it does not duplicate the Cloudflare
       beacon so much as sit beside it. Both are now gated to production by one
