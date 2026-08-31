@@ -75,6 +75,15 @@ export type SpecialistProfileData = {
     id: string; leagueName: string; leagueSlug: string; team: string; result: "win" | "loss" | "void";
     fixture: string; submittedAt: string;
   }>;
+  /**
+   * Every settled independent lock, oldest first, for the accuracy trend.
+   *
+   * Separate from recentLocks, which is the twelve most recent across all
+   * leagues and is a list rather than a series. Filtering that by league gave a
+   * chart of whatever happened to fall inside those twelve, so a league with a
+   * long record could show two points or none.
+   */
+  settledLocks: Array<{ leagueSlug: string; result: "win" | "loss" | "void" }>;
   /** Spec section 23: attributed, and never mixed into the independent record. */
   followedHistory: Array<{
     id: string; leagueName: string; leagueSlug: string; team: string;
@@ -101,7 +110,7 @@ export const getSpecialistProfile = cache(async function getSpecialistProfile(
   if (!specialist) return null;
 
   const currentViewerId = viewerId ?? "";
-  const [leagueRows, recentLockRows, followedLeagueRows, followedHistoryRows, locksDueRows] = await Promise.all([
+  const [leagueRows, recentLockRows, settledLockRows, followedLeagueRows, followedHistoryRows, locksDueRows] = await Promise.all([
     sqlClient<Array<{
       id: string; slug: string; name: string; wins: number; losses: number; settled_picks: number;
       current_win_streak: number; best_win_streak: number; confidence_adjusted_accuracy: string; followed_by_viewer: boolean;
@@ -144,6 +153,16 @@ export const getSpecialistProfile = cache(async function getSpecialistProfile(
       where p.user_id = ${specialist.id} and p.result in ('win', 'loss', 'void')
       order by p.settled_at desc nulls last, p.submitted_at desc
       limit 12`,
+    // Oldest first, because the trend reads left to right. Capped high enough
+    // that no real record reaches it, and low enough that a profile page never
+    // pulls a season of rows it will not draw.
+    sqlClient<Array<{ league_slug: string; result: "win" | "loss" | "void" }>>`
+      select l.slug as league_slug, p.result
+      from picks p
+      join leagues l on l.id = p.league_id
+      where p.user_id = ${specialist.id} and p.result in ('win', 'loss', 'void')
+      order by p.settled_at asc nulls last, p.submitted_at asc
+      limit 400`,
     sqlClient<Array<{ id: string; slug: string; name: string; specialist_id: string; specialist_name: string }>>`
       select l.id, l.slug, l.name, u.id as specialist_id, u.name as specialist_name
       from league_follows f
@@ -210,6 +229,9 @@ export const getSpecialistProfile = cache(async function getSpecialistProfile(
       id: lock.id, leagueName: lock.league_name, leagueSlug: lock.league_slug, team: lock.team,
       result: lock.result, fixture: `${lock.home} vs ${lock.away}`,
       submittedAt: new Date(lock.submitted_at).toISOString(),
+    })),
+    settledLocks: settledLockRows.map((lock) => ({
+      leagueSlug: lock.league_slug, result: lock.result,
     })),
     followedHistory: followedHistoryRows.map((entry) => ({
       id: entry.id, leagueName: entry.league_name, leagueSlug: entry.league_slug, team: entry.team,
