@@ -44,6 +44,10 @@ None.
 
 ## Completed
 
+- [x] Offer the slip wherever a match is shown — the global board, the fixtures
+      board, a league's matchweek and a club's upcoming games — and have every
+      lock and every addition land in the docks without a page change.
+
 - [x] Dock the locks beside the slip on every page, with nothing on them that
       removes anything, and put a warning in front of every lock: the fixtures
       board could lock several calls in one press with no confirmation at all.

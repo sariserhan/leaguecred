@@ -19,6 +19,7 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
+import { AddToSlipButton } from "@/components/slip/add-to-slip-button";
 import { BackToTop } from "@/components/ui/back-to-top";
 import { Button } from "@/components/ui/button";
 import { Crest } from "@/components/ui/crest";
@@ -153,7 +154,16 @@ export function FixtureBoard({ board, authenticated }: { board: FixtureBoard; au
                       <Link href={`/leagues/${fixture.leagueSlug}`} className="text-xs font-bold tracking-[.1em] uppercase hover:text-primary">
                         {fixture.leagueName}
                       </Link>
-                      <span className="text-xs text-muted-foreground">{kickoffTime.format(new Date(fixture.kickoff))}</span>
+                      <span className="flex items-center gap-3">
+                        <span className="text-xs text-muted-foreground">{kickoffTime.format(new Date(fixture.kickoff))}</span>
+                        {authenticated && !held ? (
+                          <AddToSlipButton
+                            fixtureId={fixture.id}
+                            label={`${fixture.home} v ${fixture.away}`}
+                            inSlip={fixture.inSlip}
+                          />
+                        ) : null}
+                      </span>
                     </div>
 
                     <div className="grid items-center gap-2 p-4 sm:grid-cols-[1fr_auto_1fr]">

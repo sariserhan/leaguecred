@@ -37,6 +37,9 @@ export type BoardFixture = {
   /** True when the viewer is following a specialist in this league's matchweek,
    * which rules an independent call out for the whole week. */
   following: boolean;
+  /** Already set aside by the viewer, so the button says so rather than
+   * offering a second copy. */
+  inSlip: boolean;
   homeVotes: number;
   awayVotes: number;
   viewerVote: "home" | "away" | null;
@@ -63,7 +66,7 @@ export const getFixtureBoard = cache(async function getFixtureBoard(userId?: str
     match_date: string; kickoff_at: Date;
     home: string; home_code: string; home_logo_url: string | null; home_team_id: string;
     away: string; away_code: string; away_logo_url: string | null; away_team_id: string;
-    locked_team: string | null; following: boolean;
+    locked_team: string | null; following: boolean; in_slip: boolean;
     home_votes: number; away_votes: number; viewer_vote: "home" | "away" | null;
   }>>`
     select f.id, l.id as league_id, l.name as league_name, l.slug as league_slug,
@@ -76,6 +79,8 @@ export const getFixtureBoard = cache(async function getFixtureBoard(userId?: str
         limit 1) as locked_team,
       exists(select 1 from matchweek_participation mp
         where mp.user_id = ${viewerId} and mp.matchweek_id = f.matchweek_id and mp.mode = 'follow') as following,
+      exists(select 1 from slip_candidates sc
+        where sc.user_id = ${viewerId ?? null} and sc.fixture_id = f.id) as in_slip,
       coalesce(votes.home_votes, 0) as home_votes, coalesce(votes.away_votes, 0) as away_votes,
       viewer_vote.choice as viewer_vote
     from fixtures f
@@ -132,6 +137,7 @@ export const getFixtureBoard = cache(async function getFixtureBoard(userId?: str
       awayTeamId: row.away_team_id,
       lockedTeam: row.locked_team,
       following: row.following,
+      inSlip: row.in_slip,
       homeVotes: row.home_votes,
       awayVotes: row.away_votes,
       viewerVote: row.viewer_vote,

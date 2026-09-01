@@ -159,6 +159,9 @@ export type DatabaseFixture = {
    * database clock, rather than in the browser: a lock closes on its own
    * kickoff, and the server is what will accept or refuse it. */
   open: boolean;
+  /** Already set aside by the viewer, so the button says so rather than
+   * offering a second copy. */
+  inSlip: boolean;
   homeVotes: number;
   awayVotes: number;
   viewerVote: "home" | "away" | null;
@@ -301,8 +304,9 @@ export async function getLeagueExperience(slug: string, userId?: string): Promis
   const viewerId = userId ?? "";
   const voterId = await readVoterId() ?? "";
   const [fixtureRows, discussionRows, pastFixtureRows, specialistRows, participationRows, pickRows, recordRows, followedRows, currentSeasonLeaderboardRows, careerLeaderboardRows] = await Promise.all([
-    sqlClient<Array<{ id: string; kickoff_at: Date; open: boolean; home_id: string; home: string; home_code: string; home_logo_url: string | null; away_id: string; away: string; away_code: string; away_logo_url: string | null; home_votes: number; away_votes: number; viewer_vote: "home" | "away" | null }>>`
+    sqlClient<Array<{ id: string; kickoff_at: Date; open: boolean; in_slip: boolean; home_id: string; home: string; home_code: string; home_logo_url: string | null; away_id: string; away: string; away_code: string; away_logo_url: string | null; home_votes: number; away_votes: number; viewer_vote: "home" | "away" | null }>>`
       select f.id, f.kickoff_at, (f.kickoff_at > now() and f.status = 'scheduled') as open,
+        exists(select 1 from slip_candidates sc where sc.user_id = ${viewerId ?? null} and sc.fixture_id = f.id) as in_slip,
         h.id as home_id, h.name as home, h.short_name as home_code, h.logo_url as home_logo_url,
         a.id as away_id, a.name as away, a.short_name as away_code, a.logo_url as away_logo_url,
         coalesce(votes.home_votes, 0) as home_votes, coalesce(votes.away_votes, 0) as away_votes,
@@ -429,6 +433,7 @@ export async function getLeagueExperience(slug: string, userId?: string): Promis
       kickoff: new Intl.DateTimeFormat("en", { hour: "2-digit", minute: "2-digit", timeZone: "UTC", timeZoneName: "short" }).format(new Date(fixture.kickoff_at)),
       kickoffAt: new Date(fixture.kickoff_at).toISOString(),
       open: fixture.open,
+      inSlip: fixture.in_slip,
       matchDate: new Date(fixture.kickoff_at).toISOString().slice(0, 10),
       homeVotes: fixture.home_votes, awayVotes: fixture.away_votes, viewerVote: fixture.viewer_vote,
       discussion: discussionsByFixture.get(fixture.id) ?? [],
