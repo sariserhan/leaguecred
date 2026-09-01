@@ -47,7 +47,8 @@ None.
 - [x] Make the live board usable at sixty locks: filter by league, member and
       matchday, vote a call up or down, follow the member, set a match aside on
       your slip, and see your own locked games — all from a card compact enough
-      to scan. A slip is the shortlist; the lock is made from it on /slip.
+      to scan. A slip is the shortlist, kept in a dock beside every page rather
+      than on a route of its own; the lock is made from it there.
 
 - [x] Read the duplicate-club report and merge from the admin panel, rather than
       only from `pnpm teams:dedupe` with a production database URL to hand. The

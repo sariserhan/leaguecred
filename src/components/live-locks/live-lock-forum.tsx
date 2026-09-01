@@ -138,6 +138,9 @@ function LockCard({ lock, signedIn }: { lock: GlobalActiveLock; signedIn: boolea
           description: `${lock.selected.name} against ${lock.opponent.name} is waiting for you to decide.`,
           type: "success",
         });
+        // The dock lives in the layout, so it only learns about this on a
+        // refresh of the server render.
+        router.refresh();
       } else {
         toast.add({ title: "Not added", description: result.message, type: "error" });
       }
