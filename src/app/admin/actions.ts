@@ -131,7 +131,7 @@ export async function refreshLeagueFixtures(leagueSlug: string): Promise<LeagueR
 }
 
 export type ResultPullResult =
-  | { ok: true; pending: number; leagues: number; requests: number; updated: number; finished: number; settled: number; faults: string[] }
+  | { ok: true; pending: number; leagues: number; requests: number; updated: number; finished: number; settled: number; missing: number; faults: string[] }
   | { ok: false; message: string };
 
 /**
@@ -153,7 +153,14 @@ export async function pullMatchResults(leagueSlug?: string | null): Promise<Resu
   if (!parsed.success) return { ok: false, message: "That league is not valid." };
 
   try {
-    const results = await synchronizeMatchResults(new EspnFixtureProvider(), new Date(), parsed.data ?? undefined);
+    // Probing costs one extra request and only when a single league is named,
+    // which is exactly when an operator is asking why a match is not showing.
+    const results = await synchronizeMatchResults(
+      new EspnFixtureProvider(),
+      new Date(),
+      parsed.data ?? undefined,
+      Boolean(parsed.data),
+    );
     const settlement = await settlePendingPicks();
 
     if (parsed.data) {
@@ -179,6 +186,7 @@ export async function pullMatchResults(leagueSlug?: string | null): Promise<Resu
       updated: results.updated,
       finished: results.finished,
       settled: settlement.settled,
+      missing: results.missing,
       faults: results.faults,
     };
   } catch (error) {

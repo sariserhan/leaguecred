@@ -1,6 +1,6 @@
 import { sqlClient } from "@/db";
 import { EspnFixtureProvider } from "@/providers/espn-fixtures";
-import type { FixtureProvider } from "@/providers/fixtures";
+import type { FixtureProvider, ProviderFixture } from "@/providers/fixtures";
 
 /**
  * How far back a still-unfinished fixture is worth asking about. A match whose
@@ -44,6 +44,14 @@ export async function synchronizeMatchResults(
   provider: FixtureProvider = new EspnFixtureProvider(),
   now = new Date(),
   leagueSlug?: string,
+  /**
+   * Ask the provider about a named league even when nothing is pending, purely
+   * to report matches it has that the schedule does not. Off for the hourly
+   * cron - a quiet hour should cost nothing - and on when an operator presses
+   * the button for one league, since "nothing was waiting" and "the match was
+   * never recorded" look identical from the outside and want telling apart.
+   */
+  probeMissing = false,
 ) {
   const since = new Date(now.getTime() - LOOKBACK_DAYS * 24 * 60 * 60 * 1000);
 
@@ -69,8 +77,18 @@ export async function synchronizeMatchResults(
     order by f.kickoff_at`;
 
   if (pending.length === 0) {
-    await sqlClient`update api_sync_runs set status = 'succeeded', request_count = 0, finished_at = now() where id = ${run.id}`;
-    return { pending: 0, leagues: 0, requestCount: 0, updated: 0, finished: 0, faults: [] as string[] };
+    const probe = probeMissing && leagueSlug
+      ? await countMissingFixtures(provider, leagueSlug, since, now)
+      : { missing: 0, requestCount: 0, faults: [] as string[] };
+
+    await sqlClient`update api_sync_runs set status = ${probe.faults.length ? "failed" : "succeeded"},
+      request_count = ${probe.requestCount}, finished_at = now(),
+      error = ${probe.faults.length ? probe.faults.join(" | ") : null} where id = ${run.id}`;
+
+    return {
+      pending: 0, leagues: 0, requestCount: probe.requestCount, updated: 0, finished: 0,
+      missing: probe.missing, faults: probe.faults,
+    };
   }
 
   const sourceIds = new Map((provider.competitions ?? []).map((competition) => [competition.leagueSlug, competition.externalId]));
@@ -79,6 +97,7 @@ export async function synchronizeMatchResults(
   let requestCount = 0;
   let updated = 0;
   let finished = 0;
+  let missing = 0;
   const faults: string[] = [];
 
   try {
@@ -117,6 +136,7 @@ export async function synchronizeMatchResults(
       requestCount += batch?.requestCount ?? 0;
 
       const incoming = new Map((batch?.fixtures ?? []).map((fixture) => [fixture.externalId, fixture]));
+      missing += await countUnrecorded(provider.name, [...incoming.values()], now);
       for (const stored of fixtures) {
         const fresh = incoming.get(stored.provider_external_id);
         if (!fresh) continue;
@@ -146,5 +166,56 @@ export async function synchronizeMatchResults(
     throw error;
   }
 
-  return { pending: pending.length, leagues: byLeague.size, requestCount, updated, finished, faults };
+  return { pending: pending.length, leagues: byLeague.size, requestCount, updated, finished, missing, faults };
+}
+
+/**
+ * Matches the provider played in this window that the schedule has no row for.
+ * Nothing here can fix that - creating fixtures is the schedule sync's job -
+ * but naming the number is what tells an operator to press Refresh rather than
+ * press Pull results again and read the same "nothing was waiting".
+ */
+async function countUnrecorded(providerName: string, incoming: ProviderFixture[], now: Date) {
+  const played = incoming.filter((fixture) => Date.parse(fixture.kickoffAt) <= now.getTime());
+  if (played.length === 0) return 0;
+
+  const recorded = await sqlClient<Array<{ provider_external_id: string }>>`
+    select provider_external_id from fixtures
+    where provider = ${providerName}
+      and provider_external_id = any(${played.map((fixture) => fixture.externalId)})`;
+  const known = new Set(recorded.map((row) => row.provider_external_id));
+
+  return played.filter((fixture) => !known.has(fixture.externalId)).length;
+}
+
+async function countMissingFixtures(
+  provider: FixtureProvider,
+  leagueSlug: string,
+  since: Date,
+  now: Date,
+) {
+  const leagueExternalId = (provider.competitions ?? []).find((competition) => competition.leagueSlug === leagueSlug)?.externalId;
+  if (!leagueExternalId) return { missing: 0, requestCount: 0, faults: [] as string[] };
+
+  const [league] = await sqlClient<Array<{ provider_season: string }>>`
+    select s.provider_season from leagues l
+    join seasons s on s.league_id = l.id and s.is_current = true
+    where l.slug = ${leagueSlug}`;
+  if (!league) return { missing: 0, requestCount: 0, faults: [] as string[] };
+
+  try {
+    const batch = await provider.fetchFixtures({
+      leagueExternalId,
+      season: league.provider_season,
+      from: isoDate(new Date(since.getTime() - 24 * 60 * 60 * 1000)),
+      to: isoDate(now),
+    });
+    return {
+      missing: await countUnrecorded(provider.name, batch.fixtures, now),
+      requestCount: batch.requestCount,
+      faults: [] as string[],
+    };
+  } catch (error) {
+    return { missing: 0, requestCount: 0, faults: [`${leagueSlug}: ${String(error)}`] };
+  }
 }

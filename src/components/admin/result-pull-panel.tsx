@@ -37,10 +37,15 @@ export function ResultPullPanel({ leagues }: { leagues: LeagueNavOption[] }) {
         toast.add({ title: "Results not pulled", description: result.message, type: "error" });
       } else {
         const line = result.pending === 0
-          ? "No match was waiting on a result, so nothing was requested."
+          ? "No match was waiting on a result."
           : `${result.pending} waiting · ${result.requests} request${result.requests === 1 ? "" : "s"} · ${result.updated} updated · ${result.finished} finished · ${result.settled} pick${result.settled === 1 ? "" : "s"} settled`;
-        record(label, result.faults.length ? `${line} · faults: ${result.faults.join(" | ")}` : line, result.faults.length > 0);
-        toast.add({ title: `${label} pulled`, description: line, type: result.faults.length ? "error" : "success" });
+        // The answer to "the match was played, why is nothing here": it was
+        // never recorded, and only a refresh can record it.
+        const withMissing = result.missing > 0
+          ? `${line} · ${result.missing} played match${result.missing === 1 ? "" : "es"} at the provider are not in the schedule — press Refresh league data`
+          : line;
+        record(label, result.faults.length ? `${withMissing} · faults: ${result.faults.join(" | ")}` : withMissing, result.faults.length > 0 || result.missing > 0);
+        toast.add({ title: `${label} pulled`, description: withMissing, type: result.faults.length || result.missing ? "error" : "success" });
         if (result.updated > 0 || result.settled > 0) router.refresh();
       }
 

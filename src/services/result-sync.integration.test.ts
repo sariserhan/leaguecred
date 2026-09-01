@@ -118,6 +118,27 @@ describe("synchronizeMatchResults", () => {
     expect(await storedFixture(provider, externalId)).toMatchObject({ status: "scheduled" });
   });
 
+  it("names the played matches the schedule has no row for", async () => {
+    const suffix = crypto.randomUUID();
+    const provider = `test-results-missing-${suffix}`;
+    const kickoffAt = new Date(Date.now() - 3 * 3_600_000).toISOString();
+    const unrecorded = scheduled(`test-missing-${suffix}`, `${provider}:Round ${suffix}`, kickoffAt);
+
+    // Nothing of this provider's is in the schedule at all, so there is nothing
+    // to pull - the point being that the provider still has a played match.
+    const result = await synchronizeMatchResults(
+      fakeProvider(provider, async () => ({
+        requestCount: 1,
+        fixtures: [{ ...unrecorded, status: "finished", homeScore: 6, awayScore: 2 }],
+      })),
+      new Date(),
+      "super-lig",
+      true,
+    );
+
+    expect(result).toMatchObject({ pending: 0, updated: 0, requestCount: 1, missing: 1 });
+  });
+
   it("asks the provider for nothing when no fixture is waiting on a result", async () => {
     const fetchFixtures = vi.fn();
     const result = await synchronizeMatchResults(
