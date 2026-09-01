@@ -83,21 +83,29 @@ export async function synchronizeFixtures(provider: FixtureProvider, now = new D
 
     for (const { config, batch } of fetched) {
       if (!batch) continue;
-      // Persist completed current-season results and only the immediate next upcoming
-      // matchweek. This bounds schedule writes while preserving the result history.
-      const nextFixture = batch.fixtures
-        .filter((fixture) => fixture.status === "scheduled" && Date.parse(fixture.kickoffAt) >= now.getTime())
-        .toSorted((left, right) => Date.parse(left.kickoffAt) - Date.parse(right.kickoffAt))[0];
-      const relevantFixtures = batch.fixtures.filter((fixture) =>
-        fixture.status !== "scheduled" || fixture.round === nextFixture?.round,
-      );
-      const rounds = Map.groupBy(relevantFixtures, (fixture) => fixture.round);
-      for (const [round, fixtures] of rounds) {
-        const counts = await synchronizeRound(provider.name, config, round, fixtures);
-        created += counts.created;
-        updated += counts.updated;
-        lateAdded += counts.lateAdded;
-        adopted += counts.adopted;
+      // Writing is fenced off per league for the same reason fetching is: one
+      // competition's data being unwritable - a club colliding with one another
+      // league already recorded, say - must not throw away the work of the
+      // other twenty-two, which by this point has already been fetched.
+      try {
+        // Persist completed current-season results and only the immediate next upcoming
+        // matchweek. This bounds schedule writes while preserving the result history.
+        const nextFixture = batch.fixtures
+          .filter((fixture) => fixture.status === "scheduled" && Date.parse(fixture.kickoffAt) >= now.getTime())
+          .toSorted((left, right) => Date.parse(left.kickoffAt) - Date.parse(right.kickoffAt))[0];
+        const relevantFixtures = batch.fixtures.filter((fixture) =>
+          fixture.status !== "scheduled" || fixture.round === nextFixture?.round,
+        );
+        const rounds = Map.groupBy(relevantFixtures, (fixture) => fixture.round);
+        for (const [round, fixtures] of rounds) {
+          const counts = await synchronizeRound(provider.name, config, round, fixtures);
+          created += counts.created;
+          updated += counts.updated;
+          lateAdded += counts.lateAdded;
+          adopted += counts.adopted;
+        }
+      } catch (error) {
+        faults.push(`${config.slug}: ${String(error)}`);
       }
     }
 
@@ -290,6 +298,36 @@ async function synchronizeRound(providerName: string, config: LeagueConfig, roun
   });
 }
 
+/**
+ * A slug no other club has taken.
+ *
+ * Slugs are unique across every league, and every lookup in resolveTeam is
+ * scoped to one league's membership, so a club genuinely new to us can still
+ * want a name another league's club already holds - Liverpool of Montevideo
+ * beside Liverpool of England. That collision aborted the whole sync with a
+ * constraint violation and wrote nothing anywhere. The newcomer takes a
+ * qualified slug instead: its country first, since that is the distinction a
+ * reader would draw themselves, and a number only if that is taken too.
+ */
+async function freeTeamSlug(sql: postgres.TransactionSql, name: string, config: LeagueConfig) {
+  const base = teamSlug(name);
+  const taken = new Set((await sql<Array<{ slug: string }>>`
+    select slug from teams where slug = ${base} or slug like ${`${base}-%`}`).map((row) => row.slug));
+  if (!taken.has(base)) return base;
+
+  const [country] = config.country_is_region
+    ? []
+    : await sql<Array<{ code: string }>>`select code from countries where id = ${config.country_id}`;
+
+  const candidate = [
+    ...(country ? [`${base}-${country.code.toLowerCase()}`] : []),
+    ...Array.from({ length: 50 }, (_, index) => `${base}-${index + 2}`),
+  ].find((option) => !taken.has(option));
+  if (!candidate) throw new Error(`Could not find a free slug for ${name}.`);
+
+  return candidate;
+}
+
 async function resolveTeam(
   sql: postgres.TransactionSql,
   providerName: string,
@@ -352,7 +390,7 @@ async function resolveTeam(
   if (!row) {
     [row] = await sql<Array<{ id: string }>>`
       insert into teams (provider, provider_external_id, name, slug, short_name, logo_url, logo_provider, country_id)
-      values (${providerName}, ${team.externalId}, ${team.name}, ${teamSlug(team.name)}, ${team.shortName}, ${team.logoUrl}, ${team.logoUrl ? providerName : null}, ${config.country_is_region ? null : config.country_id})
+      values (${providerName}, ${team.externalId}, ${team.name}, ${await freeTeamSlug(sql, team.name, config)}, ${team.shortName}, ${team.logoUrl}, ${team.logoUrl ? providerName : null}, ${config.country_is_region ? null : config.country_id})
       on conflict (provider, provider_external_id) do update
       set name = excluded.name, short_name = excluded.short_name,
           logo_url = coalesce(excluded.logo_url, teams.logo_url),

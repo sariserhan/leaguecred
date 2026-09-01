@@ -3,6 +3,7 @@ import { describe, expect, it } from "vitest";
 import { sqlClient } from "@/db";
 import type { FixtureBatch, FixtureProvider, ProviderFixture } from "@/providers/fixtures";
 import { synchronizeFixtures } from "@/services/fixture-sync";
+import { teamSlug as teamSlugOf } from "@/lib/team-path";
 
 const superLigExternalId = "203";
 
@@ -287,5 +288,43 @@ describe("synchronizeFixtures matchweek keying", () => {
     const [stored] = await sqlClient<Array<{ id: string }>>`
       select id from fixtures where provider_external_id = ${externalId}`;
     expect(stored).toBeDefined();
+  });
+
+  // The failure this guards: team slugs are unique across every league, but the
+  // lookups that reuse an existing club are scoped to one league's membership.
+  // A club new to us whose name another league already holds hit the unique
+  // index, and the constraint violation took the whole sweep down with it.
+  it("gives a new club a qualified slug when its name is already taken", async () => {
+    const suffix = crypto.randomUUID();
+    const provider = `test-slug-${suffix}`;
+    const sharedName = `Shared Club ${suffix}`;
+    const [existing] = await sqlClient<Array<{ slug: string }>>`
+      insert into teams (provider, provider_external_id, name, slug, short_name)
+      values (${`other-${suffix}`}, ${`other-${suffix}`}, ${sharedName}, ${teamSlugOf(sharedName)}, 'SHC')
+      returning slug`;
+
+    const kickoffAt = new Date(Date.now() + daysFromNow(2600, suffix) * 24 * 3_600_000).toISOString();
+    const externalId = `test-slug-fixture-${suffix}`;
+    await synchronizeFixtures(fakeProvider(provider, {
+      requestCount: 1,
+      fixtures: [fixture({
+        externalId,
+        round: `${provider}:Round ${suffix}`,
+        kickoffAt,
+        // Same name as the club above, and not a member of this league, so it
+        // is resolved as new and needs a slug of its own.
+        home: team(`slug-home-${suffix}`, sharedName),
+        away: team(`slug-away-${suffix}`, `Away S ${suffix}`),
+      })],
+    }));
+
+    const [stored] = await sqlClient<Array<{ slug: string; name: string }>>`
+      select t.slug, t.name from teams t
+      where t.provider = ${provider} and t.provider_external_id = ${`slug-home-${suffix}`}`;
+
+    expect(stored).toBeDefined();
+    expect(stored!.name).toBe(sharedName);
+    expect(stored!.slug).not.toBe(existing!.slug);
+    expect(stored!.slug.startsWith(existing!.slug)).toBe(true);
   });
 });
