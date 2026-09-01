@@ -170,6 +170,7 @@ function LockCard({ lock, signedIn }: { lock: GlobalActiveLock; signedIn: boolea
             <Crest src={lock.selected.logoUrl} size={28} />
             <Link href={`/teams/${lock.selected.slug}`} className="font-heading text-xl font-bold uppercase hover:text-primary">{lock.selected.name}</Link>
             <span className="text-xs text-muted-foreground">to beat</span>
+            <Crest src={lock.opponent.logoUrl} size={22} />
             <Link href={`/teams/${lock.opponent.slug}`} className="text-sm font-semibold hover:text-primary">{lock.opponent.name}</Link>
           </div>
           {lock.message ? <p className="mt-2 line-clamp-2 text-sm text-muted-foreground">“{lock.message}”</p> : null}
