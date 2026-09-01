@@ -43,6 +43,13 @@ None.
 
 ## Completed
 
+- [x] Score the fixtures a retired provider recorded. Only ESPN syncs now, and
+      both jobs matched a row by ESPN's own id alone, so a row written by
+      football-data.org or football-data-uk was never updated: it stayed
+      "scheduled" for ever, never settled, and showed nowhere, since a team page
+      lists a past match only once it has finished. Both jobs now fall back to
+      matching on the two clubs and the day.
+
 - [x] Never lose a played match. A fixture arriving into a week that has already
       locked or taken picks is now recorded rather than dropped, and a played
       match in a week that is still open shows its result immediately instead of

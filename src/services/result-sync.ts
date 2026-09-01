@@ -12,6 +12,7 @@ const LOOKBACK_DAYS = 3;
 
 type PendingFixture = {
   id: string;
+  provider: string;
   provider_external_id: string;
   home_team_id: string;
   away_team_id: string;
@@ -23,7 +24,26 @@ type PendingFixture = {
   provider_season: string;
 };
 
-function isoDate(date: Date) { return date.toISOString().slice(0, 10); }
+function isoDate(date: Date | string) { return new Date(date).toISOString().slice(0, 10); }
+
+/** A match is the same match whoever recorded it: these two clubs, on this day. */
+function matchKey(homeTeamId: string, awayTeamId: string, kickoff: Date | string) {
+  return `${homeTeamId}|${awayTeamId}|${isoDate(kickoff)}`;
+}
+
+/**
+ * Our team ids for the clubs in a provider's payload, by the provider's own ids.
+ */
+async function resolveTeamIds(providerName: string, fixtures: readonly ProviderFixture[]) {
+  const externalIds = [...new Set(fixtures.flatMap((fixture) => [fixture.home.externalId, fixture.away.externalId]))];
+  if (externalIds.length === 0) return new Map<string, string>();
+
+  const rows = await sqlClient<Array<{ provider_external_id: string; team_id: string }>>`
+    select provider_external_id, team_id from team_provider_aliases
+    where provider = ${providerName} and provider_external_id = any(${externalIds})`;
+
+  return new Map(rows.map((row) => [row.provider_external_id, row.team_id]));
+}
 
 /**
  * Scores for matches already on the schedule, and nothing else.
@@ -36,6 +56,13 @@ function isoDate(date: Date) { return date.toISOString().slice(0, 10); }
  * on a result, asks only the leagues those belong to, and only for the days
  * they were played on. Nothing is inserted and no matchweek is touched — an
  * unrecognised match here is simply one this job has no business creating.
+ *
+ * A stored fixture is matched by the provider's own id where it has one, and
+ * otherwise by the two clubs and the day. Several providers have written into
+ * this schedule over its life and only ESPN still syncs, so a row another
+ * provider recorded would otherwise sit at "scheduled" for ever: never scored,
+ * never settled, and invisible on a team page, which shows a past match only
+ * once it has finished.
  *
  * With nothing pending it makes no request at all, which is what makes it
  * cheap enough to run every hour.
@@ -64,13 +91,12 @@ export async function synchronizeMatchResults(
   if (!run) throw new Error("Could not start result sync run.");
 
   const pending = await sqlClient<PendingFixture[]>`
-    select f.id, f.provider_external_id, f.home_team_id, f.away_team_id, f.kickoff_at,
+    select f.id, f.provider, f.provider_external_id, f.home_team_id, f.away_team_id, f.kickoff_at,
       f.status, f.home_score, f.away_score, l.slug as league_slug, s.provider_season
     from fixtures f
     join leagues l on l.id = f.league_id
     join seasons s on s.id = f.season_id
-    where f.provider = ${provider.name}
-      and f.status in ('scheduled', 'live')
+    where f.status in ('scheduled', 'live')
       and f.kickoff_at <= ${now.toISOString()}::timestamptz
       and f.kickoff_at >= ${since.toISOString()}::timestamptz
       ${leagueSlug ? sqlClient`and l.slug = ${leagueSlug}` : sqlClient``}
@@ -87,7 +113,7 @@ export async function synchronizeMatchResults(
 
     return {
       pending: 0, leagues: 0, requestCount: probe.requestCount, updated: 0, finished: 0,
-      missing: probe.missing, faults: probe.faults,
+      adopted: 0, missing: probe.missing, faults: probe.faults,
     };
   }
 
@@ -97,6 +123,7 @@ export async function synchronizeMatchResults(
   let requestCount = 0;
   let updated = 0;
   let finished = 0;
+  let adopted = 0;
   let missing = 0;
   const faults: string[] = [];
 
@@ -131,14 +158,23 @@ export async function synchronizeMatchResults(
       }
     }));
 
-    for (const { fixtures, batch, error } of batches) {
+    for (const { slug, fixtures, batch, error } of batches) {
       if (error) { faults.push(error); continue; }
       requestCount += batch?.requestCount ?? 0;
 
-      const incoming = new Map((batch?.fixtures ?? []).map((fixture) => [fixture.externalId, fixture]));
-      missing += await countUnrecorded(provider.name, [...incoming.values()], now);
+      const incoming = batch?.fixtures ?? [];
+      const byExternalId = new Map(incoming.map((fixture) => [fixture.externalId, fixture]));
+      const teamIds = await resolveTeamIds(provider.name, incoming);
+      const byMatch = new Map(incoming.flatMap((fixture) => {
+        const homeId = teamIds.get(fixture.home.externalId);
+        const awayId = teamIds.get(fixture.away.externalId);
+        return homeId && awayId ? [[matchKey(homeId, awayId, fixture.kickoffAt), fixture] as const] : [];
+      }));
+
       for (const stored of fixtures) {
-        const fresh = incoming.get(stored.provider_external_id);
+        const fresh = stored.provider === provider.name
+          ? byExternalId.get(stored.provider_external_id)
+          : byMatch.get(matchKey(stored.home_team_id, stored.away_team_id, stored.kickoff_at));
         if (!fresh) continue;
         // Writing an unchanged row would only churn updated_at, and most hourly
         // runs find a match that has not kicked off any further along.
@@ -154,7 +190,10 @@ export async function synchronizeMatchResults(
           where id = ${stored.id}`;
         updated += 1;
         if (fresh.status === "finished") finished += 1;
+        if (stored.provider !== provider.name) adopted += 1;
       }
+
+      missing += await countUnrecorded(slug, incoming, teamIds, provider.name, now);
     }
 
     await sqlClient`update api_sync_runs set status = ${faults.length ? "failed" : "succeeded"},
@@ -166,26 +205,47 @@ export async function synchronizeMatchResults(
     throw error;
   }
 
-  return { pending: pending.length, leagues: byLeague.size, requestCount, updated, finished, missing, faults };
+  return { pending: pending.length, leagues: byLeague.size, requestCount, updated, finished, adopted, missing, faults };
 }
 
 /**
- * Matches the provider played in this window that the schedule has no row for.
- * Nothing here can fix that - creating fixtures is the schedule sync's job -
- * but naming the number is what tells an operator to press Refresh rather than
- * press Pull results again and read the same "nothing was waiting".
+ * Matches the provider played in this window that the schedule has no row for
+ * under any provider. Nothing here can fix that - creating fixtures is the
+ * schedule sync's job - but naming the number is what tells an operator to
+ * press Refresh rather than press Pull results again and read the same
+ * "nothing was waiting".
  */
-async function countUnrecorded(providerName: string, incoming: ProviderFixture[], now: Date) {
+async function countUnrecorded(
+  leagueSlug: string,
+  incoming: readonly ProviderFixture[],
+  teamIds: Map<string, string>,
+  providerName: string,
+  now: Date,
+) {
   const played = incoming.filter((fixture) => Date.parse(fixture.kickoffAt) <= now.getTime());
   if (played.length === 0) return 0;
 
-  const recorded = await sqlClient<Array<{ provider_external_id: string }>>`
-    select provider_external_id from fixtures
-    where provider = ${providerName}
-      and provider_external_id = any(${played.map((fixture) => fixture.externalId)})`;
-  const known = new Set(recorded.map((row) => row.provider_external_id));
+  const days = [...new Set(played.map((fixture) => isoDate(fixture.kickoffAt)))];
+  const recorded = await sqlClient<Array<{
+    provider: string; provider_external_id: string; home_team_id: string; away_team_id: string; kickoff_at: Date;
+  }>>`
+    select f.provider, f.provider_external_id, f.home_team_id, f.away_team_id, f.kickoff_at
+    from fixtures f join leagues l on l.id = f.league_id
+    where l.slug = ${leagueSlug}
+      and (f.kickoff_at at time zone 'UTC')::date::text = any(${days})`;
 
-  return played.filter((fixture) => !known.has(fixture.externalId)).length;
+  const knownIds = new Set(recorded.filter((row) => row.provider === providerName).map((row) => row.provider_external_id));
+  const knownMatches = new Set(recorded.map((row) => matchKey(row.home_team_id, row.away_team_id, row.kickoff_at)));
+
+  return played.filter((fixture) => {
+    if (knownIds.has(fixture.externalId)) return false;
+    const homeId = teamIds.get(fixture.home.externalId);
+    const awayId = teamIds.get(fixture.away.externalId);
+    // A club this schedule has never heard of cannot have a fixture here, so an
+    // unresolvable pair counts as missing rather than as quietly fine.
+    if (!homeId || !awayId) return true;
+    return !knownMatches.has(matchKey(homeId, awayId, fixture.kickoffAt));
+  }).length;
 }
 
 async function countMissingFixtures(
@@ -210,8 +270,9 @@ async function countMissingFixtures(
       from: isoDate(new Date(since.getTime() - 24 * 60 * 60 * 1000)),
       to: isoDate(now),
     });
+    const teamIds = await resolveTeamIds(provider.name, batch.fixtures);
     return {
-      missing: await countUnrecorded(provider.name, batch.fixtures, now),
+      missing: await countUnrecorded(leagueSlug, batch.fixtures, teamIds, provider.name, now),
       requestCount: batch.requestCount,
       faults: [] as string[],
     };

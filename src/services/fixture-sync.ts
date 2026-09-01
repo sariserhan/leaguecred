@@ -31,6 +31,7 @@ export async function synchronizeFixtures(provider: FixtureProvider, now = new D
   let created = 0;
   let updated = 0;
   let lateAdded = 0;
+  let adopted = 0;
   try {
     const availableConfigs = await sqlClient<Omit<LeagueConfig, "source_external_id">[]>`
       select l.id, l.slug, l.name, l.provider, l.provider_external_id, l.country_id, l.region,
@@ -80,20 +81,21 @@ export async function synchronizeFixtures(provider: FixtureProvider, now = new D
         created += counts.created;
         updated += counts.updated;
         lateAdded += counts.lateAdded;
+        adopted += counts.adopted;
       }
     }
 
     await sqlClient`update api_sync_runs set status = 'succeeded', request_count = ${requestCount}, finished_at = now() where id = ${run.id}`;
-    return { requestCount, leagues: configs.length, created, updated, lateAdded };
+    return { requestCount, leagues: configs.length, created, updated, lateAdded, adopted };
   } catch (error) {
     await sqlClient`update api_sync_runs set status = 'failed', request_count = ${requestCount}, finished_at = now(), error = ${String(error)} where id = ${run.id}`;
     throw error;
   }
 }
 
-type RoundCounts = { created: number; updated: number; lateAdded: number };
+type RoundCounts = { created: number; updated: number; lateAdded: number; adopted: number };
 
-const NO_CHANGES: RoundCounts = { created: 0, updated: 0, lateAdded: 0 };
+const NO_CHANGES: RoundCounts = { created: 0, updated: 0, lateAdded: 0, adopted: 0 };
 
 async function synchronizeRound(providerName: string, config: LeagueConfig, round: string, incoming: ProviderFixture[]): Promise<RoundCounts> {
   if (incoming.length === 0) return NO_CHANGES;
@@ -104,6 +106,7 @@ async function synchronizeRound(providerName: string, config: LeagueConfig, roun
   return sqlClient.begin(async (sql): Promise<RoundCounts> => {
     let created = 0;
     let updated = 0;
+    let adopted = 0;
     const newFixtures: ProviderFixture[] = [];
     for (const fixture of ordered) {
       const [existing] = await sql<Array<{
@@ -140,7 +143,7 @@ async function synchronizeRound(providerName: string, config: LeagueConfig, roun
         where id = ${existing.id}`;
       updated += 1;
     }
-    if (newFixtures.length === 0) return { created, updated, lateAdded: 0 };
+    if (newFixtures.length === 0) return { created, updated, lateAdded: 0, adopted };
 
     // A fixture is keyed by (provider, provider_external_id), so the lookup
     // above only finds this provider's own rows. Several providers cover most
@@ -153,15 +156,40 @@ async function synchronizeRound(providerName: string, config: LeagueConfig, roun
     for (const fixture of newFixtures) {
       const homeId = await resolveTeam(sql, providerName, fixture.home, config);
       const awayId = await resolveTeam(sql, providerName, fixture.away, config);
-      const [alreadyRecorded] = await sql<Array<{ id: string }>>`
-        select id from fixtures
+      const [alreadyRecorded] = await sql<Array<{ id: string; provider: string; status: string; home_score: number | null; away_score: number | null }>>`
+        select id, provider, status, home_score, away_score from fixtures
         where league_id = ${config.id} and season_id = ${config.season_id}
           and home_team_id = ${homeId} and away_team_id = ${awayId}
           and date(kickoff_at) = date(${fixture.kickoffAt}::timestamptz)
         limit 1`;
-      if (!alreadyRecorded) creatable.push({ fixture, homeId, awayId });
+
+      if (!alreadyRecorded) {
+        creatable.push({ fixture, homeId, awayId });
+        continue;
+      }
+
+      // Whoever recorded the match keeps it, but the score still has to reach
+      // it. Providers have come and gone from this schedule and only one syncs
+      // now, so a row another provider wrote was skipped here and updated
+      // nowhere else: it sat at "scheduled" for ever, never settling and never
+      // appearing on a team page, which shows a past match only once it has
+      // finished. The row keeps its own identity and kickoff; only what the
+      // match did is taken.
+      const changed = alreadyRecorded.status !== fixture.status
+        || alreadyRecorded.home_score !== fixture.homeScore
+        || alreadyRecorded.away_score !== fixture.awayScore;
+      if (!changed) continue;
+
+      const winnerId = fixture.winnerExternalId === fixture.home.externalId
+        ? homeId
+        : fixture.winnerExternalId === fixture.away.externalId ? awayId : null;
+      await sql`update fixtures set
+        status = ${fixture.status}, home_score = ${fixture.homeScore}, away_score = ${fixture.awayScore},
+        winner_team_id = ${winnerId}, last_synced_at = now(), updated_at = now()
+        where id = ${alreadyRecorded.id}`;
+      adopted += 1;
     }
-    if (creatable.length === 0) return { created, updated, lateAdded: 0 };
+    if (creatable.length === 0) return { created, updated, lateAdded: 0, adopted };
 
     let [matchweek] = await sql<Array<{ id: string; status: string; has_participation: boolean }>>`
       select mw.id, mw.status, exists(select 1 from matchweek_participation mp where mp.matchweek_id = mw.id) as has_participation
@@ -238,7 +266,7 @@ async function synchronizeRound(providerName: string, config: LeagueConfig, roun
       created += 1;
     }
 
-    return { created, updated, lateAdded: frozen ? creatable.length : 0 };
+    return { created, updated, lateAdded: frozen ? creatable.length : 0, adopted };
   });
 }
 

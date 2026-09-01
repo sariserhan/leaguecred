@@ -39,12 +39,25 @@ function kickoffFor(base: number, suffix: string) {
 async function storedFixture(provider: string, externalId: string) {
   const [row] = await sqlClient<Array<{
     status: string; home_score: number | null; away_score: number | null;
-    winner_team_id: string | null; home_team_id: string;
+    winner_team_id: string | null; home_team_id: string; away_team_id: string;
   }>>`
-    select status, home_score, away_score, winner_team_id, home_team_id
+    select status, home_score, away_score, winner_team_id, home_team_id, away_team_id
     from fixtures where provider = ${provider} and provider_external_id = ${externalId}`;
   return row;
 }
+
+/** The alias rows a provider's own sync would have written for these clubs. */
+async function aliasTeams(provider: string, entries: Array<{ externalId: string; teamId: string }>) {
+  for (const entry of entries) {
+    await sqlClient`insert into team_provider_aliases (provider, provider_external_id, team_id, source_name)
+      values (${provider}, ${entry.externalId}, ${entry.teamId}, ${entry.externalId})
+      on conflict (provider, provider_external_id) do nothing`;
+  }
+}
+
+// Far enough back that no other test's fixture sits in the three-day window the
+// pull looks at, now that it no longer filters by which provider wrote a row.
+const QUIET_PAST = new Date("2019-06-01T12:00:00.000Z");
 
 describe("synchronizeMatchResults", () => {
   it("writes the score onto a fixture the schedule already holds", async () => {
@@ -118,10 +131,55 @@ describe("synchronizeMatchResults", () => {
     expect(await storedFixture(provider, externalId)).toMatchObject({ status: "scheduled" });
   });
 
+  // The Beşiktaş case: a row written by a provider that no longer syncs. Only
+  // ESPN runs now, and it matched rows by its own id alone, so such a row was
+  // never scored, never settled, and never displayed - a team page shows a past
+  // match only once it has finished.
+  it("scores a fixture another provider recorded, matched by the clubs and the day", async () => {
+    const suffix = crypto.randomUUID();
+    const oldProvider = `test-retired-${suffix}`;
+    const espn = `test-current-${suffix}`;
+    const externalId = `test-retired-fixture-${suffix}`;
+    const kickoffAt = kickoffFor(2100, suffix);
+    const match = scheduled(externalId, `${oldProvider}:Round ${suffix}`, kickoffAt);
+
+    // The retired provider recorded the match, clubs and all.
+    await synchronizeFixtures(fakeProvider(oldProvider, async () => ({ requestCount: 1, fixtures: [match] })));
+
+    const recorded = await storedFixture(oldProvider, externalId);
+    const espnHome = team(`espn-home-${suffix}`, `Home ${suffix}`);
+    const espnAway = team(`espn-away-${suffix}`, `Away ${suffix}`);
+    await aliasTeams(espn, [
+      { externalId: espnHome.externalId, teamId: recorded!.home_team_id },
+      { externalId: espnAway.externalId, teamId: recorded!.away_team_id },
+    ]);
+
+    // ESPN knows the same match under its own ids, and has the score.
+    const espnView: ProviderFixture = {
+      ...match,
+      externalId: `espn-${suffix}`,
+      home: espnHome,
+      away: espnAway,
+      status: "finished",
+      homeScore: 6,
+      awayScore: 2,
+      winnerExternalId: espnHome.externalId,
+    };
+    const result = await synchronizeMatchResults(
+      fakeProvider(espn, async () => ({ requestCount: 1, fixtures: [espnView] })),
+      new Date(Date.parse(kickoffAt) + 3 * 3_600_000),
+    );
+
+    expect(result).toMatchObject({ updated: 1, finished: 1, adopted: 1, missing: 0 });
+    const stored = await storedFixture(oldProvider, externalId);
+    expect(stored).toMatchObject({ status: "finished", home_score: 6, away_score: 2 });
+    expect(stored?.winner_team_id).toBe(stored?.home_team_id);
+  });
+
   it("names the played matches the schedule has no row for", async () => {
     const suffix = crypto.randomUUID();
     const provider = `test-results-missing-${suffix}`;
-    const kickoffAt = new Date(Date.now() - 3 * 3_600_000).toISOString();
+    const kickoffAt = new Date(QUIET_PAST.getTime() - 3 * 3_600_000).toISOString();
     const unrecorded = scheduled(`test-missing-${suffix}`, `${provider}:Round ${suffix}`, kickoffAt);
 
     // Nothing of this provider's is in the schedule at all, so there is nothing
@@ -131,7 +189,7 @@ describe("synchronizeMatchResults", () => {
         requestCount: 1,
         fixtures: [{ ...unrecorded, status: "finished", homeScore: 6, awayScore: 2 }],
       })),
-      new Date(),
+      QUIET_PAST,
       "super-lig",
       true,
     );
@@ -143,6 +201,7 @@ describe("synchronizeMatchResults", () => {
     const fetchFixtures = vi.fn();
     const result = await synchronizeMatchResults(
       fakeProvider(`test-results-quiet-${crypto.randomUUID()}`, fetchFixtures),
+      QUIET_PAST,
     );
 
     expect(fetchFixtures).not.toHaveBeenCalled();

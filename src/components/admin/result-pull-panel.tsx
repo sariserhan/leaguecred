@@ -38,7 +38,8 @@ export function ResultPullPanel({ leagues }: { leagues: LeagueNavOption[] }) {
       } else {
         const line = result.pending === 0
           ? "No match was waiting on a result."
-          : `${result.pending} waiting · ${result.requests} request${result.requests === 1 ? "" : "s"} · ${result.updated} updated · ${result.finished} finished · ${result.settled} pick${result.settled === 1 ? "" : "s"} settled`;
+          : `${result.pending} waiting · ${result.requests} request${result.requests === 1 ? "" : "s"} · ${result.updated} updated · ${result.finished} finished · ${result.settled} pick${result.settled === 1 ? "" : "s"} settled`
+            + (result.adopted > 0 ? ` · ${result.adopted} on another provider's row` : "");
         // The answer to "the match was played, why is nothing here": it was
         // never recorded, and only a refresh can record it.
         const withMissing = result.missing > 0

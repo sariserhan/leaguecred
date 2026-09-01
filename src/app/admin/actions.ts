@@ -78,7 +78,7 @@ export async function saveSiteSettings(
 }
 
 export type LeagueRefreshResult =
-  | { ok: true; requests: number; created: number; updated: number; lateAdded: number }
+  | { ok: true; requests: number; created: number; updated: number; lateAdded: number; adopted: number }
   | { ok: false; message: string };
 
 /**
@@ -127,11 +127,12 @@ export async function refreshLeagueFixtures(leagueSlug: string): Promise<LeagueR
     created: result.created,
     updated: result.updated,
     lateAdded: result.lateAdded,
+    adopted: result.adopted,
   };
 }
 
 export type ResultPullResult =
-  | { ok: true; pending: number; leagues: number; requests: number; updated: number; finished: number; settled: number; missing: number; faults: string[] }
+  | { ok: true; pending: number; leagues: number; requests: number; updated: number; finished: number; settled: number; adopted: number; missing: number; faults: string[] }
   | { ok: false; message: string };
 
 /**
@@ -186,6 +187,7 @@ export async function pullMatchResults(leagueSlug?: string | null): Promise<Resu
       updated: results.updated,
       finished: results.finished,
       settled: settlement.settled,
+      adopted: results.adopted,
       missing: results.missing,
       faults: results.faults,
     };

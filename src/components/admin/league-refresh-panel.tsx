@@ -33,7 +33,9 @@ export function LeagueRefreshPanel({ leagues }: { leagues: LeagueNavOption[] }) 
         const line = `${result.requests} request${result.requests === 1 ? "" : "s"} · ${result.created} fixture${result.created === 1 ? "" : "s"} added · ${result.updated} updated`
           // Worth surfacing rather than burying: these landed in a week that had
           // already locked or taken picks, which is allowed but is not routine.
-          + (result.lateAdded > 0 ? ` · ${result.lateAdded} of them into a week already locked or picked in` : "");
+          + (result.lateAdded > 0 ? ` · ${result.lateAdded} of them into a week already locked or picked in` : "")
+          // Rows another provider wrote, which nothing else updates.
+          + (result.adopted > 0 ? ` · ${result.adopted} scored on another provider's row` : "");
         record(label, line, false);
         toast.add({ title: `${label} refreshed`, description: line, type: "success" });
         if (result.created > 0 || result.updated > 0) router.refresh();
