@@ -73,7 +73,9 @@ function Dock({ title, count, icon, open, onToggle, tone = "default", children }
   return (
     <section
       aria-label={title}
-      className={cn("flex min-h-0 flex-col border bg-background shadow-lg", open ? "w-[min(22rem,calc(100vw-1rem))]" : "w-auto self-end")}
+      // Side by side, so two open docks split the space rather than stacking
+      // into a column tall enough to cover the page.
+      className={cn("flex min-h-0 flex-col border bg-background shadow-lg", open ? "w-[min(20rem,calc(50vw-0.75rem))]" : "w-auto")}
     >
       <button
         type="button"
@@ -314,7 +316,7 @@ export function SlipDock({ candidates, locked }: { candidates: SlipCandidate[]; 
     // Above the mobile member bar rather than under it, and out of the way of
     // the page itself: these are companions to what is being read, never the
     // thing in front of it.
-    <div className="fixed right-0 bottom-20 z-40 flex max-h-[80vh] flex-col items-end gap-2 md:bottom-0">
+    <div className="fixed right-0 bottom-20 z-40 flex max-h-[70vh] items-end gap-2 md:bottom-0">
       <LockPanel games={locked} />
       <SlipPanel candidates={candidates} />
     </div>
