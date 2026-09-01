@@ -23,6 +23,7 @@ import {
 import { setFeatureFlag, updateSiteSettings } from "@/services/site-settings";
 import { synchronizeFixtures } from "@/services/fixture-sync";
 import { synchronizeMatchResults } from "@/services/result-sync";
+import { applyTeamMerge, buildDedupeReport, findPlannedMerge, type DedupeReport } from "@/services/team-dedupe-plan";
 import { settlePendingPicks } from "@/services/settlement";
 import { ESPN_FIXTURE_COMPETITIONS, EspnFixtureProvider } from "@/providers/espn-fixtures";
 import { espnStandingsTag } from "@/providers/espn-standings";
@@ -137,6 +138,68 @@ export async function refreshLeagueFixtures(leagueSlug?: string | null): Promise
     adopted: result.adopted,
     faults: result.faults,
   };
+}
+
+export type DedupeScanResult =
+  | { ok: true; report: DedupeReport }
+  | { ok: false; message: string };
+
+/**
+ * What the catalogue thinks is duplicated, on demand. Every query behind it
+ * walks the whole team table, so it runs when an operator asks rather than on
+ * every admin page load.
+ */
+export async function scanDuplicateClubs(): Promise<DedupeScanResult> {
+  const viewer = await requireAdmin();
+  if (!await withinUserRateLimit("teamDedupe", viewer.id)) {
+    return { ok: false, message: "That is a lot of scans in a minute. Wait a moment and try again." };
+  }
+
+  try {
+    return { ok: true, report: await buildDedupeReport() };
+  } catch (error) {
+    console.error("Failed to scan for duplicate clubs.", error);
+    return { ok: false, message: "The catalogue could not be scanned. Please try again." };
+  }
+}
+
+export type MergeClubsResult =
+  | { ok: true; canonical: string; merged: number }
+  | { ok: false; message: string };
+
+/**
+ * Merges one group the scan proposed. Destructive and irreversible: the
+ * duplicate rows are deleted, and every fixture, pick and alias that pointed at
+ * them is moved onto the survivor. So the plan is rebuilt from current rows
+ * rather than trusted from the browser, and a group the evidence no longer
+ * supports is refused rather than applied on the strength of a stale page.
+ */
+export async function mergeDuplicateClubs(canonicalId: string): Promise<MergeClubsResult> {
+  const viewer = await requireAdmin();
+  if (!await withinUserRateLimit("teamDedupe", viewer.id)) {
+    return { ok: false, message: "That is a lot of merges in a minute. Wait a moment and try again." };
+  }
+
+  const parsed = z.string().uuid().safeParse(canonicalId);
+  if (!parsed.success) return { ok: false, message: "That club is not valid." };
+
+  try {
+    const merge = await findPlannedMerge(parsed.data);
+    if (!merge) return { ok: false, message: "That merge is no longer proposed. Scan again." };
+
+    await applyTeamMerge(merge);
+    console.info("Admin merged duplicate clubs.", {
+      admin: viewer.id,
+      canonical: merge.canonical.slug,
+      duplicates: merge.duplicates.map((team) => team.slug),
+    });
+
+    revalidatePath("/", "layout");
+    return { ok: true, canonical: merge.canonical.name, merged: merge.duplicates.length };
+  } catch (error) {
+    console.error("Failed to merge duplicate clubs.", error);
+    return { ok: false, message: "The clubs could not be merged. Please try again." };
+  }
 }
 
 export type ResultPullResult =

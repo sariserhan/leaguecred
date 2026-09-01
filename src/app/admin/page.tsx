@@ -18,6 +18,7 @@ import { CatalogHealthPanel } from "@/components/admin/catalog-health-panel";
 import { ResultPullPanel } from "@/components/admin/result-pull-panel";
 import { AdminTabs } from "@/components/admin/admin-tabs";
 import { LeagueRefreshPanel } from "@/components/admin/league-refresh-panel";
+import { DuplicateClubsPanel } from "@/components/admin/duplicate-clubs-panel";
 import { MemberSeedingPanel } from "@/components/admin/member-seeding-panel";
 import { DistributionAnalyticsPanel } from "@/components/admin/distribution-analytics";
 import { buttonVariants } from "@/components/ui/button";
@@ -135,6 +136,7 @@ export default async function AdminPage() {
                 <ResultPullPanel leagues={leagues} />
                 <LeagueRefreshPanel leagues={leagues} />
                 <CatalogHealthPanel health={catalogHealth} />
+                <DuplicateClubsPanel />
               </>
             ),
           },

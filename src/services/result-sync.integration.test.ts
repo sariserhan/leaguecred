@@ -85,8 +85,12 @@ describe("synchronizeMatchResults", () => {
 
     // The counts outlive the press: the panel that reported them is a browser
     // tab, and the question "what did that run do" is usually asked later.
+    // Named by kind rather than "the newest row for this provider": the same
+    // provider also opened a fixtures run above, and the two can land in the
+    // same instant.
     const [logged] = await sqlClient<Array<{ kind: string; details: Record<string, number> | null }>>`
-      select kind, details from api_sync_runs where provider = ${provider} order by started_at desc limit 1`;
+      select kind, details from api_sync_runs
+      where provider = ${provider} and kind = 'results' order by started_at desc limit 1`;
     expect(logged?.kind).toBe("results");
     expect(logged?.details).toMatchObject({ pending: 1, updated: 1, finished: 1 });
 

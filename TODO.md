@@ -6,9 +6,10 @@ None.
 
 ## Next
 
-- [ ] Check any SUSPECT pair `pnpm teams:dedupe` reports and add an alias where
-      the two really are one club. Nothing to act on today: the only pair is Boca
-      Juniors beside Atlético Junior, which is the rule working, not a fault.
+- [ ] Check any SUSPECT pair the admin Duplicate clubs panel reports (same
+      report as `pnpm teams:dedupe`) and add an alias where the two really are
+      one club. Boca Juniors beside Atlético Junior is the rule working, not a
+      fault.
 - [ ] Set the founding-season rank threshold in the admin panel. It ships at the
       standard 10, which nobody can reach for 10 gameweeks; 4 opens Follow after
       about a month. Raise it back once a cohort has cleared it.
@@ -42,6 +43,11 @@ None.
 - [ ] Decide whether expertise is scoped to clubs as well as leagues
 
 ## Completed
+
+- [x] Read the duplicate-club report and merge from the admin panel, rather than
+      only from `pnpm teams:dedupe` with a production database URL to hand. The
+      evidence and the merge itself are shared with the job, so the two cannot
+      come to different conclusions about what is one club.
 
 - [x] Keep what a job run did. Every run — the hourly and nightly crons and the
       admin buttons alike — now stores its own counts on `api_sync_runs.details`

@@ -27,6 +27,9 @@ export const RATE_LIMITS = {
   /** The narrow results pull. Cheaper upstream than a full refresh - often no
    * request at all - so an admin watching a match in play can press it again. */
   pullMatchResults: { limit: 20, windowSeconds: 60 },
+  /** Scanning walks the whole team table and merging rewrites rows across it.
+   * Admin-only, and nobody deduplicates a catalogue in a hurry. */
+  teamDedupe: { limit: 15, windowSeconds: 60 },
   /** No account required, so the actor is a cookie, not a user - generous
    * enough for someone genuinely changing their mind on several fixtures. */
   castFixtureVote: { limit: 30, windowSeconds: 60 },
