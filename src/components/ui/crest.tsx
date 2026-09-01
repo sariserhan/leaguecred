@@ -41,7 +41,7 @@ export function Crest({
 
   return (
     <span
-      className={cn("flex shrink-0 items-center justify-center overflow-hidden", plate && "dark:bg-white", className)}
+      className={cn("flex shrink-0 items-center justify-center overflow-hidden", plate && "rounded-sm dark:bg-white", className)}
       style={{ width: size, height: size, padding }}
     >
       {src ? (
