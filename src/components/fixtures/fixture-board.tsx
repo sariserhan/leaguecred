@@ -3,12 +3,22 @@
 import { useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
-import { CheckIcon, LockKeyholeIcon } from "lucide-react";
+import { CheckIcon, LockKeyholeIcon, TriangleAlertIcon } from "lucide-react";
 
 import { submitDailyLocks } from "@/app/leagues/actions";
 import type { BoardFixture, FixtureBoard } from "@/data/fixtures";
 import { FixtureVotePoll } from "@/components/fixture-vote-poll";
 import { GameDiscussion } from "@/components/leagues/game-discussion";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
 import { BackToTop } from "@/components/ui/back-to-top";
 import { Button } from "@/components/ui/button";
 import { Crest } from "@/components/ui/crest";
@@ -43,6 +53,8 @@ export function FixtureBoard({ board, authenticated }: { board: FixtureBoard; au
   const [locked, setLocked] = useState<Record<string, string>>({});
   const [error, setError] = useState("");
   const [success, setSuccess] = useState("");
+  // A lock cannot be taken back, so it is never one press away here either.
+  const [confirming, setConfirming] = useState(false);
   const [pending, startTransition] = useTransition();
   const router = useRouter();
 
@@ -73,6 +85,7 @@ export function FixtureBoard({ board, authenticated }: { board: FixtureBoard; au
 
   function submit() {
     if (chosen.length === 0) return;
+    setConfirming(false);
     setError("");
     startTransition(async () => {
       const result = await submitDailyLocks(
@@ -200,6 +213,26 @@ export function FixtureBoard({ board, authenticated }: { board: FixtureBoard; au
 
       {/* Lifted clear of the submit tray when that is showing, so the two do
           not sit on top of each other. */}
+      <AlertDialog open={confirming} onOpenChange={setConfirming}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle className="flex items-center gap-2 font-heading text-3xl font-bold uppercase">
+              <TriangleAlertIcon aria-hidden="true" className="size-6 text-primary" />
+              Lock {chosen.length} call{chosen.length === 1 ? "" : "s"}?
+            </AlertDialogTitle>
+            <AlertDialogDescription>
+              {chosen.map((choice) => `${choice.teamName} on ${choice.matchDate}`).join(" · ")}. This is
+              final: a lock cannot be changed, removed or undone, and it counts towards your public
+              record whichever way the match goes.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Not yet</AlertDialogCancel>
+            <AlertDialogAction onClick={submit}>Lock {chosen.length === 1 ? "it" : "them"} for good</AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+
       <BackToTop className={chosen.length > 0 ? "bottom-24" : undefined} />
 
       {chosen.length > 0 ? (
@@ -213,7 +246,7 @@ export function FixtureBoard({ board, authenticated }: { board: FixtureBoard; au
                 {chosen.map((choice) => `${choice.teamName} (${choice.leagueName})`).join(", ")}
               </strong>
             </div>
-            <Button disabled={pending} onClick={submit}>
+            <Button disabled={pending} onClick={() => setConfirming(true)}>
               {pending ? <Spinner data-icon="inline-start" /> : <LockKeyholeIcon data-icon="inline-start" />}
               Lock {chosen.length}
             </Button>

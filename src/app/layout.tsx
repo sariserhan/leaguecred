@@ -16,6 +16,7 @@ import { Toaster } from "@/components/ui/toast";
 import { MobileMemberNav } from "@/components/mobile-member-nav";
 import { SlipDock } from "@/components/slip/slip-dock";
 import { getSlipCandidates } from "@/data/slip-candidates";
+import { getLockedGames } from "@/data/locked-games";
 import { ThemeProvider } from "@/components/theme-provider";
 import { JsonLd } from "@/lib/json-ld";
 
@@ -70,9 +71,13 @@ export default async function RootLayout({ children }: LayoutProps<"/">) {
   ]);
   const challengeEnabled = isFeatureEnabled(flags, COMMUNITY_CHALLENGE_FLAG);
   const liveLocksEnabled = isFeatureEnabled(flags, LIVE_LOCKS_FLAG);
-  const [notificationCenter, slipCandidates] = session
-    ? await Promise.all([getNotificationCenter(session.user.id), getSlipCandidates(session.user.id)])
-    : [null, []];
+  const [notificationCenter, slipCandidates, lockedGames] = session
+    ? await Promise.all([
+        getNotificationCenter(session.user.id),
+        getSlipCandidates(session.user.id),
+        getLockedGames(session.user.id),
+      ])
+    : [null, [], []];
 
   return (
     <html
@@ -104,7 +109,7 @@ export default async function RootLayout({ children }: LayoutProps<"/">) {
           <SiteHeader isAdmin={isAdmin} leagues={leagues} notificationCenter={notificationCenter} challengeEnabled={challengeEnabled} liveLocksEnabled={liveLocksEnabled} />
           <main id="main-content" tabIndex={-1} className={session ? "flex-1 pb-16 md:pb-0" : "flex-1"}>{children}</main>
           <SiteFooter challengeEnabled={challengeEnabled} liveLocksEnabled={liveLocksEnabled} />
-          {session ? <SlipDock candidates={slipCandidates} /> : null}
+          {session ? <SlipDock candidates={slipCandidates} locked={lockedGames} /> : null}
           {session ? <MobileMemberNav userId={session.user.id} liveLocksEnabled={liveLocksEnabled} unread={notificationCenter?.items.filter((item) => !item.readAt).length ?? 0} /> : null}
           <Toaster timeout={4500} />
           {isProduction ? (

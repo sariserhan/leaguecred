@@ -44,6 +44,10 @@ None.
 
 ## Completed
 
+- [x] Dock the locks beside the slip on every page, with nothing on them that
+      removes anything, and put a warning in front of every lock: the fixtures
+      board could lock several calls in one press with no confirmation at all.
+
 - [x] Make the live board usable at sixty locks: filter by league, member and
       matchday, vote a call up or down, follow the member, set a match aside on
       your slip, and see your own locked games — all from a card compact enough
