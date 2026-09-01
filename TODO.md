@@ -43,6 +43,11 @@ None.
 
 ## Completed
 
+- [x] Keep what a job run did. Every run — the hourly and nightly crons and the
+      admin buttons alike — now stores its own counts on `api_sync_runs.details`
+      and Diagnostics reads them back, so "what did that run see" is answerable
+      afterwards instead of only while the panel that reported it is on screen.
+
 - [x] Score the fixtures a retired provider recorded. Only ESPN syncs now, and
       both jobs matched a row by ESPN's own id alone, so a row written by
       football-data.org or football-data-uk was never updated: it stayed

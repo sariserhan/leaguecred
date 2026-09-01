@@ -24,7 +24,8 @@ function isoDate(date: Date) { return date.toISOString().slice(0, 10); }
 
 export async function synchronizeFixtures(provider: FixtureProvider, now = new Date(), leagueSlug?: string) {
   const [run] = await sqlClient<Array<{ id: string }>>`
-    insert into api_sync_runs (provider, kind) values (${provider.name}, 'fixtures') returning id`;
+    insert into api_sync_runs (provider, kind)
+    values (${provider.name}, ${leagueSlug ? `fixtures:${leagueSlug}` : "fixtures"}) returning id`;
   if (!run) throw new Error("Could not start fixture sync run.");
 
   let requestCount = 0;
@@ -85,8 +86,10 @@ export async function synchronizeFixtures(provider: FixtureProvider, now = new D
       }
     }
 
-    await sqlClient`update api_sync_runs set status = 'succeeded', request_count = ${requestCount}, finished_at = now() where id = ${run.id}`;
-    return { requestCount, leagues: configs.length, created, updated, lateAdded, adopted };
+    const summary = { leagues: configs.length, created, updated, lateAdded, adopted };
+    await sqlClient`update api_sync_runs set status = 'succeeded', request_count = ${requestCount},
+      finished_at = now(), details = ${JSON.stringify(summary)}::jsonb where id = ${run.id}`;
+    return { requestCount, ...summary };
   } catch (error) {
     await sqlClient`update api_sync_runs set status = 'failed', request_count = ${requestCount}, finished_at = now(), error = ${String(error)} where id = ${run.id}`;
     throw error;

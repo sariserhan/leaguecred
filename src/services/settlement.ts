@@ -32,6 +32,18 @@ export async function settlePendingPicks() {
   for (const candidate of candidates) {
     settled += await settlePick(candidate.id) ? 1 : 0;
   }
+
+  // Logged only when there was something to settle. Settlement runs beside
+  // every result pull, so recording the empty passes as well would bury the
+  // runs worth reading under two dozen "nothing to do" rows a day - and the
+  // pull's own row above it already proves the pass happened.
+  if (candidates.length > 0) {
+    await sqlClient`
+      insert into api_sync_runs (provider, kind, status, finished_at, details)
+      values ('leaguecred', 'settlement', 'succeeded', now(),
+        ${JSON.stringify({ candidates: candidates.length, settled })}::jsonb)`;
+  }
+
   return { candidates: candidates.length, settled };
 }
 

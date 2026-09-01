@@ -554,6 +554,11 @@ export const apiSyncRuns = pgTable("api_sync_runs", {
   startedAt: timestamp("started_at", { withTimezone: true }).defaultNow().notNull(),
   finishedAt: timestamp("finished_at", { withTimezone: true }),
   error: text("error"),
+  /** What the run did, in the job's own counts. Kept because the numbers were
+   * previously reported to whoever pressed the button and then thrown away,
+   * leaving no way to ask afterwards what a run — a nightly one especially —
+   * had actually seen. */
+  details: jsonb("details"),
 }, (table) => [index("api_sync_runs_provider_started_idx").on(table.provider, table.startedAt)]);
 
 // Singleton row holding the operator-controlled presentation state of the site.

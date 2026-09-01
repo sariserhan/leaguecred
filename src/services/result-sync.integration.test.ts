@@ -83,6 +83,13 @@ describe("synchronizeMatchResults", () => {
 
     expect(result).toMatchObject({ leagues: 1, requestCount: 1, updated: 1, finished: 1, faults: [] });
 
+    // The counts outlive the press: the panel that reported them is a browser
+    // tab, and the question "what did that run do" is usually asked later.
+    const [logged] = await sqlClient<Array<{ kind: string; details: Record<string, number> | null }>>`
+      select kind, details from api_sync_runs where provider = ${provider} order by started_at desc limit 1`;
+    expect(logged?.kind).toBe("results");
+    expect(logged?.details).toMatchObject({ pending: 1, updated: 1, finished: 1 });
+
     const stored = await storedFixture(provider, externalId);
     expect(stored).toMatchObject({ status: "finished", home_score: 2, away_score: 1 });
     expect(stored?.winner_team_id).toBe(stored?.home_team_id);

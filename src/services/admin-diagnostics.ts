@@ -13,6 +13,9 @@ export type SyncRunDiagnostic = {
   finishedAt: string | null;
   durationSeconds: number | null;
   error: string | null;
+  /** The job's own counts for this run, or null for a run recorded before the
+   * column existed. */
+  details: Record<string, unknown> | null;
 };
 
 export type SettlementCorrectionDiagnostic = {
@@ -67,13 +70,16 @@ export async function getAdminManagementSummary(): Promise<AdminManagementSummar
   };
 }
 
-export async function getSyncRunDiagnostics(limit = 15): Promise<SyncRunDiagnostic[]> {
+// Two dozen hourly result pulls a day now land here alongside the nightly runs,
+// so the window is wide enough to still hold yesterday's.
+export async function getSyncRunDiagnostics(limit = 40): Promise<SyncRunDiagnostic[]> {
   const rows = await sqlClient<Array<{
     id: string; provider: string; kind: string;
     status: SyncRunDiagnostic["status"]; request_count: number;
     started_at: Date | string; finished_at: Date | string | null; error: string | null;
+    details: Record<string, unknown> | null;
   }>>`
-    select id, provider, kind, status, request_count, started_at, finished_at, error
+    select id, provider, kind, status, request_count, started_at, finished_at, error, details
     from api_sync_runs
     order by started_at desc
     limit ${limit}`;
@@ -95,6 +101,7 @@ export async function getSyncRunDiagnostics(limit = 15): Promise<SyncRunDiagnost
         )
       : null,
     error: row.error,
+    details: row.details,
   }));
 }
 

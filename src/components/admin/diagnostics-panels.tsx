@@ -60,6 +60,21 @@ export function OperationalSummaryPanel({ summary }: { summary: OperationalSumma
   );
 }
 
+/**
+ * A run's own counts, as a sentence. Zeroes are dropped so the line carries
+ * what happened rather than every field a job can report - except when nothing
+ * happened at all, which is itself the answer and says so.
+ */
+function summarize(details: Record<string, unknown> | null) {
+  if (!details) return null;
+
+  const parts = Object.entries(details)
+    .filter(([, value]) => typeof value === "number" && value !== 0)
+    .map(([key, value]) => `${value} ${key.replace(/([A-Z])/g, " $1").toLowerCase()}`);
+
+  return parts.length > 0 ? parts.join(" · ") : "no changes";
+}
+
 export function SyncRunsPanel({ runs }: { runs: SyncRunDiagnostic[] }) {
   return (
     <Card className="rounded-sm">
@@ -69,8 +84,8 @@ export function SyncRunsPanel({ runs }: { runs: SyncRunDiagnostic[] }) {
           Fixture sync runs
         </CardTitle>
         <CardDescription>
-          The most recent provider synchronizations, newest first. A failed run is the usual reason
-          a matchweek looks stale.
+          Every job run, newest first — the hourly and nightly crons and anything pressed above,
+          with what each one actually did. A failed run is the usual reason a matchweek looks stale.
         </CardDescription>
       </CardHeader>
       <CardContent className="p-0">
@@ -79,13 +94,14 @@ export function SyncRunsPanel({ runs }: { runs: SyncRunDiagnostic[] }) {
             No synchronization has been recorded yet.
           </p>
         ) : (
-          <><ul className="divide-y border-t sm:hidden">{runs.map((run) => <li key={run.id} className="flex flex-col gap-3 p-4"><div className="flex items-center justify-between gap-3"><Badge variant={statusBadgeVariant(run.status)}>{run.status}</Badge><time className="text-xs text-muted-foreground">{formatMoment(run.startedAt)}</time></div><div><strong className="block">{run.provider}</strong><span className="text-sm text-muted-foreground">{run.kind} · {run.requestCount} requests · {run.durationSeconds === null ? "running" : `${run.durationSeconds}s`}</span></div>{run.error ? <p className="flex items-start gap-2 text-xs leading-5 text-destructive"><CircleAlertIcon aria-hidden="true" className="mt-0.5 size-4 shrink-0" />{run.error}</p> : null}</li>)}</ul><div className="hidden overflow-x-auto border-t sm:block">
+          <><ul className="divide-y border-t sm:hidden">{runs.map((run) => <li key={run.id} className="flex flex-col gap-3 p-4"><div className="flex items-center justify-between gap-3"><Badge variant={statusBadgeVariant(run.status)}>{run.status}</Badge><time className="text-xs text-muted-foreground">{formatMoment(run.startedAt)}</time></div><div><strong className="block">{run.provider}</strong><span className="text-sm text-muted-foreground">{run.kind} · {run.requestCount} requests · {run.durationSeconds === null ? "running" : `${run.durationSeconds}s`}</span>{summarize(run.details) ? <p className="mt-1 text-sm">{summarize(run.details)}</p> : null}</div>{run.error ? <p className="flex items-start gap-2 text-xs leading-5 text-destructive"><CircleAlertIcon aria-hidden="true" className="mt-0.5 size-4 shrink-0" />{run.error}</p> : null}</li>)}</ul><div className="hidden overflow-x-auto border-t sm:block">
             <table className="w-full min-w-[720px] text-left text-sm">
               <thead className="border-b bg-muted text-xs font-semibold tracking-[0.08em] text-muted-foreground uppercase">
                 <tr>
                   <th scope="col" className="px-6 py-3">Status</th>
                   <th scope="col" className="px-6 py-3">Provider</th>
                   <th scope="col" className="px-6 py-3">Kind</th>
+                  <th scope="col" className="px-6 py-3">What it did</th>
                   <th scope="col" className="px-6 py-3">Started</th>
                   <th scope="col" className="px-6 py-3 text-right">Requests</th>
                   <th scope="col" className="px-6 py-3 text-right">Duration</th>
@@ -105,6 +121,7 @@ export function SyncRunsPanel({ runs }: { runs: SyncRunDiagnostic[] }) {
                     </td>
                     <td className="px-6 py-4 font-semibold">{run.provider}</td>
                     <td className="px-6 py-4 text-muted-foreground">{run.kind}</td>
+                    <td className="px-6 py-4">{summarize(run.details) ?? <span className="text-muted-foreground">—</span>}</td>
                     <td className="px-6 py-4 text-muted-foreground">{formatMoment(run.startedAt)}</td>
                     <td className="px-6 py-4 text-right tabular-nums">{run.requestCount}</td>
                     <td className="px-6 py-4 text-right tabular-nums text-muted-foreground">

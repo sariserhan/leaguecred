@@ -1,0 +1,1 @@
+ALTER TABLE "api_sync_runs" ADD COLUMN "details" jsonb;

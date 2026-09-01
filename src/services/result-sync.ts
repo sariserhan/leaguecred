@@ -82,6 +82,10 @@ export async function synchronizeMatchResults(
 ) {
   const since = new Date(now.getTime() - LOOKBACK_DAYS * 24 * 60 * 60 * 1000);
 
+  // JSON.stringify with an explicit ::jsonb cast rather than sql.json(), for
+  // the reason recordAdminAudit sets out: the shared postgres client is mutated
+  // by drizzle and sql.json() corrupts the wire format.
+  //
   // Recorded before the work, and recorded even when there is none. A pull that
   // found nothing waiting is the normal answer between matchdays, and it is
   // also what an admin sees when they press the button and nothing visibly
@@ -107,14 +111,14 @@ export async function synchronizeMatchResults(
       ? await countMissingFixtures(provider, leagueSlug, since, now)
       : { missing: 0, requestCount: 0, faults: [] as string[] };
 
+    const summary = {
+      pending: 0, leagues: 0, updated: 0, finished: 0, adopted: 0, missing: probe.missing,
+    };
     await sqlClient`update api_sync_runs set status = ${probe.faults.length ? "failed" : "succeeded"},
-      request_count = ${probe.requestCount}, finished_at = now(),
+      request_count = ${probe.requestCount}, finished_at = now(), details = ${JSON.stringify(summary)}::jsonb,
       error = ${probe.faults.length ? probe.faults.join(" | ") : null} where id = ${run.id}`;
 
-    return {
-      pending: 0, leagues: 0, requestCount: probe.requestCount, updated: 0, finished: 0,
-      adopted: 0, missing: probe.missing, faults: probe.faults,
-    };
+    return { ...summary, requestCount: probe.requestCount, faults: probe.faults };
   }
 
   const sourceIds = new Map((provider.competitions ?? []).map((competition) => [competition.leagueSlug, competition.externalId]));
@@ -197,7 +201,9 @@ export async function synchronizeMatchResults(
     }
 
     await sqlClient`update api_sync_runs set status = ${faults.length ? "failed" : "succeeded"},
-      request_count = ${requestCount}, finished_at = now(), error = ${faults.length ? faults.join(" | ") : null}
+      request_count = ${requestCount}, finished_at = now(),
+      details = ${JSON.stringify({ pending: pending.length, leagues: byLeague.size, updated, finished, adopted, missing })}::jsonb,
+      error = ${faults.length ? faults.join(" | ") : null}
       where id = ${run.id}`;
   } catch (error) {
     await sqlClient`update api_sync_runs set status = 'failed', request_count = ${requestCount},
