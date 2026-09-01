@@ -316,7 +316,10 @@ export function SlipDock({ candidates, locked }: { candidates: SlipCandidate[]; 
     // Above the mobile member bar rather than under it, and out of the way of
     // the page itself: these are companions to what is being read, never the
     // thing in front of it.
-    <div className="fixed right-0 bottom-20 z-40 flex max-h-[70vh] items-end gap-2 md:bottom-0">
+    // --dock-bottom is set by a page that pins a bar of its own to the bottom,
+    // so the docks rise above it instead of covering its buttons. On a phone
+    // they already clear the member bar.
+    <div className="fixed right-0 bottom-20 z-40 flex max-h-[70vh] items-end gap-2 md:bottom-[var(--dock-bottom,0px)]">
       <LockPanel games={locked} />
       <SlipPanel candidates={candidates} />
     </div>

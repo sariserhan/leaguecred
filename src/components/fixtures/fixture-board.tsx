@@ -20,6 +20,7 @@ import {
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
 import { AddToSlipButton } from "@/components/slip/add-to-slip-button";
+import { useDockClearance } from "@/components/slip/dock-clearance";
 import { BackToTop } from "@/components/ui/back-to-top";
 import { Button } from "@/components/ui/button";
 import { Crest } from "@/components/ui/crest";
@@ -83,6 +84,8 @@ export function FixtureBoard({ board, authenticated }: { board: FixtureBoard; au
       };
     });
   }
+
+  useDockClearance(chosen.length > 0);
 
   function submit() {
     if (chosen.length === 0) return;

@@ -53,7 +53,9 @@ export function BackToTop({ after = 900, className }: { after?: number; classNam
       aria-hidden={!shown}
       tabIndex={shown ? 0 : -1}
       className={cn(
-        "fixed right-4 bottom-4 z-40 flex size-11 items-center justify-center border border-primary bg-foreground text-background shadow-lg transition-all",
+        // Left of the corner the slip and lock docks hold, rather than on top
+        // of their headers.
+        "fixed bottom-4 left-4 z-40 flex size-11 items-center justify-center border border-primary bg-foreground text-background shadow-lg transition-all",
         "hover:bg-primary hover:text-primary-foreground focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ring",
         shown ? "translate-y-0 opacity-100" : "pointer-events-none translate-y-2 opacity-0",
         className,

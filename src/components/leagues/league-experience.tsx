@@ -42,6 +42,7 @@ import { LeagueLeaderboard } from "@/components/leagues/league-leaderboard";
 import { FixtureVotePoll } from "@/components/fixture-vote-poll";
 import { GameDiscussion } from "@/components/leagues/game-discussion";
 import { AddToSlipButton } from "@/components/slip/add-to-slip-button";
+import { useDockClearance } from "@/components/slip/dock-clearance";
 import { LockCountdown } from "@/components/lock-countdown";
 import { LocalTime } from "@/components/local-time";
 import type { LeagueExperienceData, PastMatchweek } from "@/data/leagues";
@@ -178,6 +179,8 @@ export function LeagueExperience({
     : null;
   // Only a week that is over, or one with nothing left to call, is closed.
   const interactionLocked = data.matchweek.status !== "upcoming" || openFixtures.length === 0;
+  // This page pins its own bar to the bottom, so the docks rise above it.
+  useDockClearance(daysLeft > 0 && !interactionLocked);
   const fixturesByDate = new Map<string, typeof data.fixtures>();
   for (const fixture of data.fixtures) {
     const fixtures = fixturesByDate.get(fixture.kickoffDate);

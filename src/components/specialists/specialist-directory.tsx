@@ -11,6 +11,7 @@ import { Input } from "@/components/ui/input";
 import { ToggleGroup, ToggleGroupItem } from "@/components/ui/toggle-group";
 import type { SpecialistDirectoryEntry } from "@/data/specialists";
 import { cn } from "@/lib/utils";
+import { useDockClearance } from "@/components/slip/dock-clearance";
 
 const sorts = ["Confidence-adjusted", "Accuracy", "Evidence", "Followers"] as const;
 type Sort = (typeof sorts)[number];
@@ -25,6 +26,8 @@ export function SpecialistDirectory({ specialists, initialLeague, rankThreshold 
   const [comparedIds, setComparedIds] = useState<string[]>([]);
   const leagues = useMemo(() => ["All leagues", ...new Set(specialists.map((entry) => entry.leagueName))], [specialists]);
   const compared = specialists.filter((entry) => comparedIds.includes(entry.id));
+  // The comparison tray is pinned to the bottom, so the docks rise above it.
+  useDockClearance(compared.length > 0);
   const filtered = useMemo(() => {
     const needle = deferredQuery.trim().toLocaleLowerCase();
     return specialists.filter((entry) => (!needle || entry.name.toLocaleLowerCase().includes(needle) || entry.leagueName.toLocaleLowerCase().includes(needle)) && (league === "All leagues" || entry.leagueName === league)).toSorted((a, b) => {
