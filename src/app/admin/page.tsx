@@ -39,6 +39,10 @@ import { TOLERATED_CATALOG_FAULTS, measureCatalogHealth } from "@/services/catal
 
 export const dynamic = "force-dynamic";
 
+// Refreshing every league in one press walks 23 competitions, so the actions on
+// this page get the same room the nightly route has rather than the default.
+export const maxDuration = 300;
+
 export const metadata: Metadata = {
   title: "Admin",
   robots: { index: false, follow: false },

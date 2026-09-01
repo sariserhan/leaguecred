@@ -82,43 +82,49 @@ export type LeagueRefreshResult =
   | { ok: false; message: string };
 
 /**
- * Rebuild one league's schedule from the provider: create fixtures it does not
+ * Rebuild a league's schedule from the provider: create fixtures it does not
  * have, update the ones it does, and refresh the standings table beside them.
+ * Without a league it covers every enabled one, which is the same work the
+ * nightly job does and the way to sweep a stuck row out of all of them at once.
  *
  * It reports what it did, including how many fixtures arrived into a week that
  * had already locked or taken picks. Those are written rather than dropped -
  * losing a played match is worse than a late arrival - but an operator should
  * still see it happen.
  */
-export async function refreshLeagueFixtures(leagueSlug: string): Promise<LeagueRefreshResult> {
+export async function refreshLeagueFixtures(leagueSlug?: string | null): Promise<LeagueRefreshResult> {
   const viewer = await requireAdmin();
   // This one calls a provider, so the limit is as much about their rate as ours.
   if (!await withinUserRateLimit("refreshLeagueFixtures", viewer.id)) {
     return { ok: false, message: "That is a lot of refreshes in a minute. Wait a moment and try again." };
   }
-  const parsed = z.string().min(1).max(120).regex(/^[a-z0-9-]+$/).safeParse(leagueSlug);
+  const parsed = z.string().min(1).max(120).regex(/^[a-z0-9-]+$/).nullish().safeParse(leagueSlug ?? null);
   if (!parsed.success) return { ok: false, message: "That league is not valid." };
 
   let result: Awaited<ReturnType<typeof synchronizeFixtures>>;
   try {
-    result = await synchronizeFixtures(new EspnFixtureProvider(), new Date(), parsed.data);
+    result = await synchronizeFixtures(new EspnFixtureProvider(), new Date(), parsed.data ?? undefined);
   } catch (error) {
     console.error("Failed to refresh league fixtures.", error);
     return { ok: false, message: "The league could not be refreshed. Please try again." };
   }
 
-  console.info("Admin refreshed league fixtures.", { admin: viewer.id, league: parsed.data, ...result });
+  console.info("Admin refreshed league fixtures.", { admin: viewer.id, league: parsed.data ?? "all", ...result });
 
   // The table is fetched from ESPN and cached against its own tag, so the page
   // revalidation below does not reach it. Without this a refresh updates the
   // fixtures immediately and leaves the standings as they were. updateTag
   // rather than revalidateTag: this is a server action, and the admin who
   // pressed refresh should see the new table, not the next visitor.
-  const competition = ESPN_FIXTURE_COMPETITIONS.find((entry) => entry.leagueSlug === parsed.data);
-  if (competition) updateTag(espnStandingsTag(competition.externalId));
+  const competitions = parsed.data
+    ? ESPN_FIXTURE_COMPETITIONS.filter((entry) => entry.leagueSlug === parsed.data)
+    : ESPN_FIXTURE_COMPETITIONS;
+  for (const competition of competitions) updateTag(espnStandingsTag(competition.externalId));
 
-  revalidatePath(`/leagues/${parsed.data}`, "page");
-  revalidatePath(`/leagues/${parsed.data}/standings`, "page");
+  for (const competition of competitions) {
+    revalidatePath(`/leagues/${competition.leagueSlug}`, "page");
+    revalidatePath(`/leagues/${competition.leagueSlug}/standings`, "page");
+  }
   revalidatePath("/", "layout");
 
   return {

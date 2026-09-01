@@ -5,7 +5,9 @@ import { useRouter } from "next/navigation";
 import { DownloadIcon } from "lucide-react";
 
 import { refreshLeagueFixtures } from "@/app/admin/actions";
+import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { Spinner } from "@/components/ui/spinner";
 import { RunLog, useRunLog } from "@/components/admin/run-log";
 import { toast } from "@/components/ui/toast";
 import type { LeagueNavOption } from "@/data/teams";
@@ -21,8 +23,8 @@ export function LeagueRefreshPanel({ leagues }: { leagues: LeagueNavOption[] }) 
   const [pendingSlug, setPendingSlug] = useState<string | null>(null);
   const { entries, record } = useRunLog();
 
-  function refresh(slug: string, label: string) {
-    setPendingSlug(slug);
+  function refresh(slug: string | null, label: string) {
+    setPendingSlug(slug ?? "all");
     startTransition(async () => {
       const result = await refreshLeagueFixtures(slug);
 
@@ -59,6 +61,16 @@ export function LeagueRefreshPanel({ leagues }: { leagues: LeagueNavOption[] }) 
         </CardDescription>
       </CardHeader>
       <CardContent className="grid gap-5 border-t pt-6">
+        <div>
+          <Button onClick={() => refresh(null, "All leagues")} disabled={pending}>
+            {pendingSlug === "all" ? <Spinner data-icon="inline-start" /> : <DownloadIcon data-icon="inline-start" />}
+            Refresh every league
+          </Button>
+          <p className="mt-2 text-sm text-muted-foreground">
+            One provider request per league, around twenty in a press, and it can take a minute.
+          </p>
+        </div>
+
         <div className="grid gap-2 sm:grid-cols-2 lg:grid-cols-3">
           {leagues.map((league) => (
             <button
