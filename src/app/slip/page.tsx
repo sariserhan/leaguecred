@@ -9,6 +9,8 @@ import { LockCountdown } from "@/components/lock-countdown";
 import { LockTimeline } from "@/components/slip/lock-timeline";
 import type { WeeklySlipEntry } from "@/data/weekly-slip";
 import { getWeeklySlip } from "@/data/weekly-slip";
+import { getSlipCandidates } from "@/data/slip-candidates";
+import { SlipShortlist } from "@/components/slip/slip-shortlist";
 import { getSession } from "@/lib/auth-session";
 import { cn } from "@/lib/utils";
 import { Crest } from "@/components/ui/crest";
@@ -69,7 +71,10 @@ function SlipGroups({ entries, now, active = false }: { entries: WeeklySlipEntry
 export default async function WeeklySlipPage() {
   const session = await getSession();
   if (!session) redirect("/auth");
-  const data = await getWeeklySlip(session.user.id);
+  const [data, candidates] = await Promise.all([
+    getWeeklySlip(session.user.id),
+    getSlipCandidates(session.user.id),
+  ]);
   const now = new Date().toISOString();
   const accuracy = data.summary.independentDecisions === 0 ? null : Math.round((data.summary.independentWins / data.summary.independentDecisions) * 100);
 
@@ -85,7 +90,21 @@ export default async function WeeklySlipPage() {
         {[["Active calls", data.summary.activeLocks], ["Your locks", data.summary.independentLocks], ["Followed calls", data.summary.followedCalls], ["Your accuracy", accuracy === null ? "—" : `${accuracy}%`]].map(([label, value]) => <div key={label} className="border-b p-5 last:border-b-0 sm:border-r sm:last:border-r-0 xl:border-b-0"><strong className="block font-heading text-4xl leading-none">{value}</strong><span className="mt-1 block text-sm text-muted-foreground">{label}</span></div>)}
       </section>
 
-      <section className="mt-7" aria-labelledby="active-heading">
+      <section className="mt-7" aria-labelledby="shortlist-heading">
+        <div className="mb-4 flex items-end justify-between gap-4">
+          <div>
+            <h2 id="shortlist-heading" className="section-title">Set aside to decide</h2>
+            <p className="mt-2 text-muted-foreground">
+              Matches you added to think about. Nothing here counts for anything until you choose a
+              side and lock it.
+            </p>
+          </div>
+          <Badge variant="outline">{candidates.length}</Badge>
+        </div>
+        <SlipShortlist candidates={candidates} />
+      </section>
+
+      <section className="mt-10" aria-labelledby="active-heading">
         <div className="mb-4 flex items-end justify-between gap-4"><div><h2 id="active-heading" className="section-title">On your slip</h2><p className="mt-2 text-muted-foreground">These calls are still awaiting their final result.</p></div><LockKeyholeIcon aria-hidden="true" className="size-7 text-primary" /></div>
         {data.active.length > 0 ? <SlipGroups entries={data.active} now={now} active /> : <div className="border p-8 text-center"><CheckIcon aria-hidden="true" className="mx-auto size-7 text-primary" /><h3 className="mt-3 font-heading text-3xl font-bold uppercase">Your slip is clear</h3><p className="mx-auto mt-2 max-w-lg text-muted-foreground">Pick one team from the league you truly know, or follow a proven specialist from another league.</p><Link href="/leagues" className={cn(buttonVariants({ size: "lg" }), "mt-5")}><ArrowRightIcon data-icon="inline-start" />Explore leagues</Link></div>}
       </section>

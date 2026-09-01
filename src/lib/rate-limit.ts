@@ -32,6 +32,9 @@ export const RATE_LIMITS = {
   teamDedupe: { limit: 15, windowSeconds: 60 },
   /** No account required, so the actor is a cookie, not a user - generous
    * enough for someone genuinely changing their mind on several fixtures. */
+  /** Adding and removing matches to think about later. Cheap, and a member
+   * building a slip does it in bursts. */
+  slipCandidate: { limit: 60, windowSeconds: 60 },
   castFixtureVote: { limit: 30, windowSeconds: 60 },
   addGameDiscussion: { limit: 10, windowSeconds: 60 },
   becomeCommunityCaptain: { limit: 5, windowSeconds: 60 },

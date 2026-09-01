@@ -7,6 +7,7 @@ import {
   ArrowBigDownIcon,
   ArrowBigUpIcon,
   CheckIcon,
+  LockKeyholeIcon,
   MessageCircleIcon,
   PlusIcon,
   ReplyIcon,
@@ -15,18 +16,12 @@ import {
 } from "lucide-react";
 
 import { addLockOpinion, voteLockOpinion, voteOnLock } from "@/app/live-locks/actions";
-import { followSpecialist, submitDailyLock } from "@/app/leagues/actions";
+import { addSlipCandidate } from "@/app/slip/actions";
+import { followSpecialist } from "@/app/leagues/actions";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
 import { Button, buttonVariants } from "@/components/ui/button";
 import { Crest } from "@/components/ui/crest";
-import {
-  Dialog,
-  DialogContent,
-  DialogDescription,
-  DialogHeader,
-  DialogTitle,
-} from "@/components/ui/dialog";
 import { LocalTime } from "@/components/local-time";
 import { Spinner } from "@/components/ui/spinner";
 import { toast } from "@/components/ui/toast";
@@ -103,8 +98,7 @@ function LockCard({ lock, signedIn }: { lock: GlobalActiveLock; signedIn: boolea
   const [score, setScore] = useState(lock.score);
   const [vote, setVote] = useState(lock.viewerVote);
   const [following, setFollowing] = useState(lock.viewerFollows);
-  const [adding, setAdding] = useState(false);
-  const [added, setAdded] = useState(false);
+  const [added, setAdded] = useState(lock.inViewerSlip);
   const [open, setOpen] = useState(false);
   const [body, setBody] = useState("");
   const [reply, setReply] = useState<LockOpinion | null>(null);
@@ -132,17 +126,18 @@ function LockCard({ lock, signedIn }: { lock: GlobalActiveLock; signedIn: boolea
     });
   }
 
-  // The card is one member's call; taking the match is the reader's own lock,
-  // on whichever side they think wins, so both are offered rather than assuming
-  // agreement.
-  function addToSlip(teamId: string, teamName: string) {
-    setAdding(false);
+  // Adding sets the match aside; it does not take a side and it does not lock.
+  // The reader decides on their own slip, where both teams are offered.
+  function addToSlip() {
     startTransition(async () => {
-      const result = await submitDailyLock(lock.fixtureId, teamId);
+      const result = await addSlipCandidate(lock.fixtureId);
       if (result.ok) {
         setAdded(true);
-        toast.add({ title: "Added to your slip", description: `${teamName} is your Daily Lock for that day.`, type: "success" });
-        router.refresh();
+        toast.add({
+          title: "On your slip",
+          description: `${lock.selected.name} against ${lock.opponent.name} is waiting for you to decide.`,
+          type: "success",
+        });
       } else {
         toast.add({ title: "Not added", description: result.message, type: "error" });
       }
@@ -189,9 +184,9 @@ function LockCard({ lock, signedIn }: { lock: GlobalActiveLock; signedIn: boolea
             {following ? <CheckIcon data-icon="inline-start" /> : <UserPlusIcon data-icon="inline-start" />}
             {following ? "Following" : "Follow"}
           </Button>
-          <Button size="sm" variant={added ? "secondary" : "default"} disabled={!signedIn || pending || added} onClick={() => setAdding(true)}>
+          <Button size="sm" variant={added ? "secondary" : "default"} disabled={!signedIn || pending || added} onClick={addToSlip}>
             {added ? <CheckIcon data-icon="inline-start" /> : <PlusIcon data-icon="inline-start" />}
-            {added ? "In your slip" : "Add to slip"}
+            {added ? "On your slip" : "Add to slip"}
           </Button>
           <Button size="sm" variant="ghost" onClick={() => setOpen((current) => !current)} aria-expanded={open}>
             <MessageCircleIcon data-icon="inline-start" />{lock.opinions.length}
@@ -245,32 +240,19 @@ function LockCard({ lock, signedIn }: { lock: GlobalActiveLock; signedIn: boolea
         </section>
       ) : null}
 
-      <Dialog open={adding} onOpenChange={setAdding}>
-        <DialogContent>
-          <DialogHeader>
-            <DialogTitle className="font-heading text-3xl font-bold uppercase">Add to your slip</DialogTitle>
-            <DialogDescription>
-              Your own Daily Lock on {lock.selected.name} against {lock.opponent.name}, independent of
-              {" "}{lock.username}&rsquo;s call. One lock a day in {lock.league.name}, and it counts towards your own record.
-            </DialogDescription>
-          </DialogHeader>
-          <div className="grid gap-3 sm:grid-cols-2">
-            {[lock.selected, lock.opponent].map((team) => (
-              <Button key={team.id} variant="outline" disabled={pending} onClick={() => addToSlip(team.id, team.name)}>
-                <Crest src={team.logoUrl} size={20} />{team.name}
-              </Button>
-            ))}
-          </div>
-        </DialogContent>
-      </Dialog>
     </article>
   );
 }
 
-export function LiveLockForum({ locks, signedIn }: { locks: GlobalActiveLock[]; signedIn: boolean }) {
+export function LiveLockForum({ locks, signedIn, viewerId }: { locks: GlobalActiveLock[]; signedIn: boolean; viewerId: string | null }) {
   const [filters, setFilters] = useState<LockFilters>(emptyLockFilters);
+  const [mineOnly, setMineOnly] = useState(false);
   const options = useMemo(() => lockFilterOptions(locks), [locks]);
-  const visible = useMemo(() => filterLocks(locks, filters), [locks, filters]);
+  const mine = useMemo(() => locks.filter((lock) => lock.userId === viewerId), [locks, viewerId]);
+  const visible = useMemo(() => {
+    const scoped = mineOnly ? mine : locks;
+    return filterLocks(scoped, filters);
+  }, [locks, mine, mineOnly, filters]);
 
   function set(key: keyof LockFilters, value: string) {
     setFilters((current) => ({ ...current, [key]: value }));
@@ -304,8 +286,18 @@ export function LiveLockForum({ locks, signedIn }: { locks: GlobalActiveLock[]; 
             ))}
           </select>
         </label>
-        {filters === emptyLockFilters ? null : (
-          <Button variant="ghost" onClick={() => setFilters(emptyLockFilters)}>Clear</Button>
+        {viewerId ? (
+          <Button
+            variant={mineOnly ? "default" : "outline"}
+            aria-pressed={mineOnly}
+            onClick={() => setMineOnly((current) => !current)}
+          >
+            <LockKeyholeIcon data-icon="inline-start" />
+            {mineOnly ? "Showing my locks" : `My locked games (${mine.length})`}
+          </Button>
+        ) : null}
+        {filters === emptyLockFilters && !mineOnly ? null : (
+          <Button variant="ghost" onClick={() => { setFilters(emptyLockFilters); setMineOnly(false); }}>Clear</Button>
         )}
         <p className="ml-auto text-sm text-muted-foreground">
           {visible.length} of {locks.length} lock{locks.length === 1 ? "" : "s"}
@@ -314,7 +306,7 @@ export function LiveLockForum({ locks, signedIn }: { locks: GlobalActiveLock[]; 
 
       {visible.length === 0 ? (
         <p className="border p-8 text-center text-sm text-muted-foreground">
-          No active lock matches those filters.
+          {mineOnly ? "You have no active lock right now." : "No active lock matches those filters."}
         </p>
       ) : (
         <div className="grid gap-3">

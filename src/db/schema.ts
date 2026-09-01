@@ -422,6 +422,21 @@ export const pickOpinionVotes = pgTable("pick_opinion_votes", {
   check("pick_opinion_votes_value_check", sql`${table.value} in (-1, 1)`),
 ]);
 
+/**
+ * Matches a member has set aside to think about. A slip entry is not a lock and
+ * never becomes one on its own: it is a shortlist, and the lock is made from it
+ * deliberately, one side chosen, while the match is still open.
+ */
+export const slipCandidates = pgTable("slip_candidates", {
+  userId: text("user_id").notNull().references(() => user.id, { onDelete: "cascade" }),
+  fixtureId: uuid("fixture_id").notNull().references(() => fixtures.id, { onDelete: "cascade" }),
+  createdAt,
+  updatedAt,
+}, (table) => [
+  primaryKey({ columns: [table.userId, table.fixtureId] }),
+  index("slip_candidates_fixture_id_idx").on(table.fixtureId),
+]);
+
 /** Agreement with a lock itself, as opposed to with an opinion written under
  * it. One vote per member per lock, and switching sides replaces it. */
 export const pickVotes = pgTable("pick_votes", {
