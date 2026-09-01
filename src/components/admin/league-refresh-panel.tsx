@@ -32,14 +32,17 @@ export function LeagueRefreshPanel({ leagues }: { leagues: LeagueNavOption[] }) 
         record(label, result.message, true);
         toast.add({ title: "League not refreshed", description: result.message, type: "error" });
       } else {
-        const line = `${result.requests} request${result.requests === 1 ? "" : "s"} · ${result.created} fixture${result.created === 1 ? "" : "s"} added · ${result.updated} updated`
+        const line = `${result.leagues} league${result.leagues === 1 ? "" : "s"} · ${result.requests} request${result.requests === 1 ? "" : "s"} · ${result.created} fixture${result.created === 1 ? "" : "s"} added · ${result.updated} updated`
           // Worth surfacing rather than burying: these landed in a week that had
           // already locked or taken picks, which is allowed but is not routine.
           + (result.lateAdded > 0 ? ` · ${result.lateAdded} of them into a week already locked or picked in` : "")
           // Rows another provider wrote, which nothing else updates.
-          + (result.adopted > 0 ? ` · ${result.adopted} scored on another provider's row` : "");
-        record(label, line, false);
-        toast.add({ title: `${label} refreshed`, description: line, type: "success" });
+          + (result.adopted > 0 ? ` · ${result.adopted} scored on another provider's row` : "")
+          // Named rather than folded into a single failure: the leagues that
+          // did refresh still did, and which one is down is the useful part.
+          + (result.faults.length > 0 ? ` · ${result.faults.length} league${result.faults.length === 1 ? "" : "s"} failed: ${result.faults.join(" | ")}` : "");
+        record(label, line, result.faults.length > 0);
+        toast.add({ title: `${label} refreshed`, description: line, type: result.faults.length > 0 ? "error" : "success" });
         if (result.created > 0 || result.updated > 0) router.refresh();
       }
 

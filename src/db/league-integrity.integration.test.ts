@@ -232,6 +232,12 @@ describe("LeagueCred database integrity", () => {
       select id from matchweeks where league_id = ${superLig} and provider_round_name = ${round}`;
     expect(created).toBeDefined();
 
+    // Captured before the second sync: this week may be one an earlier run left
+    // behind and this round joined, and what matters is that locking pins the
+    // deadline wherever it already sat.
+    const [before] = await sqlClient<Array<{ lock_at: Date }>>`
+      select lock_at from matchweeks where id = ${created!.id}`;
+
     const userId = `test-frozen-${suffix}`;
     await createUser(userId);
     await sqlClient`insert into matchweek_participation (user_id, league_id, matchweek_id, mode)
@@ -268,7 +274,7 @@ describe("LeagueCred database integrity", () => {
 
     const [week] = await sqlClient<Array<{ lock_at: Date }>>`
       select lock_at from matchweeks where id = ${created!.id}`;
-    expect(new Date(week!.lock_at).toISOString()).toBe(originalKickoff);
+    expect(new Date(week!.lock_at).toISOString()).toBe(new Date(before!.lock_at).toISOString());
   });
 });
 

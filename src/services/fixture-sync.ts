@@ -33,6 +33,7 @@ export async function synchronizeFixtures(provider: FixtureProvider, now = new D
   let updated = 0;
   let lateAdded = 0;
   let adopted = 0;
+  const faults: string[] = [];
   try {
     const availableConfigs = await sqlClient<Omit<LeagueConfig, "source_external_id">[]>`
       select l.id, l.slug, l.name, l.provider, l.provider_external_id, l.country_id, l.region,
@@ -56,18 +57,32 @@ export async function synchronizeFixtures(provider: FixtureProvider, now = new D
     const to = new Date(now); to.setUTCDate(to.getUTCDate() + 90);
 
     // Complete external requests concurrently and before opening write transactions.
-    const fetched = await Promise.all(configs.map(async (config) => ({
-      config,
-      batch: await provider.fetchFixtures({
-        leagueExternalId: config.source_external_id,
-        season: config.provider_season,
-        from: config.season_start_date,
-        to: isoDate(to),
-      }),
-    })));
-    requestCount = fetched.reduce((total, entry) => total + entry.batch.requestCount, 0);
+    //
+    // One league's request failing must not cost the other twenty-two theirs.
+    // These all go to the same provider at the same moment, so a rate limit or
+    // a single flaky competition is ordinary rather than exceptional - and
+    // rejecting the lot meant a whole-schedule refresh wrote nothing at all and
+    // reported only that it could not be done.
+    const fetched = await Promise.all(configs.map(async (config) => {
+      try {
+        return {
+          config,
+          batch: await provider.fetchFixtures({
+            leagueExternalId: config.source_external_id,
+            season: config.provider_season,
+            from: config.season_start_date,
+            to: isoDate(to),
+          }),
+        };
+      } catch (error) {
+        faults.push(`${config.slug}: ${String(error)}`);
+        return { config, batch: null };
+      }
+    }));
+    requestCount = fetched.reduce((total, entry) => total + (entry.batch?.requestCount ?? 0), 0);
 
     for (const { config, batch } of fetched) {
+      if (!batch) continue;
       // Persist completed current-season results and only the immediate next upcoming
       // matchweek. This bounds schedule writes while preserving the result history.
       const nextFixture = batch.fixtures
@@ -86,10 +101,12 @@ export async function synchronizeFixtures(provider: FixtureProvider, now = new D
       }
     }
 
-    const summary = { leagues: configs.length, created, updated, lateAdded, adopted };
-    await sqlClient`update api_sync_runs set status = 'succeeded', request_count = ${requestCount},
-      finished_at = now(), details = ${JSON.stringify(summary)}::jsonb where id = ${run.id}`;
-    return { requestCount, ...summary };
+    const summary = { leagues: configs.length - faults.length, created, updated, lateAdded, adopted };
+    await sqlClient`update api_sync_runs set status = ${faults.length ? "failed" : "succeeded"},
+      request_count = ${requestCount}, finished_at = now(),
+      details = ${JSON.stringify({ ...summary, faulted: faults.length })}::jsonb,
+      error = ${faults.length ? faults.join(" | ") : null} where id = ${run.id}`;
+    return { requestCount, ...summary, faults };
   } catch (error) {
     await sqlClient`update api_sync_runs set status = 'failed', request_count = ${requestCount}, finished_at = now(), error = ${String(error)} where id = ${run.id}`;
     throw error;

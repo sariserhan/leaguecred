@@ -78,7 +78,7 @@ export async function saveSiteSettings(
 }
 
 export type LeagueRefreshResult =
-  | { ok: true; requests: number; created: number; updated: number; lateAdded: number; adopted: number }
+  | { ok: true; requests: number; leagues: number; created: number; updated: number; lateAdded: number; adopted: number; faults: string[] }
   | { ok: false; message: string };
 
 /**
@@ -132,8 +132,10 @@ export async function refreshLeagueFixtures(leagueSlug?: string | null): Promise
     requests: result.requestCount,
     created: result.created,
     updated: result.updated,
+    leagues: result.leagues,
     lateAdded: result.lateAdded,
     adopted: result.adopted,
+    faults: result.faults,
   };
 }
 

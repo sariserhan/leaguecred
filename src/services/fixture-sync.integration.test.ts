@@ -211,6 +211,14 @@ describe("synchronizeFixtures matchweek keying", () => {
       update matchweeks set status = 'locked' where id = (
         select matchweek_id from fixtures where provider_external_id = ${`test-frozen-a-${suffix}`})`;
 
+    // Captured rather than assumed to be this round's own kickoff: a week left
+    // by an earlier run can overlap this one's window and be joined, and the
+    // invariant under test is that locking pins the deadline wherever it sits.
+    const [before] = await sqlClient<Array<{ id: string; lock_at: Date }>>`
+      select mw.id, mw.lock_at from matchweeks mw
+      join fixtures f on f.matchweek_id = mw.id
+      where f.provider_external_id = ${`test-frozen-a-${suffix}`}`;
+
     const arrived = await synchronizeFixtures(fakeProvider(provider, { requestCount: 1, fixtures: [first, late] }));
 
     expect(arrived).toMatchObject({ created: 1, lateAdded: 1 });
@@ -222,7 +230,62 @@ describe("synchronizeFixtures matchweek keying", () => {
     // drag lock_at backwards under everyone who already picked against it.
     const [week] = await sqlClient<Array<{ status: string; lock_at: Date }>>`
       select status, lock_at from matchweeks where id = ${stored!.matchweek_id}`;
+    expect(stored!.matchweek_id).toBe(before!.id);
     expect(week?.status).toBe("locked");
-    expect(new Date(week!.lock_at).toISOString()).toBe(kickoffA);
+    expect(new Date(week!.lock_at).toISOString()).toBe(new Date(before!.lock_at).toISOString());
+  });
+
+  // The failure this guards: every league is fetched at the same moment from
+  // the same provider, so one rate-limited or flaky competition is ordinary.
+  // Rejecting the whole run for it meant a full-schedule refresh wrote nothing
+  // and could only report that it had not worked.
+  it("refreshes the leagues it can when one competition's request fails", async () => {
+    const suffix = crypto.randomUUID();
+    const provider = `test-partial-${suffix}`;
+    // The seed gives a current season to Süper Lig alone, and a league without
+    // one is not synced at all, so the second competition is created here.
+    const brokenSlug = `test-broken-league-${suffix}`;
+    await sqlClient`
+      with country as (select id from countries limit 1),
+      league as (
+        insert into leagues (provider, provider_external_id, country_id, name, slug, short_name, region, enabled, priority)
+        select ${provider}, ${brokenSlug}, country.id, ${brokenSlug}, ${brokenSlug}, 'TBL', 'Europe', true, 99 from country
+        returning id
+      )
+      insert into seasons (league_id, provider_season, name, start_date, end_date, is_current)
+      select league.id, '2026', '2026-27', '2026-07-01', '2027-06-30', true from league`;
+    const kickoffAt = new Date(Date.now() + daysFromNow(2200, suffix) * 24 * 3_600_000).toISOString();
+    const externalId = `test-partial-a-${suffix}`;
+
+    const working: FixtureProvider = {
+      name: provider,
+      competitions: [
+        { leagueSlug: "super-lig", externalId: superLigExternalId },
+        { leagueSlug: brokenSlug, externalId: `broken-${suffix}` },
+      ],
+      async fetchFixtures(input) {
+        if (input.leagueExternalId !== superLigExternalId) throw new Error("Scoreboard request failed with 429");
+        return {
+          requestCount: 1,
+          fixtures: [fixture({
+            externalId,
+            round: `${provider}:Round ${suffix}`,
+            kickoffAt,
+            home: team(`home-p-${suffix}`, `Home P ${suffix}`),
+            away: team(`away-p-${suffix}`, `Away P ${suffix}`),
+          })],
+        };
+      },
+    };
+
+    const result = await synchronizeFixtures(working);
+
+    expect(result.created).toBe(1);
+    expect(result.faults).toHaveLength(1);
+    expect(result.faults[0]).toContain(brokenSlug);
+
+    const [stored] = await sqlClient<Array<{ id: string }>>`
+      select id from fixtures where provider_external_id = ${externalId}`;
+    expect(stored).toBeDefined();
   });
 });
