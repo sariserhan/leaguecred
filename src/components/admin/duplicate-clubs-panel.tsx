@@ -4,7 +4,7 @@ import { useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
 import { CopyCheckIcon, SearchIcon, TriangleAlertIcon } from "lucide-react";
 
-import { mergeDuplicateClubs, scanDuplicateClubs } from "@/app/admin/actions";
+import { mergeClubsByHand, mergeDuplicateClubs, scanDuplicateClubs } from "@/app/admin/actions";
 import {
   AlertDialog,
   AlertDialogAction,
@@ -32,11 +32,16 @@ import type { DedupeReport } from "@/services/team-dedupe-plan";
  * decides whether a pair is a fault at all. Two clubs are allowed to be called
  * Liverpool.
  */
+type PairSide = { id: string; name: string; fixtures?: number };
+
 export function DuplicateClubsPanel() {
   const router = useRouter();
   const [pending, startTransition] = useTransition();
   const [report, setReport] = useState<DedupeReport | null>(null);
   const [confirming, setConfirming] = useState<DedupeReport["merges"][number] | null>(null);
+  // A pair the evidence cannot decide, once an operator has said which row
+  // survives. Held separately: this merge is their assertion, not the plan's.
+  const [byHand, setByHand] = useState<{ keep: PairSide; fold: PairSide } | null>(null);
   const { entries, record } = useRunLog();
 
   function scan() {
@@ -70,6 +75,37 @@ export function DuplicateClubsPanel() {
       if (rescan.ok) setReport(rescan.report);
       router.refresh();
     });
+  }
+
+  function mergeByHand(keep: PairSide, fold: PairSide) {
+    setByHand(null);
+    startTransition(async () => {
+      const result = await mergeClubsByHand(keep.id, fold.id);
+      if (!result.ok) {
+        record(`${keep.name} ← ${fold.name}`, result.message, true);
+        toast.add({ title: "Clubs not merged", description: result.message, type: "error" });
+        return;
+      }
+
+      record(`${keep.name} ← ${fold.name}`, `merged by hand into ${result.canonical}`);
+      toast.add({ title: "Clubs merged", description: `${fold.name} folded into ${result.canonical}.`, type: "success" });
+      const rescan = await scanDuplicateClubs();
+      if (rescan.ok) setReport(rescan.report);
+      router.refresh();
+    });
+  }
+
+  function PairActions({ a, b }: { a: PairSide; b: PairSide }) {
+    return (
+      <span className="flex flex-wrap gap-2">
+        <Button size="sm" variant="outline" disabled={pending} onClick={() => setByHand({ keep: a, fold: b })}>
+          Keep {a.name}
+        </Button>
+        <Button size="sm" variant="outline" disabled={pending} onClick={() => setByHand({ keep: b, fold: a })}>
+          Keep {b.name}
+        </Button>
+      </span>
+    );
   }
 
   return (
@@ -141,24 +177,42 @@ export function DuplicateClubsPanel() {
                 For a person to judge
               </h3>
               <p className="mt-1 text-sm text-muted-foreground">
-                One side has never played a match. That is either a leftover catalogue entry or a
-                club not synced yet, and only you can tell which. Nothing here is merged
-                automatically.
+                Nothing here is merged automatically, because no rule available to the code can
+                separate these: Feyenoord beside Feyenoord Rotterdam is one club, Club Brugge beside
+                Cercle Brugge is two. Choose the club to keep and the other is folded into it — or
+                leave the pair alone, which is the right answer whenever they are genuinely two
+                clubs.
               </p>
               {report.suspects.length === 0 && report.namesDisagree.length === 0 ? (
                 <p className="mt-2 text-sm text-muted-foreground">Nothing to check.</p>
               ) : (
                 <ul className="mt-3 divide-y border text-sm">
                   {report.suspects.map((pair) => (
-                    <li key={`${pair.nameA}-${pair.nameB}`} className="flex flex-wrap items-center gap-2 p-4">
-                      <Badge variant="outline">Suspect</Badge>
-                      <span>{pair.nameA} · {pair.nameB}</span>
+                    <li key={`${pair.idA}-${pair.idB}`} className="grid gap-2 p-4 sm:grid-cols-[1fr_auto] sm:items-center">
+                      <span className="flex flex-wrap items-center gap-2">
+                        <Badge variant="outline">One has never played</Badge>
+                        <span>
+                          {pair.nameA} ({pair.fixturesA} fixture{pair.fixturesA === 1 ? "" : "s"})
+                          {" · "}
+                          {pair.nameB} ({pair.fixturesB} fixture{pair.fixturesB === 1 ? "" : "s"})
+                        </span>
+                      </span>
+                      <PairActions
+                        a={{ id: pair.idA, name: pair.nameA }}
+                        b={{ id: pair.idB, name: pair.nameB }}
+                      />
                     </li>
                   ))}
                   {report.namesDisagree.map((pair) => (
-                    <li key={`${pair.nameA}-${pair.nameB}-names`} className="flex flex-wrap items-center gap-2 p-4">
-                      <Badge variant="outline">Fixtures say one club</Badge>
-                      <span>{pair.nameA} · {pair.nameB} — the names do not agree, so they were left alone.</span>
+                    <li key={`${pair.idA}-${pair.idB}-names`} className="grid gap-2 p-4 sm:grid-cols-[1fr_auto] sm:items-center">
+                      <span className="flex flex-wrap items-center gap-2">
+                        <Badge variant="outline">Fixtures say one club</Badge>
+                        <span>{pair.nameA} · {pair.nameB} — the names do not agree, so nothing was merged.</span>
+                      </span>
+                      <PairActions
+                        a={{ id: pair.idA, name: pair.nameA }}
+                        b={{ id: pair.idB, name: pair.nameB }}
+                      />
                     </li>
                   ))}
                 </ul>
@@ -193,6 +247,30 @@ export function DuplicateClubsPanel() {
 
         <RunLog entries={entries} emptyHint="Nothing scanned yet in this session." />
       </CardContent>
+
+      <AlertDialog open={byHand !== null} onOpenChange={(open) => { if (!open) setByHand(null); }}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle className="font-heading text-3xl font-bold uppercase">
+              Keep {byHand?.keep.name}?
+            </AlertDialogTitle>
+            <AlertDialogDescription>
+              {byHand?.fold.name} will be deleted, and every fixture, pick and alias pointing at it
+              moved onto {byHand?.keep.name}. Nothing has checked that these are the same club —
+              that is what you are asserting. This cannot be undone.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Leave both</AlertDialogCancel>
+            <AlertDialogAction
+              onClick={() => { if (byHand) mergeByHand(byHand.keep, byHand.fold); }}
+              className="bg-destructive text-destructive-foreground"
+            >
+              Merge them
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
 
       <AlertDialog open={confirming !== null} onOpenChange={(open) => { if (!open) setConfirming(null); }}>
         <AlertDialogContent>

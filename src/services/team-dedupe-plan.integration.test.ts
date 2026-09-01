@@ -1,7 +1,7 @@
 import { describe, expect, it } from "vitest";
 
 import { sqlClient } from "@/db";
-import { applyTeamMerge } from "@/services/team-dedupe-plan";
+import { applyTeamMerge, mergeNamedTeams } from "@/services/team-dedupe-plan";
 import type { TeamRow } from "@/services/team-dedupe-plan";
 
 const superLig = "10000000-0000-4000-8000-000000000001";
@@ -73,5 +73,32 @@ describe("applyTeamMerge", () => {
       select team_id from team_provider_aliases
       where provider = ${duplicateProvider} and provider_external_id = ${`${duplicateProvider}-external`}`;
     expect(alias?.team_id).toBe(keeper.id);
+  });
+
+  // The pairs a person decides get no evidence check by design, but they still
+  // must not produce a club playing itself - the schema forbids it, and the
+  // merge would fail half-applied rather than be refused.
+  it("refuses a hand-made merge when a fixture lists both clubs", async () => {
+    const suffix = crypto.randomUUID();
+    const left = await createTeam(`Rival A ${suffix}`, `rival-a-${suffix}`, `test-rival-a-${suffix}`);
+    const right = await createTeam(`Rival B ${suffix}`, `rival-b-${suffix}`, `test-rival-b-${suffix}`);
+
+    const [season] = await sqlClient<Array<{ id: string }>>`
+      select id from seasons where league_id = ${superLig} and is_current = true limit 1`;
+    const [matchweek] = await sqlClient<Array<{ id: string }>>`
+      insert into matchweeks (league_id, season_id, provider_round_name, display_name, start_at, lock_at, end_at)
+      values (${superLig}, ${season!.id}, ${`rival-round-${suffix}`}, ${`Rival week ${suffix}`},
+        now() + interval '60 days', now() + interval '60 days', now() + interval '61 days')
+      returning id`;
+    await sqlClient`
+      insert into fixtures (provider, provider_external_id, league_id, season_id, matchweek_id,
+        home_team_id, away_team_id, kickoff_at, last_synced_at)
+      values (${`test-rival-${suffix}`}, ${`rival-fixture-${suffix}`}, ${superLig}, ${season!.id}, ${matchweek!.id},
+        ${left.id}, ${right.id}, now() + interval '60 days', now())`;
+
+    await expect(mergeNamedTeams(left.id, right.id)).rejects.toThrow(/play itself/);
+
+    const [survivor] = await sqlClient<Array<{ id: string }>>`select id from teams where id = ${right.id}`;
+    expect(survivor).toBeDefined();
   });
 });

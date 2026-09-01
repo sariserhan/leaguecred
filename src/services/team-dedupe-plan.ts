@@ -79,10 +79,10 @@ export async function loadFixtureEvidence() {
     from pairs p join teams ta on ta.id = p.a join teams tb on tb.id = p.b`;
 
   const accepted: Array<[string, string]> = [];
-  const rejected: Array<{ nameA: string; nameB: string }> = [];
+  const rejected: Array<{ idA: string; idB: string; nameA: string; nameB: string }> = [];
   for (const row of rows) {
     if (namesCouldBeOneClub(row.name_a, row.name_b)) accepted.push([row.a, row.b]);
-    else rejected.push({ nameA: row.name_a, nameB: row.name_b });
+    else rejected.push({ idA: row.a, idB: row.b, nameA: row.name_a, nameB: row.name_b });
   }
   return { accepted, rejected };
 }
@@ -114,15 +114,28 @@ export async function loadStubEvidence() {
     join teams ta on ta.id = ma.team_id
     join teams tb on tb.id = mb.team_id`;
 
-  const pairs: Array<{ nameA: string; nameB: string }> = [];
+  const pairs: Array<{
+    idA: string; idB: string; nameA: string; nameB: string; fixturesA: number; fixturesB: number;
+  }> = [];
   for (const row of rows) {
     const left = { name: row.name_a, fixtures: row.fixtures_a };
     const right = { name: row.name_b, fixtures: row.fixtures_b };
     if (isDuplicateOfCatalogued(left, right) || isDuplicateOfCatalogued(right, left)) {
-      pairs.push({ nameA: row.name_a, nameB: row.name_b });
+      pairs.push({
+        idA: row.a, idB: row.b, nameA: row.name_a, nameB: row.name_b,
+        fixturesA: row.fixtures_a, fixturesB: row.fixtures_b,
+      });
     }
   }
-  return pairs;
+  // The same two clubs can be paired through more than one competition they
+  // share; a person only needs to decide once.
+  const seen = new Set<string>();
+  return pairs.filter((pair) => {
+    const key = [pair.idA, pair.idB].toSorted().join("|");
+    if (seen.has(key)) return false;
+    seen.add(key);
+    return true;
+  });
 }
 
 /** Fixtures where both sides collapse to one team would break the check
@@ -247,4 +260,30 @@ export async function findPlannedMerge(canonicalId: string) {
   const evidence = await loadFixtureEvidence();
   const planned = planTeamMerges(await loadDedupeTeams(), evidence.accepted);
   return planned.merges.find((merge) => merge.canonical.id === canonicalId) ?? null;
+}
+
+/**
+ * A merge nothing but a person is asserting.
+ *
+ * The automatic plan will not touch these: one side has never played, or the
+ * fixtures say one club while the names disagree. Both are cases where the
+ * data cannot decide - Feyenoord beside Feyenoord Rotterdam is one club, Club
+ * Brugge beside Cercle Brugge is two, and no rule available here separates
+ * them. So the caller names which row survives and takes responsibility for it.
+ */
+export async function mergeNamedTeams(canonicalId: string, duplicateId: string) {
+  if (canonicalId === duplicateId) throw new Error("A club cannot be merged into itself.");
+
+  const teams = await loadDedupeTeams();
+  const canonical = teams.find((team) => team.id === canonicalId);
+  const duplicate = teams.find((team) => team.id === duplicateId);
+  if (!canonical || !duplicate) throw new Error("One of those clubs no longer exists.");
+
+  const blocked = await selfPlayingFixtures([canonical.id, duplicate.id]);
+  if (blocked > 0) {
+    throw new Error(`${blocked} fixture(s) list both clubs as opponents, so merging them would make a club play itself.`);
+  }
+
+  await applyTeamMerge({ canonical, duplicates: [duplicate] });
+  return { canonical, duplicate };
 }

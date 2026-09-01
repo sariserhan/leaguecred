@@ -23,7 +23,13 @@ import {
 import { setFeatureFlag, updateSiteSettings } from "@/services/site-settings";
 import { synchronizeFixtures } from "@/services/fixture-sync";
 import { synchronizeMatchResults } from "@/services/result-sync";
-import { applyTeamMerge, buildDedupeReport, findPlannedMerge, type DedupeReport } from "@/services/team-dedupe-plan";
+import {
+  applyTeamMerge,
+  buildDedupeReport,
+  findPlannedMerge,
+  mergeNamedTeams,
+  type DedupeReport,
+} from "@/services/team-dedupe-plan";
 import { settlePendingPicks } from "@/services/settlement";
 import { ESPN_FIXTURE_COMPETITIONS, EspnFixtureProvider } from "@/providers/espn-fixtures";
 import { espnStandingsTag } from "@/providers/espn-standings";
@@ -199,6 +205,39 @@ export async function mergeDuplicateClubs(canonicalId: string): Promise<MergeClu
   } catch (error) {
     console.error("Failed to merge duplicate clubs.", error);
     return { ok: false, message: "The clubs could not be merged. Please try again." };
+  }
+}
+
+/**
+ * Merges two clubs on an operator's say-so, for the pairs the evidence cannot
+ * decide. Nothing here checks whether they are the same club, because nothing
+ * can: that is the whole reason these pairs are shown to a person.
+ */
+export async function mergeClubsByHand(canonicalId: string, duplicateId: string): Promise<MergeClubsResult> {
+  const viewer = await requireAdmin();
+  if (!await withinUserRateLimit("teamDedupe", viewer.id)) {
+    return { ok: false, message: "That is a lot of merges in a minute. Wait a moment and try again." };
+  }
+
+  const parsed = z.object({ canonicalId: z.string().uuid(), duplicateId: z.string().uuid() })
+    .safeParse({ canonicalId, duplicateId });
+  if (!parsed.success) return { ok: false, message: "Those clubs are not valid." };
+
+  try {
+    const merged = await mergeNamedTeams(parsed.data.canonicalId, parsed.data.duplicateId);
+    console.info("Admin merged two clubs by hand.", {
+      admin: viewer.id,
+      kept: merged.canonical.slug,
+      merged: merged.duplicate.slug,
+    });
+
+    revalidatePath("/", "layout");
+    return { ok: true, canonical: merged.canonical.name, merged: 1 };
+  } catch (error) {
+    console.error("Failed to merge two clubs by hand.", error);
+    // This one's failures are the operator's to read - a fixture listing both
+    // clubs, a row already merged away - rather than an internal detail.
+    return { ok: false, message: error instanceof Error ? error.message : "The clubs could not be merged." };
   }
 }
 
