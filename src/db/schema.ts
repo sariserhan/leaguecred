@@ -422,6 +422,20 @@ export const pickOpinionVotes = pgTable("pick_opinion_votes", {
   check("pick_opinion_votes_value_check", sql`${table.value} in (-1, 1)`),
 ]);
 
+/** Agreement with a lock itself, as opposed to with an opinion written under
+ * it. One vote per member per lock, and switching sides replaces it. */
+export const pickVotes = pgTable("pick_votes", {
+  pickId: uuid("pick_id").notNull().references(() => picks.id, { onDelete: "cascade" }),
+  userId: text("user_id").notNull().references(() => user.id, { onDelete: "cascade" }),
+  value: integer("value").notNull(),
+  createdAt,
+  updatedAt,
+}, (table) => [
+  primaryKey({ columns: [table.pickId, table.userId] }),
+  index("pick_votes_user_id_idx").on(table.userId),
+  check("pick_votes_value_check", sql`${table.value} in (-1, 1)`),
+]);
+
 export const referrals = pgTable("referrals", {
   id: uuid("id").defaultRandom().primaryKey(),
   inviterUserId: text("inviter_user_id").notNull().references(() => user.id, { onDelete: "cascade" }),

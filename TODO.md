@@ -44,6 +44,10 @@ None.
 
 ## Completed
 
+- [x] Make the live board usable at sixty locks: filter by league, member and
+      matchday, vote a call up or down, follow the member, and take the match
+      into your own slip — all from a card compact enough to scan.
+
 - [x] Read the duplicate-club report and merge from the admin panel, rather than
       only from `pnpm teams:dedupe` with a production database URL to hand. The
       evidence and the merge itself are shared with the job, so the two cannot

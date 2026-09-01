@@ -31,3 +31,46 @@ export async function voteLockOpinion(opinionId:string,value:-1|1):Promise<Forum
     const[score]=await sql<Array<{score:number;viewer_vote:number}>>`select coalesce(sum(value),0)::int score,coalesce(max(value) filter(where user_id=${session.user.id}),0)::int viewer_vote from pick_opinion_votes where opinion_id=${parsed.data.opinionId}`;return score;});
   revalidatePath("/live-locks");return{ok:true,score:result.score,viewerVote:result.viewer_vote};
 }
+
+/**
+ * Agreement with a lock itself, rather than with an opinion written under it.
+ *
+ * Pressing the side already held clears the vote, which is how the opinion
+ * votes behave: a reader who changes their mind to neutral has no other way
+ * back, and a vote that cannot be withdrawn stops being an opinion.
+ */
+export async function voteOnLock(pickId: string, value: -1 | 1): Promise<ForumResult> {
+  const parsed = z.object({ pickId: z.string().uuid(), value: z.union([z.literal(-1), z.literal(1)]) }).safeParse({ pickId, value });
+  if (!parsed.success) return { ok: false, message: "That vote is invalid." };
+  if (!await featureEnabled(LIVE_LOCKS_FLAG)) return { ok: false, message: "The global board is currently unavailable." };
+
+  const session = await getSession();
+  if (!session) return { ok: false, message: "Sign in to vote." };
+  if (!await withinUserRateLimit("votePickOpinion", session.user.id)) return { ok: false, message: "You are voting too quickly." };
+
+  // Voting on your own call would let a member add to their own standing.
+  const [own] = await sqlClient<Array<{ id: string }>>`
+    select id from picks where id = ${parsed.data.pickId} and user_id = ${session.user.id}`;
+  if (own) return { ok: false, message: "You cannot vote on your own lock." };
+
+  const result = await sqlClient.begin(async (sql) => {
+    const [current] = await sql<Array<{ value: number }>>`
+      select value from pick_votes where pick_id = ${parsed.data.pickId} and user_id = ${session.user.id} for update`;
+
+    if (current?.value === parsed.data.value) {
+      await sql`delete from pick_votes where pick_id = ${parsed.data.pickId} and user_id = ${session.user.id}`;
+    } else {
+      await sql`insert into pick_votes (pick_id, user_id, value) values (${parsed.data.pickId}, ${session.user.id}, ${parsed.data.value})
+        on conflict (pick_id, user_id) do update set value = excluded.value, updated_at = now()`;
+    }
+
+    const [score] = await sql<Array<{ score: number; viewer_vote: number }>>`
+      select coalesce(sum(value),0)::int score,
+        coalesce(max(value) filter (where user_id = ${session.user.id}),0)::int viewer_vote
+      from pick_votes where pick_id = ${parsed.data.pickId}`;
+    return score;
+  });
+
+  revalidatePath("/live-locks");
+  return { ok: true, score: result.score, viewerVote: result.viewer_vote };
+}
