@@ -66,7 +66,12 @@ describe("getGlobalActiveLocks", () => {
     const listed = board.find((entry) => entry.id === lock.pickId);
 
     expect(listed).toBeDefined();
-    expect(listed).toMatchObject({ fixtureId: lock.fixtureId, score: 1, viewerVote: 1, viewerFollows: true });
+    expect(listed).toMatchObject({
+      fixtureId: lock.fixtureId, score: 1, viewerVote: 1, viewerFollows: true,
+      // Callable by the viewer: the match is ahead and they have not spent that
+      // day's call in this league.
+      open: true, viewerLockedThatDay: false,
+    });
     expect(listed!.selected.id).toBe(lock.selectedTeamId);
     expect(listed!.league.id).toBe(lock.leagueId);
   });

@@ -10,6 +10,7 @@ import {
   LockKeyholeIcon,
   MessageCircleIcon,
   PlusIcon,
+  TriangleAlertIcon,
   ReplyIcon,
   SendIcon,
   UserPlusIcon,
@@ -17,7 +18,16 @@ import {
 
 import { addLockOpinion, voteLockOpinion, voteOnLock } from "@/app/live-locks/actions";
 import { addSlipCandidate } from "@/app/slip/actions";
-import { followSpecialist } from "@/app/leagues/actions";
+import { followSpecialist, submitDailyLock } from "@/app/leagues/actions";
+import {
+  AlertDialog,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
 import { Button, buttonVariants } from "@/components/ui/button";
@@ -99,6 +109,8 @@ function LockCard({ lock, signedIn }: { lock: GlobalActiveLock; signedIn: boolea
   const [vote, setVote] = useState(lock.viewerVote);
   const [following, setFollowing] = useState(lock.viewerFollows);
   const [added, setAdded] = useState(lock.inViewerSlip);
+  const [locking, setLocking] = useState(false);
+  const [lockedByViewer, setLockedByViewer] = useState(lock.viewerLockedThatDay);
   const [open, setOpen] = useState(false);
   const [body, setBody] = useState("");
   const [reply, setReply] = useState<LockOpinion | null>(null);
@@ -147,6 +159,23 @@ function LockCard({ lock, signedIn }: { lock: GlobalActiveLock; signedIn: boolea
     });
   }
 
+  // Locking from the board is the reader's own call on the same match, on
+  // whichever side they believe - so the warning carries both teams and the
+  // choice is made inside it, never a press away from the card.
+  function lockSide(teamId: string, teamName: string) {
+    setLocking(false);
+    startTransition(async () => {
+      const result = await submitDailyLock(lock.fixtureId, teamId);
+      if (result.ok) {
+        setLockedByViewer(true);
+        toast.add({ title: "Locked", description: `${teamName} is your Daily Lock for that day.`, type: "success" });
+        router.refresh();
+      } else {
+        toast.add({ title: "Not locked", description: result.message, type: "error" });
+      }
+    });
+  }
+
   function postOpinion() {
     startTransition(async () => {
       const result = await addLockOpinion(lock.id, body, reply?.id);
@@ -188,10 +217,16 @@ function LockCard({ lock, signedIn }: { lock: GlobalActiveLock; signedIn: boolea
             {following ? <CheckIcon data-icon="inline-start" /> : <UserPlusIcon data-icon="inline-start" />}
             {following ? "Following" : "Follow"}
           </Button>
-          <Button size="sm" variant={added ? "secondary" : "default"} disabled={!signedIn || pending || added} onClick={addToSlip}>
+          <Button size="sm" variant={added ? "secondary" : "outline"} disabled={!signedIn || pending || added} onClick={addToSlip}>
             {added ? <CheckIcon data-icon="inline-start" /> : <PlusIcon data-icon="inline-start" />}
-            {added ? "On your slip" : "Add to slip"}
+            {added ? "On your slip" : "Slip"}
           </Button>
+          {lock.open ? (
+            <Button size="sm" disabled={!signedIn || pending || lockedByViewer} onClick={() => setLocking(true)}>
+              <LockKeyholeIcon data-icon="inline-start" />
+              {lockedByViewer ? "Called that day" : "Lock"}
+            </Button>
+          ) : null}
           <Button size="sm" variant="ghost" onClick={() => setOpen((current) => !current)} aria-expanded={open}>
             <MessageCircleIcon data-icon="inline-start" />{lock.opinions.length}
           </Button>
@@ -244,6 +279,32 @@ function LockCard({ lock, signedIn }: { lock: GlobalActiveLock; signedIn: boolea
         </section>
       ) : null}
 
+      <AlertDialog open={locking} onOpenChange={setLocking}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle className="flex items-center gap-2 font-heading text-3xl font-bold uppercase">
+              <TriangleAlertIcon aria-hidden="true" className="size-6 text-primary" />
+              Who wins?
+            </AlertDialogTitle>
+            <AlertDialogDescription>
+              Your own call on {lock.selected.name} against {lock.opponent.name}, independent of
+              {" "}{lock.username}&rsquo;s. This is final: a lock cannot be changed, removed or undone, it
+              counts towards your public {lock.league.name} record whichever way the match goes, and it
+              spends your one call for that day.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <div className="grid gap-3 sm:grid-cols-2">
+            {[lock.selected, lock.opponent].map((team) => (
+              <Button key={team.id} disabled={pending} onClick={() => lockSide(team.id, team.name)}>
+                <Crest src={team.logoUrl} size={20} />Lock {team.name}
+              </Button>
+            ))}
+          </div>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Not yet</AlertDialogCancel>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </article>
   );
 }

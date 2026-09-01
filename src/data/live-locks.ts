@@ -13,6 +13,11 @@ export type GlobalActiveLock = {
   viewerFollows: boolean;
   /** Already set aside by the viewer, so the board offers no second copy. */
   inViewerSlip: boolean;
+  /** Still callable: the match has not kicked off. */
+  open: boolean;
+  /** The viewer already spent this league's call for that day, whichever match
+   * they spent it on. */
+  viewerLockedThatDay: boolean;
   league: { id: string; name: string; slug: string };
   selected: { id: string; name: string; slug: string; logoUrl: string | null };
   opponent: { id: string; name: string; slug: string; logoUrl: string | null };
@@ -42,7 +47,11 @@ export async function getGlobalActiveLocks(viewerId?: string): Promise<GlobalAct
       exists(select 1 from league_follows lf
         where lf.follower_user_id=${viewerId ?? null} and lf.specialist_user_id=p.user_id and lf.league_id=p.league_id) "viewerFollows",
       exists(select 1 from slip_candidates sc
-        where sc.user_id=${viewerId ?? null} and sc.fixture_id=f.id) "inViewerSlip"
+        where sc.user_id=${viewerId ?? null} and sc.fixture_id=f.id) "inViewerSlip",
+      (f.status='scheduled' and f.kickoff_at>now()) "open",
+      exists(select 1 from picks mine
+        where mine.user_id=${viewerId ?? null} and mine.league_id=p.league_id
+          and mine.match_date=(f.kickoff_at at time zone 'UTC')::date) "viewerLockedThatDay"
     from picks p join "user" u on u.id=p.user_id join fixtures f on f.id=p.fixture_id
     join leagues l on l.id=p.league_id join teams st on st.id=p.selected_team_id
     join teams ht on ht.id=f.home_team_id join teams at on at.id=f.away_team_id
@@ -60,6 +69,7 @@ export async function getGlobalActiveLocks(viewerId?: string): Promise<GlobalAct
     id: lock.id, userId: lock.userId, username: lock.username, userImage: lock.userImage, message: lock.message, lockedAt: lock.lockedAt, kickoffAt: lock.kickoffAt,
     fixtureId: lock.fixtureId, score: lock.score, viewerVote: lock.viewerVote,
     viewerFollows: lock.viewerFollows, inViewerSlip: lock.inViewerSlip,
+    open: lock.open, viewerLockedThatDay: lock.viewerLockedThatDay,
     league: { id: lock.league_id, name: lock.league_name, slug: lock.league_slug },
     selected: { id: lock.selected_id, name: lock.selected_name, slug: lock.selected_slug, logoUrl: lock.selected_logo },
     opponent: { id: lock.opponent_id, name: lock.opponent_name, slug: lock.opponent_slug, logoUrl: lock.opponent_logo },
