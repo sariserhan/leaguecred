@@ -23,12 +23,14 @@ const dateFormatter = new Intl.DateTimeFormat("en", {
 });
 
 function scoreline(fixture: AssignableFixture) {
-  if (fixture.homeScore === null || fixture.awayScore === null) return "—";
+  if (fixture.homeScore === null || fixture.awayScore === null) return fixture.played ? "—" : "vs";
   return `${fixture.homeScore}–${fixture.awayScore}`;
 }
 
 /**
- * Creating a member, and giving them locks on matches already played.
+ * Creating a member, and giving them locks - on matches already played, which
+ * are backfilled with the result they had, and on matches still to come, which
+ * settle on their own when played.
  *
  * A lock recorded here is indistinguishable from one a member placed: same
  * table, same settlement, same league record, counted on the public
@@ -97,11 +99,13 @@ export function MemberSeedingPanel({
 
   return (
     <section className="border p-5 sm:p-6">
-      <h2 className="font-heading text-2xl font-bold uppercase">Create a member and assign played matches</h2>
+      <h2 className="font-heading text-2xl font-bold uppercase">Create a member and assign matches</h2>
       <p className="mt-1 text-sm text-muted-foreground">
         A lock recorded here counts exactly like one a member placed themselves — it settles the same way and
-        appears on the public leaderboard with no marking. None of it can be undone: locks cannot be deleted
-        and a member created here cannot be removed. Every action is written to the audit log.
+        appears on the public leaderboard with no marking. A played match is recorded with the result it
+        already had; a match still to kick off is left pending and settles when it is played. None of it can be
+        undone: locks cannot be deleted and a member created here cannot be removed. Every action is written to
+        the audit log.
       </p>
 
       <div className="mt-6 grid gap-3 border p-4 sm:grid-cols-[1fr_auto]">
@@ -157,7 +161,7 @@ export function MemberSeedingPanel({
 
       {fixtures === null ? (
         <Button variant="outline" className="mt-4" disabled={pending || !memberId} onClick={() => refresh(memberId, leagueSlug)}>
-          {pending ? "Loading…" : "Show played matches"}
+          {pending ? "Loading…" : "Show matches"}
         </Button>
       ) : null}
 
@@ -171,18 +175,19 @@ export function MemberSeedingPanel({
       {fixtures ? (
         <div className="mt-6">
           <h3 className="font-heading text-lg font-bold uppercase">
-            Played matches {selected ? `available for ${selected.name}` : ""}
+            Matches {selected ? `available for ${selected.name}` : ""}
           </h3>
           {fixtures.length === 0 ? (
             <p className="mt-2 text-sm text-muted-foreground">
-              No played match is left in this league that this member does not already hold a lock for that day.
+              No match is left in this league that this member does not already hold a lock for that day.
             </p>
           ) : (
             <ul className="mt-3 divide-y border">
               {fixtures.map((fixture) => (
                 <li key={fixture.id} className="grid gap-3 p-4 sm:grid-cols-[auto_1fr_auto] sm:items-center">
-                  <span className="text-xs text-muted-foreground sm:w-28">
+                  <span className="text-xs text-muted-foreground sm:w-36">
                     {dateFormatter.format(new Date(fixture.kickoff))}
+                    {fixture.played ? null : <span className="ml-2 font-bold text-primary uppercase">Upcoming</span>}
                   </span>
                   <span className="text-sm font-semibold">
                     {fixture.home.name} {scoreline(fixture)} {fixture.away.name}

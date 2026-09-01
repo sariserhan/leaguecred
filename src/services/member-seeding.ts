@@ -37,6 +37,9 @@ export type AssignableFixture = {
   awayScore: number | null;
   /** Null for a draw, which still settles — as a loss whichever side was taken. */
   winnerTeamId: string | null;
+  /** False for a match still to kick off: the lock is recorded as any member's
+   * would be and settles when the match is played. */
+  played: boolean;
 };
 
 export type AssignedLock = {
@@ -106,31 +109,60 @@ export async function listMembers(): Promise<SeedableMember[]> {
  * already hold one for is left out rather than offered and then rejected.
  */
 export async function listAssignableFixtures(input: { userId: string; leagueSlug: string }): Promise<AssignableFixture[]> {
-  const rows = await sqlClient<Array<{
+  type Row = {
     id: string; kickoff_at: Date | string; league_name: string;
     home_team_id: string; home_name: string; away_team_id: string; away_name: string;
     home_score: number | null; away_score: number | null; winner_team_id: string | null;
-  }>>`
-    select f.id, f.kickoff_at, l.name as league_name,
-      f.home_team_id, home.name as home_name,
-      f.away_team_id, away.name as away_name,
-      f.home_score, f.away_score, f.winner_team_id
-    from fixtures f
-    join leagues l on l.id = f.league_id
-    join seasons s on s.id = f.season_id and s.is_current = true
-    join teams home on home.id = f.home_team_id
-    join teams away on away.id = f.away_team_id
-    where l.slug = ${input.leagueSlug}
-      and f.status = 'finished'
-      and not exists (
-        select 1 from picks p
-        where p.user_id = ${input.userId}
-          and p.league_id = f.league_id
-          and p.match_date = (f.kickoff_at at time zone 'UTC')::date)
-    order by f.kickoff_at desc
-    limit 60`;
+    status: string;
+  };
 
-  return rows.map((row) => ({
+  const columns = sqlClient`
+    f.id, f.kickoff_at, f.status, l.name as league_name,
+    f.home_team_id, home.name as home_name,
+    f.away_team_id, away.name as away_name,
+    f.home_score, f.away_score, f.winner_team_id`;
+
+  // A day the member already holds a lock for is excluded either way: one lock
+  // per league per day is the rule the product is built on.
+  const [played, upcoming] = await Promise.all([
+    sqlClient<Row[]>`
+      select ${columns}
+      from fixtures f
+      join leagues l on l.id = f.league_id
+      join seasons s on s.id = f.season_id and s.is_current = true
+      join teams home on home.id = f.home_team_id
+      join teams away on away.id = f.away_team_id
+      where l.slug = ${input.leagueSlug}
+        and f.status = 'finished'
+        and not exists (
+          select 1 from picks p
+          where p.user_id = ${input.userId}
+            and p.league_id = f.league_id
+            and p.match_date = (f.kickoff_at at time zone 'UTC')::date)
+      order by f.kickoff_at desc
+      limit 60`,
+    // Still to kick off, so a lock on one is an ordinary lock rather than a
+    // backfill: it is placed now, and settles when the match is played.
+    sqlClient<Row[]>`
+      select ${columns}
+      from fixtures f
+      join leagues l on l.id = f.league_id
+      join seasons s on s.id = f.season_id and s.is_current = true
+      join teams home on home.id = f.home_team_id
+      join teams away on away.id = f.away_team_id
+      where l.slug = ${input.leagueSlug}
+        and f.status = 'scheduled'
+        and f.kickoff_at > now()
+        and not exists (
+          select 1 from picks p
+          where p.user_id = ${input.userId}
+            and p.league_id = f.league_id
+            and p.match_date = (f.kickoff_at at time zone 'UTC')::date)
+      order by f.kickoff_at
+      limit 30`,
+  ]);
+
+  return [...upcoming, ...played].map((row) => ({
     id: row.id,
     kickoff: toIsoTimestamp(row.kickoff_at),
     leagueName: row.league_name,
@@ -139,6 +171,7 @@ export async function listAssignableFixtures(input: { userId: string; leagueSlug
     homeScore: row.home_score,
     awayScore: row.away_score,
     winnerTeamId: row.winner_team_id,
+    played: row.status === "finished",
   }));
 }
 
@@ -179,7 +212,19 @@ export async function listAssignedLocks(userId: string): Promise<AssignedLock[]>
  * Settlement runs after the insert transaction commits rather than inside it,
  * because settlePick opens its own transaction and takes its own locks.
  */
-export async function assignHistoricalLock(input: {
+/**
+ * Records a lock for a member on a match they did not pick themselves.
+ *
+ * A played match is a backfill: the database refuses a lock on a started match,
+ * and the trigger derives the timestamps from the kickoff so the row reads as a
+ * lock placed before it rather than one placed at an arbitrary time.
+ *
+ * A match still to kick off needs none of that and gets none of it. It is an
+ * ordinary lock, written down the ordinary path with ordinary timestamps, and
+ * it settles when the match is played like any other. Relaxing the rules for it
+ * would only stamp it with a submitted_at in the future.
+ */
+export async function assignMemberLock(input: {
   userId: string;
   fixtureId: string;
   selectedTeamId: string;
@@ -194,7 +239,10 @@ export async function assignHistoricalLock(input: {
         (kickoff_at at time zone 'UTC')::date as match_date
       from fixtures where id = ${input.fixtureId} for share`;
     if (!fixture) throw new Error("That fixture no longer exists.");
-    if (fixture.status !== "finished") throw new Error("Only a played match can be assigned.");
+    const played = fixture.status === "finished";
+    if (!played && fixture.status !== "scheduled") {
+      throw new Error("A match already under way cannot be assigned.");
+    }
     if (input.selectedTeamId !== fixture.home_team_id && input.selectedTeamId !== fixture.away_team_id) {
       throw new Error("That team is not playing in this fixture.");
     }
@@ -208,8 +256,9 @@ export async function assignHistoricalLock(input: {
       on conflict (user_id, league_id, matchweek_id) do nothing`;
 
     // Transaction-local, so it cannot leak to another statement on this pooled
-    // connection once this transaction ends.
-    await sql`select set_config('leaguecred.backfill', 'on', true)`;
+    // connection once this transaction ends. Only a played match needs it: an
+    // upcoming one is a lock the rules already allow.
+    if (played) await sql`select set_config('leaguecred.backfill', 'on', true)`;
 
     const [pick] = await sql<Array<{ id: string }>>`
       insert into picks (user_id, league_id, season_id, matchweek_id, fixture_id, selected_team_id, match_date)

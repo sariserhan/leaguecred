@@ -15,7 +15,7 @@ import {
 import {
   type AssignableFixture,
   type AssignedLock,
-  assignHistoricalLock,
+  assignMemberLock,
   createMember,
   listAssignableFixtures,
   listAssignedLocks,
@@ -364,7 +364,7 @@ export async function assignLockAction(input: {
   const viewer = await requireAdmin();
 
   try {
-    await assignHistoricalLock({ ...input, actorUserId: viewer.id });
+    await assignMemberLock({ ...input, actorUserId: viewer.id });
   } catch (error) {
     console.error("Failed to assign a lock.", error);
     // A second lock on a date the member already holds one for trips the unique
