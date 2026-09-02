@@ -1,5 +1,6 @@
 import { isAuthorizedCronRequest } from "@/lib/cron-auth";
 import { runJobSteps } from "@/lib/job-steps";
+import { completeJobRun } from "@/services/job-run";
 import { TOLERATED_CATALOG_FAULTS, measureCatalogHealth } from "@/services/catalog-health";
 import { synchronizeFreeFixtureSources } from "@/services/free-fixture-sync";
 import { settlePendingPicks } from "@/services/settlement";
@@ -45,11 +46,9 @@ async function runDaily(request: Request) {
     return Response.json({ error: "Unauthorized" }, { status: 401 });
   }
 
-  const { ok, results } = await runJobSteps(steps);
-
-  // A non-2xx marks the run failed in the Vercel cron log, which is the only
-  // place a silent nightly failure would otherwise show up.
-  return Response.json({ ok, ...results }, { status: ok ? 200 : 500 });
+  // Reports the run before answering: a non-2xx marks it failed in the Vercel
+  // cron log, and a failed step also reaches ALERT_EMAIL when one is set.
+  return completeJobRun("daily", await runJobSteps(steps));
 }
 
 export const GET = runDaily;

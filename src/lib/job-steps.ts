@@ -29,3 +29,17 @@ export async function runJobSteps(steps: readonly JobStep[]): Promise<JobStepsRe
 
   return { ok, results };
 }
+
+export type FailedJobStep = { name: string; message: string };
+
+/**
+ * Which steps recorded a failure, read back out of the results a run collected.
+ * `runJobSteps` stores `{ error }` in place of a step's result, so the shape is
+ * the record of what went wrong; this is what turns it into something to say.
+ */
+export function failedJobSteps(results: Record<string, unknown>): FailedJobStep[] {
+  return Object.entries(results)
+    .filter((entry): entry is [string, { error: unknown }] =>
+      typeof entry[1] === "object" && entry[1] !== null && "error" in entry[1])
+    .map(([name, value]) => ({ name, message: String(value.error) }));
+}

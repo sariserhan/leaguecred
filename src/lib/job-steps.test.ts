@@ -1,6 +1,6 @@
 import { describe, expect, it, vi } from "vitest";
 
-import { runJobSteps } from "@/lib/job-steps";
+import { failedJobSteps, runJobSteps } from "@/lib/job-steps";
 
 describe("runJobSteps", () => {
   it("runs every step in order and collects the results", async () => {
@@ -34,5 +34,31 @@ describe("runJobSteps", () => {
 
   it("reports ok for an empty chain", async () => {
     expect(await runJobSteps([])).toEqual({ ok: true, results: {} });
+  });
+});
+
+describe("failedJobSteps", () => {
+  it("names only the steps that recorded an error", () => {
+    expect(failedJobSteps({
+      fixtures: { created: 4 },
+      settlement: { error: "connection terminated" },
+      teamLogos: { error: "provider returned 503" },
+    })).toEqual([
+      { name: "settlement", message: "connection terminated" },
+      { name: "teamLogos", message: "provider returned 503" },
+    ]);
+  });
+
+  it("finds nothing in a clean run", () => {
+    expect(failedJobSteps({ fixtures: { created: 4 }, settlement: { settled: 0 } })).toEqual([]);
+  });
+
+  // A step is free to return null or a bare number; neither is a failure.
+  it.each([
+    ["null", null],
+    ["a number", 7],
+    ["a string", "done"],
+  ])("does not mistake %s for a failure", (_label, value) => {
+    expect(failedJobSteps({ step: value })).toEqual([]);
   });
 });
