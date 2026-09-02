@@ -9,6 +9,20 @@ None.
 - [ ] Send one real reminder and confirm it arrives. `RESEND_FROM_EMAIL` is set
       and now live, but only a delivered message proves the sender domain is
       actually verified — an unverified one fails at Resend, not here.
+- [ ] Move the maintenance wall into `proxy.ts`, then convert the public pages.
+      These are one job, in that order. `enforceMaintenanceGate()` is called at
+      the top of eight pages, and a page that prerenders answers its own body at
+      build time — so on `/` and `/fixtures` the gate is now frozen into the
+      shell and the switch is wired to nothing. Verified locally: maintenance
+      enabled in the database, those two serve 200 and no redirect, while
+      /leagues and /specialists still redirect. A wall that protects some routes
+      is the worst of both.
+      A proxy runs before any cache, on every request, for every route, which is
+      what a site-wide wall needs — and it would also cover /communities,
+      /recaps, /live-locks and /teams/*, which never called the gate at all and
+      so have never been walled. Only once that exists can the public pages drop
+      `instant = false` safely; a first attempt at converting them is what turned
+      this up.
 - [ ] Remove the `instant = false` opt-outs one route at a time. The codemod put
       one on 35 segments so the app would build; each is a route whose data still
       blocks its own shell. The public ones earn the most from being converted —
@@ -89,6 +103,9 @@ None.
 
 ## Completed
 
+- [x] Stopped caching the site settings row. Caching it for an hour put the
+      maintenance switch an hour behind, which is the wrong property for the
+      control you reach for when the site is in trouble.
 - [x] Migrated to Cache Components. The root layout no longer reads the session,
       so it prerenders; the header and the member docks stream in behind
       Suspense. Site settings, feature flags and the league nav are `use cache`

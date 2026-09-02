@@ -5,7 +5,6 @@ import { sqlClient } from "@/db";
 import type { BannerTone } from "@/db/schema";
 import {
   FEATURE_FLAGS_TAG,
-  SITE_SETTINGS_TAG,
   defaultSiteSettings,
   resolveFeatureFlags,
   type ResolvedFeatureFlag,
@@ -28,38 +27,35 @@ type SettingsRow = {
  * maintenance wall and no banner, which is the safer direction to fail in.
  */
 /**
- * Cached, and the try/catch deliberately sits outside it: a throw leaves no
- * entry behind, so a database blip cannot pin "no maintenance, no banner"
- * in the cache for the rest of the hour. The fallback still happens, it just
- * happens per request until the database answers again.
+ * Deliberately NOT cached, unlike the flags and the league nav beside it.
+ *
+ * This row carries the maintenance switch, and a cached switch is a switch
+ * wired to a delay. Caching it for an hour meant a wall raised in the database
+ * — the thing you reach for when the site is in enough trouble that the admin
+ * panel and its `updateTag` may not be reachable — went up an hour later. A
+ * short cache life is not the answer either: too short to store, it errors
+ * during prerendering rather than caching anything.
+ *
+ * So it stays a read. It is a single row by primary key, the cheapest query
+ * here, and `cache` still collapses the several callers in one render into one
+ * round trip.
  */
-async function readSiteSettings(): Promise<SiteSettings> {
-  "use cache";
-  cacheTag(SITE_SETTINGS_TAG);
-  // A ceiling, not the mechanism: `updateTag` in the admin action is what makes
-  // a change live. This only bounds how long a write from outside the app -
-  // psql, a job - can go unnoticed.
-  cacheLife("hours");
-
-  const [row] = await sqlClient<SettingsRow[]>`
-    select minimum_settled_picks_for_rank, maintenance_enabled, maintenance_message,
-      banner_enabled, banner_message, banner_tone
-    from app_settings where id = 'global'`;
-  if (!row) return defaultSiteSettings;
-
-  return {
-    minimumSettledPicksForRank: row.minimum_settled_picks_for_rank,
-    maintenanceEnabled: row.maintenance_enabled,
-    maintenanceMessage: row.maintenance_message,
-    bannerEnabled: row.banner_enabled,
-    bannerMessage: row.banner_message,
-    bannerTone: row.banner_tone,
-  };
-}
-
 export const getSiteSettings = cache(async (): Promise<SiteSettings> => {
   try {
-    return await readSiteSettings();
+    const [row] = await sqlClient<SettingsRow[]>`
+      select minimum_settled_picks_for_rank, maintenance_enabled, maintenance_message,
+        banner_enabled, banner_message, banner_tone
+      from app_settings where id = 'global'`;
+    if (!row) return defaultSiteSettings;
+
+    return {
+      minimumSettledPicksForRank: row.minimum_settled_picks_for_rank,
+      maintenanceEnabled: row.maintenance_enabled,
+      maintenanceMessage: row.maintenance_message,
+      bannerEnabled: row.banner_enabled,
+      bannerMessage: row.banner_message,
+      bannerTone: row.banner_tone,
+    };
   } catch (error) {
     console.error("Failed to read site settings; falling back to defaults.", error);
     return defaultSiteSettings;

@@ -7,7 +7,6 @@ import { requireAdmin } from "@/lib/admin";
 import {
   FEATURE_FLAGS_TAG,
   LEAGUE_NAV_TAG,
-  SITE_SETTINGS_TAG,
   BANNER_MESSAGE_MAX_LENGTH,
   MAINTENANCE_MESSAGE_MAX_LENGTH,
   MAX_SETTLED_PICKS_FOR_RANK,
@@ -83,11 +82,8 @@ export async function saveSiteSettings(
     return { ok: false, message: "The site settings could not be saved. Please try again." };
   }
 
-  // The settings are cached for an hour, so without this the maintenance switch
-  // and the banner would come into force whenever that hour happened to end.
-  // updateTag rather than revalidateTag: this is a server action, and the admin
-  // who just saved should see the result on their own next request.
-  updateTag(SITE_SETTINGS_TAG);
+  // No updateTag here: the settings are read fresh on every request rather than
+  // cached, precisely so the maintenance switch cannot be left waiting on one.
   revalidatePath("/", "layout");
   return { ok: true };
 }
