@@ -16,10 +16,13 @@ import { enforceMaintenanceGate } from "@/lib/maintenance";
 import { HOMEPAGE_ACTIVITY_FLAG, LIVE_LOCKS_FLAG, isFeatureEnabled } from "@/lib/site-settings";
 import { getFeatureFlags } from "@/services/site-settings";
 
+// TODO: Cache Components adoption. Refactor this route so this opt-out can be removed.
+// See: https://nextjs.org/docs/app/guides/migrating-to-cache-components
+export const instant = false;
+
 /** The hero photograph. Swap the file to change it. */
 const HERO_IMAGE = "/2.webp";
 
-export const dynamic = "force-dynamic";
 export const metadata: Metadata = {
   title: "LeagueCred — Football knowledge, proven over time",
   description: "Make one permanent Daily Lock in the league you know, or follow a football specialist with a transparent record.",

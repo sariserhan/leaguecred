@@ -5,7 +5,10 @@ import { getSpecialistDirectory } from "@/data/specialists";
 import { enforceMaintenanceGate } from "@/lib/maintenance";
 import { getRankThreshold } from "@/services/site-settings";
 
-export const dynamic = "force-dynamic";
+// TODO: Cache Components adoption. Refactor this route so this opt-out can be removed.
+// See: https://nextjs.org/docs/app/guides/migrating-to-cache-components
+export const instant = false;
+
 export const metadata: Metadata = { title: "Find specialists", description: "Compare verified football specialists by league, record, and evidence.", alternates: { canonical: "/specialists" } };
 
 export default async function SpecialistsPage({ searchParams }: PageProps<"/specialists">) {

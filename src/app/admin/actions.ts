@@ -5,6 +5,9 @@ import { z } from "zod";
 
 import { requireAdmin } from "@/lib/admin";
 import {
+  FEATURE_FLAGS_TAG,
+  LEAGUE_NAV_TAG,
+  SITE_SETTINGS_TAG,
   BANNER_MESSAGE_MAX_LENGTH,
   MAINTENANCE_MESSAGE_MAX_LENGTH,
   MAX_SETTLED_PICKS_FOR_RANK,
@@ -80,6 +83,11 @@ export async function saveSiteSettings(
     return { ok: false, message: "The site settings could not be saved. Please try again." };
   }
 
+  // The settings are cached for an hour, so without this the maintenance switch
+  // and the banner would come into force whenever that hour happened to end.
+  // updateTag rather than revalidateTag: this is a server action, and the admin
+  // who just saved should see the result on their own next request.
+  updateTag(SITE_SETTINGS_TAG);
   revalidatePath("/", "layout");
   return { ok: true };
 }
@@ -127,6 +135,9 @@ export async function refreshLeagueFixtures(leagueSlug?: string | null): Promise
     ? ESPN_FIXTURE_COMPETITIONS.filter((entry) => entry.leagueSlug === parsed.data)
     : ESPN_FIXTURE_COMPETITIONS;
   for (const competition of competitions) updateTag(espnStandingsTag(competition.externalId));
+  // The header's league list is the enabled leagues that have a current season
+  // with clubs in it, which a refresh can bring into existence.
+  updateTag(LEAGUE_NAV_TAG);
 
   for (const competition of competitions) {
     revalidatePath(`/leagues/${competition.leagueSlug}`, "page");
@@ -333,6 +344,9 @@ export async function toggleFeatureFlag(
     return { ok: false, message: "The flag could not be saved. Please try again." };
   }
 
+  // A flag decides whether a route exists at all, so a stale one is a 404 on a
+  // link the navigation is still drawing.
+  updateTag(FEATURE_FLAGS_TAG);
   revalidatePath("/", "layout");
   return { ok: true };
 }

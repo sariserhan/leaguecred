@@ -1,8 +1,11 @@
 import { cache } from "react";
+import { cacheLife, cacheTag } from "next/cache";
 
 import { sqlClient } from "@/db";
 import type { BannerTone } from "@/db/schema";
 import {
+  FEATURE_FLAGS_TAG,
+  SITE_SETTINGS_TAG,
   defaultSiteSettings,
   resolveFeatureFlags,
   type ResolvedFeatureFlag,
@@ -24,33 +27,58 @@ type SettingsRow = {
  * take the whole site down. Falling back to the defaults fails open: no
  * maintenance wall and no banner, which is the safer direction to fail in.
  */
+/**
+ * Cached, and the try/catch deliberately sits outside it: a throw leaves no
+ * entry behind, so a database blip cannot pin "no maintenance, no banner"
+ * in the cache for the rest of the hour. The fallback still happens, it just
+ * happens per request until the database answers again.
+ */
+async function readSiteSettings(): Promise<SiteSettings> {
+  "use cache";
+  cacheTag(SITE_SETTINGS_TAG);
+  // A ceiling, not the mechanism: `updateTag` in the admin action is what makes
+  // a change live. This only bounds how long a write from outside the app -
+  // psql, a job - can go unnoticed.
+  cacheLife("hours");
+
+  const [row] = await sqlClient<SettingsRow[]>`
+    select minimum_settled_picks_for_rank, maintenance_enabled, maintenance_message,
+      banner_enabled, banner_message, banner_tone
+    from app_settings where id = 'global'`;
+  if (!row) return defaultSiteSettings;
+
+  return {
+    minimumSettledPicksForRank: row.minimum_settled_picks_for_rank,
+    maintenanceEnabled: row.maintenance_enabled,
+    maintenanceMessage: row.maintenance_message,
+    bannerEnabled: row.banner_enabled,
+    bannerMessage: row.banner_message,
+    bannerTone: row.banner_tone,
+  };
+}
+
 export const getSiteSettings = cache(async (): Promise<SiteSettings> => {
   try {
-    const [row] = await sqlClient<SettingsRow[]>`
-      select minimum_settled_picks_for_rank, maintenance_enabled, maintenance_message,
-        banner_enabled, banner_message, banner_tone
-      from app_settings where id = 'global'`;
-    if (!row) return defaultSiteSettings;
-
-    return {
-      minimumSettledPicksForRank: row.minimum_settled_picks_for_rank,
-      maintenanceEnabled: row.maintenance_enabled,
-      maintenanceMessage: row.maintenance_message,
-      bannerEnabled: row.banner_enabled,
-      bannerMessage: row.banner_message,
-      bannerTone: row.banner_tone,
-    };
+    return await readSiteSettings();
   } catch (error) {
     console.error("Failed to read site settings; falling back to defaults.", error);
     return defaultSiteSettings;
   }
 });
 
+async function readFeatureFlags(): Promise<ResolvedFeatureFlag[]> {
+  "use cache";
+  cacheTag(FEATURE_FLAGS_TAG);
+  cacheLife("hours");
+
+  const rows = await sqlClient<Array<{ key: string; enabled: boolean }>>`
+    select key, enabled from feature_flags`;
+  return resolveFeatureFlags(rows);
+}
+
 export const getFeatureFlags = cache(async (): Promise<ResolvedFeatureFlag[]> => {
   try {
-    const rows = await sqlClient<Array<{ key: string; enabled: boolean }>>`
-      select key, enabled from feature_flags`;
-    return resolveFeatureFlags(rows);
+    return await readFeatureFlags();
   } catch (error) {
     console.error("Failed to read feature flags; falling back to defaults.", error);
     return resolveFeatureFlags([]);

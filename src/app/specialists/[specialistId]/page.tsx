@@ -9,7 +9,9 @@ import { getPersonalizedRecommendations } from "@/data/recommendations";
 import { getLeaguePreferences } from "@/data/league-preferences";
 import { JsonLd } from "@/lib/json-ld";
 
-export const dynamic = "force-dynamic";
+// TODO: Cache Components adoption. Refactor this route so this opt-out can be removed.
+// See: https://nextjs.org/docs/app/guides/migrating-to-cache-components
+export const instant = false;
 
 type SpecialistPageProps = { params: Promise<{ specialistId: string }> };
 

@@ -1,4 +1,5 @@
 import Link from "next/link";
+import { cacheLife } from "next/cache";
 import { BrandMark } from "@/components/brand-logo";
 import { FooterHelpLinks } from "@/components/site-footer-feedback";
 import { InstallApp } from "@/components/install-app";
@@ -29,7 +30,19 @@ const footerGroups = [
   },
 ] as const;
 
-export function SiteFooter({ challengeEnabled, liveLocksEnabled, leaderboardEnabled }: { challengeEnabled: boolean; liveLocksEnabled: boolean; leaderboardEnabled: boolean }) {
+/**
+ * The clock is not stable, and a prerendered shell has to be. Read inside a
+ * cached scope the year becomes a value with a stated lifetime rather than
+ * whatever the machine thought at the moment of rendering — which is the whole
+ * of what a copyright line needs.
+ */
+async function copyrightYear() {
+  "use cache";
+  cacheLife("days");
+  return new Date().getFullYear();
+}
+
+export async function SiteFooter({ challengeEnabled, liveLocksEnabled, leaderboardEnabled }: { challengeEnabled: boolean; liveLocksEnabled: boolean; leaderboardEnabled: boolean }) {
   // A footer link to a route the flag has turned into a 404 is worse than no
   // link, so a flagged entry is dropped along with the page it points at.
   const enabledByFlag: Record<string, boolean> = {
@@ -37,6 +50,8 @@ export function SiteFooter({ challengeEnabled, liveLocksEnabled, leaderboardEnab
     [LIVE_LOCKS_FLAG]: liveLocksEnabled,
     [LEAGUE_LEADERBOARD_FLAG]: leaderboardEnabled,
   };
+
+  const year = await copyrightYear();
 
   return (
     <footer className="border-t bg-inverted text-inverted-foreground">
@@ -67,7 +82,7 @@ export function SiteFooter({ challengeEnabled, liveLocksEnabled, leaderboardEnab
       </div>
       <div className="border-t border-inverted-foreground/20">
         <div className="page-shell flex flex-col items-start justify-between gap-3 py-4 text-xs text-inverted-foreground/60 sm:flex-row sm:items-center">
-          <div>© {new Date().getFullYear()} LeagueCred. Built on independent records.</div>
+          <div>© {year} LeagueCred. Built on independent records.</div>
           <div className="flex items-center gap-2 text-inverted-foreground/80">
             <InstallApp className="text-inverted-foreground/80 hover:bg-inverted-foreground/10 hover:text-inverted-foreground" />
             <span>Theme:</span>

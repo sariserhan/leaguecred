@@ -3,25 +3,26 @@ import Script from "next/script";
 import type { Metadata, Viewport } from "next";
 import { Barlow_Condensed, Inter } from "next/font/google";
 
+import { Suspense } from "react";
+
 import { SiteBanner } from "@/components/site-banner";
 import { SiteHeader } from "@/components/site-header";
 import { SiteFooter } from "@/components/site-footer";
-import { viewerIsAdmin } from "@/lib/admin";
+import { ViewerHeader } from "@/components/viewer-header";
+import { MemberChrome } from "@/components/member-chrome";
 import { getLeagueNavOptions } from "@/data/teams";
-import { getSession } from "@/lib/auth-session";
 import { COMMUNITY_CHALLENGE_FLAG, LEAGUE_LEADERBOARD_FLAG, LIVE_LOCKS_FLAG, isFeatureEnabled } from "@/lib/site-settings";
 import { getFeatureFlags } from "@/services/site-settings";
-import { getNotificationCenter } from "@/data/notifications";
 import { Toaster } from "@/components/ui/toast";
-import { MobileMemberNav } from "@/components/mobile-member-nav";
-import { SlipDock } from "@/components/slip/slip-dock";
-import { getSlipCandidates } from "@/data/slip-candidates";
-import { getLockedGames, getViewerHandle } from "@/data/locked-games";
 import { ThemeProvider } from "@/components/theme-provider";
 import { JsonLd } from "@/lib/json-ld";
 import { ServiceWorkerManager } from "@/components/service-worker";
 
 import "./globals.css";
+
+// TODO: Cache Components adoption. Refactor this route so this opt-out can be removed.
+// See: https://nextjs.org/docs/app/guides/migrating-to-cache-components
+export const instant = false;
 
 const inter = Inter({
   subsets: ["latin"],
@@ -82,24 +83,17 @@ export const viewport: Viewport = {
 // left ungated, our own building and reviewing lands in the visitor numbers.
 const isProduction = process.env.VERCEL_ENV === "production";
 
+/**
+ * Nothing here reads the session. Both of the reads it does make are cached and
+ * tagged, so this whole shell prerenders and is served from the edge of the
+ * response while the two boundaries below stream the viewer's own half in.
+ */
 export default async function RootLayout({ children }: LayoutProps<"/">) {
-  const [isAdmin, session, leagues, flags] = await Promise.all([
-    viewerIsAdmin(),
-    getSession(),
-    getLeagueNavOptions(),
-    getFeatureFlags(),
-  ]);
+  const [leagues, flags] = await Promise.all([getLeagueNavOptions(), getFeatureFlags()]);
   const challengeEnabled = isFeatureEnabled(flags, COMMUNITY_CHALLENGE_FLAG);
   const liveLocksEnabled = isFeatureEnabled(flags, LIVE_LOCKS_FLAG);
   const leaderboardEnabled = isFeatureEnabled(flags, LEAGUE_LEADERBOARD_FLAG);
-  const [notificationCenter, slipCandidates, lockedGames, viewerHandle] = session
-    ? await Promise.all([
-        getNotificationCenter(session.user.id),
-        getSlipCandidates(session.user.id),
-        getLockedGames(session.user.id),
-        getViewerHandle(session.user.id),
-      ])
-    : [null, [], [], null];
+  const headerFlags = { challengeEnabled, liveLocksEnabled, leaderboardEnabled };
 
   return (
     <html
@@ -128,11 +122,18 @@ export default async function RootLayout({ children }: LayoutProps<"/">) {
             }}
           />
           <SiteBanner />
-          <SiteHeader isAdmin={isAdmin} leagues={leagues} notificationCenter={notificationCenter} viewerHandle={viewerHandle} challengeEnabled={challengeEnabled} liveLocksEnabled={liveLocksEnabled} leaderboardEnabled={leaderboardEnabled} />
-          <main id="main-content" tabIndex={-1} className={session ? "flex-1 pb-16 md:pb-0" : "flex-1"}>{children}</main>
+          <Suspense
+            fallback={
+              <SiteHeader isAdmin={false} leagues={leagues} notificationCenter={null} viewerHandle={null} {...headerFlags} />
+            }
+          >
+            <ViewerHeader leagues={leagues} {...headerFlags} />
+          </Suspense>
+          <main id="main-content" tabIndex={-1} className="flex-1">{children}</main>
+          <Suspense fallback={null}>
+            <MemberChrome liveLocksEnabled={liveLocksEnabled} />
+          </Suspense>
           <SiteFooter challengeEnabled={challengeEnabled} liveLocksEnabled={liveLocksEnabled} leaderboardEnabled={leaderboardEnabled} />
-          {session ? <SlipDock candidates={slipCandidates} locked={lockedGames} /> : null}
-          {session ? <MobileMemberNav userId={viewerHandle ?? session.user.id} liveLocksEnabled={liveLocksEnabled} unread={notificationCenter?.items.filter((item) => !item.readAt).length ?? 0} /> : null}
           <Toaster timeout={4500} />
           <ServiceWorkerManager />
           {isProduction ? (

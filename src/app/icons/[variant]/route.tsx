@@ -3,11 +3,6 @@ import { ImageResponse } from "next/og";
 import { BrandMark } from "@/components/brand-logo";
 import { PWA_ICON_VARIANTS, parsePwaIconVariant } from "@/lib/pwa";
 
-/** Every variant is known at build time, so none of these cost a render in
- *  production — a launcher asking for a 512px icon gets a static file. */
-export const dynamic = "force-static";
-export const dynamicParams = false;
-
 export function generateStaticParams() {
   return PWA_ICON_VARIANTS.map((variant) => ({ variant }));
 }

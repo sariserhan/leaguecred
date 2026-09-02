@@ -38,7 +38,9 @@ import { listMembers } from "@/services/member-seeding";
 import { getSiteFeedback } from "@/services/site-feedback";
 import { TOLERATED_CATALOG_FAULTS, measureCatalogHealth } from "@/services/catalog-health";
 
-export const dynamic = "force-dynamic";
+// TODO: Cache Components adoption. Refactor this route so this opt-out can be removed.
+// See: https://nextjs.org/docs/app/guides/migrating-to-cache-components
+export const instant = false;
 
 // Refreshing every league in one press walks 23 competitions, so the actions on
 // this page get the same room the nightly route has rather than the default.

@@ -10,6 +10,8 @@
  * feed uses, so rows map onto our clubs by id rather than by name.
  */
 
+import { cacheLife, cacheTag } from "next/cache";
+
 import { assertUnderstood } from "@/providers/upstream-shape";
 
 const STANDINGS_ENDPOINT = "https://site.api.espn.com/apis/v2/sports/soccer";
@@ -96,10 +98,16 @@ export async function fetchEspnStandings(input: {
    * matches finish, so it does not need to be fetched on every page view. */
   revalidate?: number;
 }): Promise<EspnStandingRow[]> {
+  "use cache";
+  // Was `next: { revalidate, tags }` on the fetch itself. Under Cache
+  // Components a fetch is not cached by its own options; it is cached by the
+  // scope it runs in, and these two calls are where those options went. The
+  // tag is unchanged, so the admin refresh that updates it still works.
+  cacheTag(espnStandingsTag(input.leagueExternalId));
+  cacheLife({ revalidate: input.revalidate ?? 300 });
+
   const url = `${STANDINGS_ENDPOINT}/${input.leagueExternalId}/standings?season=${input.season}`;
-  const response = await fetch(url, {
-    next: { revalidate: input.revalidate ?? 300, tags: [espnStandingsTag(input.leagueExternalId)] },
-  });
+  const response = await fetch(url);
   if (!response.ok) throw new Error(`ESPN standings responded ${response.status}.`);
 
   const payload = (await response.json()) as EspnStandingsResponse;

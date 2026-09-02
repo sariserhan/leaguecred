@@ -13,7 +13,9 @@ import { getSession } from "@/lib/auth-session";
 import { cn } from "@/lib/utils";
 import { Crest } from "@/components/ui/crest";
 
-export const dynamic = "force-dynamic";
+// TODO: Cache Components adoption. Refactor this route so this opt-out can be removed.
+// See: https://nextjs.org/docs/app/guides/migrating-to-cache-components
+export const instant = false;
 
 export const metadata: Metadata = {
   title: "Your Weekly Slip",

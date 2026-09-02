@@ -5,6 +5,10 @@ import { ShieldCheckIcon } from "lucide-react";
 import { buttonVariants } from "@/components/ui/button";
 import { getSafeInternalPath } from "@/lib/safe-redirect";
 
+// TODO: Cache Components adoption. Refactor this route so this opt-out can be removed.
+// See: https://nextjs.org/docs/app/guides/migrating-to-cache-components
+export const instant = false;
+
 export const metadata: Metadata = {
   title: "Address confirmed",
   robots: { index: false, follow: false },

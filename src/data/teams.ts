@@ -2,6 +2,9 @@ import "server-only";
 
 import { cache } from "react";
 
+import { cacheLife, cacheTag } from "next/cache";
+
+import { LEAGUE_NAV_TAG } from "@/lib/site-settings";
 import { sqlClient } from "@/db";
 import type { FixtureStatus } from "@/db/schema";
 
@@ -157,6 +160,14 @@ export const getTeamProfile = cache(async function getTeamProfile(teamSlug: stri
  * inlining them all into every page is what {@link getLeagueNavTeams} avoids.
  */
 export const getLeagueNavOptions = cache(async function getLeagueNavOptions(): Promise<LeagueNavOption[]> {
+  "use cache";
+  cacheTag(LEAGUE_NAV_TAG);
+  // The catalogue moves when a league is enabled or a season rolls over, both
+  // of which are rare and neither of which is urgent. The admin action that
+  // enables a league updates the tag; this is the backstop for a change made
+  // by a job or by hand.
+  cacheLife("hours");
+
   return sqlClient<LeagueNavOption[]>`
     select l.slug, l.name, c.name as country, l.logo_url as "logoUrl"
     from leagues l

@@ -9,17 +9,16 @@ None.
 - [ ] Send one real reminder and confirm it arrives. `RESEND_FROM_EMAIL` is set
       and now live, but only a delivered message proves the sender domain is
       actually verified — an unverified one fails at Resend, not here.
-- [ ] Finish the Cache Components migration. The flag is off; a trial run
-      showed the mechanical part is removing 24 `force-dynamic` exports, and the
-      real work is that the root layout reads the session outside a `<Suspense>`
-      boundary, so nothing in the app can prerender. It needs the header, slip
-      dock and member nav moved behind boundaries with a neutral fallback (not a
-      signed-out one, which would flash the wrong state), `use cache` plus
-      `cacheTag` on leagues, flags and settings, and `updateTag` from the admin
-      actions. It also turns on PPR and `<Activity>` navigation app-wide, which
-      preserves component state across navigations — dialogs and dropdowns need
-      a look. Wait until CI has run green at least once; that is the net this
-      was sequenced behind.
+- [ ] Remove the `instant = false` opt-outs one route at a time. The codemod put
+      one on 35 segments so the app would build; each is a route whose data still
+      blocks its own shell. The public ones earn the most from being converted —
+      /, /leagues, /specialists, /teams/[team] are what a recruit lands on — and
+      the member-only ones (/slip, /network, /settings, /admin) earn least, since
+      nobody reaches them without a session anyway.
+- [ ] Work out why `/` is still fully dynamic. Most routes came out of the
+      migration as Partial Prerender; the homepage is marked `ƒ`, so something
+      in it reaches runtime data outside a boundary and no shell is being built
+      for the page a recruit sees first.
 - [ ] Check any SUSPECT pair the admin Duplicate clubs panel reports (same
       report as `pnpm teams:dedupe`) and add an alias where the two really are
       one club. Boca Juniors beside Atlético Junior is the rule working, not a
@@ -90,6 +89,13 @@ None.
 
 ## Completed
 
+- [x] Migrated to Cache Components. The root layout no longer reads the session,
+      so it prerenders; the header and the member docks stream in behind
+      Suspense. Site settings, feature flags and the league nav are `use cache`
+      with tags, and the admin actions call `updateTag`, so a toggle is live on
+      the next request rather than whenever the hour lapses. Measured with
+      statement logging on: a signed-out /leagues went from about four queries
+      per request to one, and that one is the page's own directory read.
 - [x] Shipped everything above to production and got CI green on it. First run
       failed on typecheck for a reason that would have bitten any clean clone;
       the fix is in `next typegen`, and the build moved to the jobs that have a

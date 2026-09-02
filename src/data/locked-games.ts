@@ -1,5 +1,7 @@
 import "server-only";
 
+import { cache } from "react";
+
 import { sqlClient } from "@/db";
 
 export type LockedGame = {
@@ -13,11 +15,11 @@ export type LockedGame = {
 };
 
 /** The handle a member's own profile lives at, for the links the layout draws. */
-export async function getViewerHandle(userId: string) {
+export const getViewerHandle = cache(async (userId: string) => {
   const [row] = await sqlClient<Array<{ username: string | null }>>`
     select username from "user" where id = ${userId}`;
   return row?.username ?? null;
-}
+});
 
 /**
  * The calls a member has made and cannot take back.

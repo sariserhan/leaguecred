@@ -1,6 +1,10 @@
 import type { NextConfig } from "next";
 
 const nextConfig: NextConfig = {
+  // Data is dynamic by default and caching is opted into per function with
+  // `use cache`, which is what lets the signed-out shell of a page prerender
+  // while the viewer's own half streams in behind a boundary.
+  cacheComponents: true,
   images: {
     remotePatterns: [
       {

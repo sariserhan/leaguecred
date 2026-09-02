@@ -144,3 +144,15 @@ export function normalizeAdminMessage(value: string | null | undefined, maxLengt
 
   return collapsed.slice(0, maxLength);
 }
+
+/**
+ * Cache tags for the three reads the root layout makes on every request.
+ *
+ * All three are the same for every visitor and change only when an
+ * administrator changes them, which is exactly the shape `use cache` is for.
+ * The admin actions call `updateTag` on these, so a toggle is live on the next
+ * request rather than whenever a duration happens to lapse.
+ */
+export const SITE_SETTINGS_TAG = "site-settings";
+export const FEATURE_FLAGS_TAG = "feature-flags";
+export const LEAGUE_NAV_TAG = "league-nav";
