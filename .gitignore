@@ -44,3 +44,7 @@ next-env.d.ts
 # Scratch helpers for running jobs against a remote database
 .prod-*.mjs
 .migrate-check.ts
+
+# Playwright writes traces and screenshots here on a failed run.
+/test-results
+/playwright-report
