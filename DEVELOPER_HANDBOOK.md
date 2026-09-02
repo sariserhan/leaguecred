@@ -274,11 +274,13 @@ must get a 404 at `/admin`, and an admin must keep browsing the site while maint
   the point: settlement reads final scores, so it has to run after the sync rather than beside
   it. Steps are independent, so one failure is recorded and the rest still run, and every step
   is idempotent, so the next night recovers whatever failed.
-- **Three entries, and an hourly schedule, both need a plan above Hobby.** Hobby allows two
-  cron jobs and runs them approximately once a day whatever the expression says, so on Hobby
-  the hourly results pull silently does not happen hourly and an evening match waits for the
-  04:00 chain — the exact delay that job was added to remove. Check the project's Cron Jobs tab
-  against `vercel.json` rather than assuming the schedule in the file is the schedule running.
+- Three entries and an hourly schedule both need a plan above Hobby. This project is on Pro,
+  where they run as written: confirmed on 2 September 2026 from the runtime logs, 24 consecutive
+  hourly results runs plus the nightly and reminder runs, all 200. Worth knowing for a fork —
+  Hobby allows two crons and runs them about once a day whatever the expression says, which
+  would put an evening match back behind the 04:00 chain.
+- `vercel logs --since 24h --query "/api/jobs"` is the quickest way to answer "did the crons
+  run", and reads the requests themselves rather than the schedule they were meant to follow.
 - The nightly work stays one chained route regardless: settlement has to read scores the sync
   just wrote, and chaining guarantees that ordering where two schedules only hope for it.
 - The individual routes stay for manual runs: `/api/jobs/fixtures`, `/api/jobs/settlement`,

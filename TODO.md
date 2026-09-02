@@ -6,17 +6,11 @@ None.
 
 ## Next
 
-- [ ] Confirm the three crons in `vercel.json` are actually running on their
-      stated schedules. Hobby allows two and runs them about once a day whatever
-      the expression says, so on Hobby the hourly `/api/jobs/results` pull
-      quietly becomes a daily one and an evening match waits for the 04:00
-      chain — the delay that job exists to remove. Vercel's Cron Jobs tab
-      against `vercel.json` settles it.
-- [ ] Set `RESEND_FROM_EMAIL` in Vercel, or confirm it is already set. Unset, it
-      falls back to Resend's test sender, which only delivers to Resend's own
-      addresses — so the lock reminders and specialist-lock notifications, the
-      two things that create a reason to come back daily, reach nobody and say
-      nothing about it. `ALERT_EMAIL` is worth setting at the same time.
+- [ ] Redeploy production so the new `RESEND_FROM_EMAIL` and `ALERT_EMAIL` take
+      effect. Both are set in Vercel, but an environment variable only reaches a
+      deployment built after it was added, and the live one predates them — so
+      the reminder mail is still going out under the old sender and a failed
+      cron step still alerts nobody.
 - [ ] Finish the Cache Components migration. The flag is off; a trial run
       showed the mechanical part is removing 24 `force-dynamic` exports, and the
       real work is that the root layout reads the session outside a `<Suspense>`
@@ -96,6 +90,10 @@ None.
 
 ## Completed
 
+- [x] Confirmed the crons run. Three entries and an hourly schedule are within
+      Pro's limits, and the runtime logs show 24 consecutive hourly results runs
+      plus the nightly and reminder runs, all 200. The worry came from the repo's
+      own docs, which described a two-cron Hobby setup the project left behind.
 - [x] Run the quality gates on push: a CI workflow with lint, typecheck, unit
       tests and build; the integration suite against a Postgres service
       container; and Playwright against a real build, including the browser
