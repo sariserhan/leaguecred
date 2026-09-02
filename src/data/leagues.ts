@@ -10,10 +10,22 @@ import type { League, Region } from "@/lib/league-data";
 import { getRankThreshold } from "@/services/site-settings";
 import { readVoterId } from "@/lib/voter-id";
 
+/**
+ * Emoji flags for the countries whose flag image the catalogue does not carry.
+ *
+ * There is deliberately no fallback for a code that is missing here. It used to
+ * fall back to a football, which was wrong twice over: a ball is not a flag,
+ * and since the catalogue gained the NBA, the NFL and the rest, the ball it
+ * fell back to was the wrong sport's. A country with no flag now renders a
+ * neutral marker, and a continent renders one that says continent.
+ */
 const flags: Record<string, string> = {
   AR: "🇦🇷", BR: "🇧🇷", CA: "🇨🇦", DE: "🇩🇪", ES: "🇪🇸", GB: "🏴",
   GR: "🇬🇷", IT: "🇮🇹", JP: "🇯🇵", MX: "🇲🇽", NL: "🇳🇱", PT: "🇵🇹",
   TR: "🇹🇷", US: "🇺🇸",
+  // Two countries, so two flags. The NBA, MLB and NHL are filed here beside
+  // MLS because each of them has a Canadian club.
+  "US-CA": "🇺🇸🇨🇦",
 };
 
 type DirectoryRow = {
@@ -21,6 +33,8 @@ type DirectoryRow = {
   country: string;
   country_code: string;
   flag_url: string | null;
+  is_region: boolean;
+  sport: string;
   name: string;
   short_name: string;
   logo_url: string | null;
@@ -39,7 +53,7 @@ export async function getLeagueDirectory(userId?: string): Promise<League[]> {
   const rankThreshold = await getRankThreshold();
   const currentUserId = userId ?? "";
   const rows = await sqlClient<DirectoryRow[]>`
-    select l.slug, c.name as country, c.code as country_code, c.flag_url, l.name, l.short_name, l.logo_url, l.region,
+    select l.slug, c.name as country, c.code as country_code, c.flag_url, c.is_region, l.sport, l.name, l.short_name, l.logo_url, l.region,
       (select count(*)::int from user_league_records r where r.league_id = l.id and r.settled_picks >= ${rankThreshold}) as specialist_count,
       own.wins, own.losses,
       exists(select 1 from matchweeks mw where mw.league_id = l.id) as has_experience,
@@ -76,8 +90,10 @@ export async function getLeagueDirectory(userId?: string): Promise<League[]> {
       slug: row.slug,
       country: row.country,
       countryCode: row.country_code,
-      flag: flags[row.country_code] ?? "⚽",
+      flag: flags[row.country_code],
       flagUrl: row.flag_url,
+      isRegion: row.is_region,
+      sport: row.sport,
       logoUrl: row.logo_url,
       name: row.name,
       shortName: row.short_name,

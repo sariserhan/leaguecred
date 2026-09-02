@@ -3,13 +3,14 @@
 import { useMemo, useState } from "react";
 import Image from "next/image";
 import Link from "next/link";
-import { ArrowRightIcon, CircleDotIcon, LockKeyholeIcon, RotateCcwIcon, SearchIcon, SlidersHorizontalIcon, UsersRoundIcon } from "lucide-react";
+import { ArrowRightIcon, CircleDotIcon, GlobeIcon, LockKeyholeIcon, MapPinIcon, RotateCcwIcon, SearchIcon, SlidersHorizontalIcon, UsersRoundIcon } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import { ToggleGroup, ToggleGroupItem } from "@/components/ui/toggle-group";
 import type { League, Region } from "@/lib/league-data";
+import { sportLabel, sportsPresent } from "@/lib/sports";
 import { cn } from "@/lib/utils";
 import { Crest } from "@/components/ui/crest";
 
@@ -18,6 +19,23 @@ const availabilityOptions = ["All leagues", "Daily Lock ready", "Team catalog"] 
 type RegionFilter = (typeof regions)[number];
 type AvailabilityFilter = (typeof availabilityOptions)[number];
 type Intent = "prove" | "follow";
+
+/**
+ * Whatever best stands for where a league is played: its flag image, an emoji
+ * flag, or — for a confederation like Europe or South America, which has no
+ * flag because it is not a country — a globe. A marker of last resort is a pin,
+ * never a ball: a ball says nothing about a place, and with four sports in the
+ * catalogue it would be the wrong ball besides.
+ */
+function CountryMark({ league }: { league: League }) {
+  if (league.flagUrl) {
+    return <Image src={league.flagUrl} alt="" width={28} height={20} unoptimized className="h-5 w-7 object-cover" />;
+  }
+  if (league.flag) return <span className="text-2xl" aria-hidden="true">{league.flag}</span>;
+
+  const Marker = league.isRegion ? GlobeIcon : MapPinIcon;
+  return <Marker aria-hidden="true" className="size-5 shrink-0 text-muted-foreground" />;
+}
 
 function PersonalStatus({ league, authenticated }: { league: League; authenticated: boolean }) {
   if (!authenticated) return <span className="text-muted-foreground">No activity yet</span>;
@@ -30,7 +48,7 @@ function LeagueRow({ league, intent, authenticated }: { league: League; intent: 
   return (
     <li className="grid gap-4 border-b px-4 py-5 transition-colors last:border-b-0 hover:bg-muted/60 md:grid-cols-[1fr_1.35fr_1.25fr_1.2fr_auto] md:items-center md:gap-5">
       <span className="flex items-center gap-3 text-sm">
-        {league.flagUrl ? <Image src={league.flagUrl} alt="" width={28} height={20} unoptimized className="h-5 w-7 object-cover" /> : <span className="text-2xl" aria-hidden="true">{league.flag}</span>}
+        <CountryMark league={league} />
         <span>{league.country}</span>
       </span>
       <strong className="flex items-center gap-3">
@@ -66,6 +84,7 @@ function LeagueSection({ title, leagues, intent, authenticated }: { title: strin
 export function LeagueExplorer({ leagues, authenticated, initialIntent }: { leagues: League[]; authenticated: boolean; initialIntent: Intent }) {
   const [query, setQuery] = useState("");
   const [region, setRegion] = useState<RegionFilter>("All");
+  const [sport, setSport] = useState("All");
   const [availability, setAvailability] = useState<AvailabilityFilter>("All leagues");
   const [intent, setIntent] = useState<Intent>(initialIntent);
   const [filtersOpen, setFiltersOpen] = useState(false);
@@ -73,15 +92,20 @@ export function LeagueExplorer({ leagues, authenticated, initialIntent }: { leag
     const normalizedQuery = query.trim().toLocaleLowerCase();
     return leagues.filter((league) => {
       const matchesRegion = region === "All" || league.region === (region as Region);
+      const matchesSport = sport === "All" || league.sport === sport;
       const matchesQuery = !normalizedQuery || league.name.toLocaleLowerCase().includes(normalizedQuery) || league.country.toLocaleLowerCase().includes(normalizedQuery);
       const matchesAvailability = availability === "All leagues" || (availability === "Daily Lock ready" ? league.hasExperience : league.hasTeamCatalog);
-      return matchesRegion && matchesQuery && matchesAvailability;
+      return matchesRegion && matchesSport && matchesQuery && matchesAvailability;
     });
-  }, [availability, leagues, query, region]);
+  }, [availability, leagues, query, region, sport]);
+  const sportOptions = useMemo(
+    () => ["All", ...sportsPresent(leagues.flatMap((league) => league.sport ?? []))],
+    [leagues],
+  );
   const ready = filteredLeagues.filter((league) => league.hasExperience);
   const catalogs = filteredLeagues.filter((league) => !league.hasExperience);
   const networkStats = { known: authenticated ? leagues.filter((league) => league.hasRecord).length : 0, followed: authenticated ? leagues.filter((league) => league.isFollowed).length : 0, locksDue: authenticated ? leagues.filter((league) => league.lockDue).length : 0 };
-  function resetFilters() { setQuery(""); setRegion("All"); setAvailability("All leagues"); }
+  function resetFilters() { setQuery(""); setRegion("All"); setSport("All"); setAvailability("All leagues"); }
 
   return (
     <div className="grid gap-10 lg:grid-cols-[minmax(0,1fr)_280px]">
@@ -92,16 +116,34 @@ export function LeagueExplorer({ leagues, authenticated, initialIntent }: { leag
         </ToggleGroup>
         <div className="mt-6 border-y py-6">
           <label className="relative block"><span className="sr-only">Search leagues or countries</span><SearchIcon aria-hidden="true" className="pointer-events-none absolute top-1/2 left-4 size-5 -translate-y-1/2 text-muted-foreground" /><Input type="search" value={query} onChange={(event) => setQuery(event.target.value)} placeholder="Search leagues or countries" className="h-14 rounded-sm pl-12 text-base" /></label>
-          <Button variant="outline" className="mt-4 w-full sm:hidden" onClick={() => setFiltersOpen(true)}><SlidersHorizontalIcon data-icon="inline-start" />Filters{region !== "All" || availability !== "All leagues" ? " · Active" : ""}</Button>
-          <div className="mt-5 hidden gap-5 sm:grid"><FilterRow label="Region"><ToggleGroup value={[region]} onValueChange={(values) => values[0] && setRegion(values[0] as RegionFilter)} variant="outline" spacing={0} aria-label="Filter leagues by region" className="w-max">{regions.map((item) => <ToggleGroupItem key={item} value={item} className="rounded-none px-4">{item}</ToggleGroupItem>)}</ToggleGroup></FilterRow><FilterRow label="Availability"><ToggleGroup value={[availability]} onValueChange={(values) => values[0] && setAvailability(values[0] as AvailabilityFilter)} variant="outline" spacing={0} aria-label="Filter leagues by availability" className="w-max">{availabilityOptions.map((item) => <ToggleGroupItem key={item} value={item} className="rounded-none px-4">{item}</ToggleGroupItem>)}</ToggleGroup></FilterRow></div>
+          <Button variant="outline" className="mt-4 w-full sm:hidden" onClick={() => setFiltersOpen(true)}><SlidersHorizontalIcon data-icon="inline-start" />Filters{region !== "All" || sport !== "All" || availability !== "All leagues" ? " · Active" : ""}</Button>
+          <div className="mt-5 hidden gap-5 sm:grid"><SportFilter options={sportOptions} value={sport} onChange={setSport} /><FilterRow label="Region"><ToggleGroup value={[region]} onValueChange={(values) => values[0] && setRegion(values[0] as RegionFilter)} variant="outline" spacing={0} aria-label="Filter leagues by region" className="w-max">{regions.map((item) => <ToggleGroupItem key={item} value={item} className="rounded-none px-4">{item}</ToggleGroupItem>)}</ToggleGroup></FilterRow><FilterRow label="Availability"><ToggleGroup value={[availability]} onValueChange={(values) => values[0] && setAvailability(values[0] as AvailabilityFilter)} variant="outline" spacing={0} aria-label="Filter leagues by availability" className="w-max">{availabilityOptions.map((item) => <ToggleGroupItem key={item} value={item} className="rounded-none px-4">{item}</ToggleGroupItem>)}</ToggleGroup></FilterRow></div>
         </div>
         {filteredLeagues.length ? <div className="mt-8"><LeagueSection title="Ready for a Daily Lock" leagues={ready} intent={intent} authenticated={authenticated} /><LeagueSection title="Explore team catalogs" leagues={catalogs} intent={intent} authenticated={authenticated} /></div> : (
           <div className="mt-8 flex min-h-72 flex-col items-center justify-center border-y px-6 text-center"><SearchIcon aria-hidden="true" className="size-10" strokeWidth={1.5} /><h2 className="mt-5 font-heading text-3xl font-bold uppercase">No leagues found</h2><p className="mt-2 text-sm text-muted-foreground">Try adjusting your filters or search terms.</p><button type="button" onClick={resetFilters} className="mt-6 inline-flex h-10 items-center gap-2 border border-inverted px-4 text-sm font-semibold hover:bg-inverted hover:text-inverted-foreground"><RotateCcwIcon className="size-4" />Reset filters</button></div>
         )}
       </div>
       <NetworkSummary authenticated={authenticated} stats={networkStats} />
-      <Dialog open={filtersOpen} onOpenChange={setFiltersOpen}><DialogContent className="rounded-none"><DialogHeader><DialogTitle className="font-heading text-3xl font-bold uppercase">League filters</DialogTitle><DialogDescription>Choose a region and the type of league experience you need.</DialogDescription></DialogHeader><div className="grid gap-6"><FilterRow label="Region"><ToggleGroup value={[region]} onValueChange={(values) => values[0] && setRegion(values[0] as RegionFilter)} variant="outline" className="flex flex-wrap">{regions.map((item) => <ToggleGroupItem key={item} value={item} className="rounded-none">{item}</ToggleGroupItem>)}</ToggleGroup></FilterRow><FilterRow label="Availability"><ToggleGroup value={[availability]} onValueChange={(values) => values[0] && setAvailability(values[0] as AvailabilityFilter)} variant="outline" className="flex flex-wrap">{availabilityOptions.map((item) => <ToggleGroupItem key={item} value={item} className="rounded-none">{item}</ToggleGroupItem>)}</ToggleGroup></FilterRow></div><DialogFooter><Button variant="outline" onClick={resetFilters}>Reset</Button><Button onClick={() => setFiltersOpen(false)}>Show {filteredLeagues.length} leagues</Button></DialogFooter></DialogContent></Dialog>
+      <Dialog open={filtersOpen} onOpenChange={setFiltersOpen}><DialogContent className="rounded-none"><DialogHeader><DialogTitle className="font-heading text-3xl font-bold uppercase">League filters</DialogTitle><DialogDescription>Choose a region and the type of league experience you need.</DialogDescription></DialogHeader><div className="grid gap-6"><SportFilter options={sportOptions} value={sport} onChange={setSport} /><FilterRow label="Region"><ToggleGroup value={[region]} onValueChange={(values) => values[0] && setRegion(values[0] as RegionFilter)} variant="outline" className="flex flex-wrap">{regions.map((item) => <ToggleGroupItem key={item} value={item} className="rounded-none">{item}</ToggleGroupItem>)}</ToggleGroup></FilterRow><FilterRow label="Availability"><ToggleGroup value={[availability]} onValueChange={(values) => values[0] && setAvailability(values[0] as AvailabilityFilter)} variant="outline" className="flex flex-wrap">{availabilityOptions.map((item) => <ToggleGroupItem key={item} value={item} className="rounded-none">{item}</ToggleGroupItem>)}</ToggleGroup></FilterRow></div><DialogFooter><Button variant="outline" onClick={resetFilters}>Reset</Button><Button onClick={() => setFiltersOpen(false)}>Show {filteredLeagues.length} leagues</Button></DialogFooter></DialogContent></Dialog>
     </div>
+  );
+}
+
+/** Hidden while the catalogue is one sport, so a football-only deployment is
+ *  not asked to choose between football and nothing. */
+function SportFilter({ options, value, onChange }: { options: string[]; value: string; onChange: (next: string) => void }) {
+  if (options.length <= 2) return null;
+
+  return (
+    <FilterRow label="Sport">
+      <ToggleGroup value={[value]} onValueChange={(values) => values[0] && onChange(values[0])} variant="outline" spacing={0} aria-label="Filter leagues by sport" className="flex w-max flex-wrap">
+        {options.map((item) => (
+          <ToggleGroupItem key={item} value={item} className="rounded-none px-4">
+            {item === "All" ? "All" : sportLabel(item)}
+          </ToggleGroupItem>
+        ))}
+      </ToggleGroup>
+    </FilterRow>
   );
 }
 
