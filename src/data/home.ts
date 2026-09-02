@@ -13,6 +13,7 @@ export type HomeLeague = {
 
 export type HomeSpecialist = {
   userId: string;
+  handle: string | null;
   name: string;
   league: string;
   leagueSlug: string;
@@ -80,8 +81,8 @@ export async function getHomeData(): Promise<HomeData> {
       where l.enabled = true
       order by l.priority desc, l.name asc
     `,
-    sqlClient<Array<{ user_id: string; name: string; league: string; league_slug: string; wins: number; settled_picks: number; current_win_streak: number }>>`
-      select r.user_id, u.name, l.name as league, l.slug as league_slug,
+    sqlClient<Array<{ user_id: string; handle: string | null; name: string; league: string; league_slug: string; wins: number; settled_picks: number; current_win_streak: number }>>`
+      select r.user_id, u.username as handle, u.name, l.name as league, l.slug as league_slug,
         r.wins, r.settled_picks, r.current_win_streak
       from user_league_records r
       join "user" u on u.id = r.user_id
@@ -125,6 +126,7 @@ export async function getHomeData(): Promise<HomeData> {
     })),
     specialists: specialistRows.map((row) => ({
       userId: row.user_id,
+      handle: row.handle,
       name: row.name,
       league: row.league,
       leagueSlug: row.league_slug,

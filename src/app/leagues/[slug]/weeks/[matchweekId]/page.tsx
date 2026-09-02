@@ -131,7 +131,7 @@ export default async function MatchweekHistoryPage(props: MatchweekPageProps) {
           <div className="divide-y">
             {data.locks.map((lock) => (
               <article key={lock.id} className="grid gap-4 px-5 py-4 sm:grid-cols-[minmax(10rem,1fr)_minmax(12rem,1fr)_auto] sm:items-center">
-                <div className="flex items-center gap-3"><span className="flex size-9 shrink-0 items-center justify-center rounded-full bg-muted text-sm font-bold">{lock.initials}</span><strong><Link href={`/specialists/${lock.specialistId}`} className="hover:text-primary hover:underline">{lock.specialist}</Link></strong></div>
+                <div className="flex items-center gap-3"><span className="flex size-9 shrink-0 items-center justify-center rounded-full bg-muted text-sm font-bold">{lock.initials}</span><strong><Link href={`/specialists/${lock.specialistHandle ?? lock.specialistId}`} className="hover:text-primary hover:underline">{lock.specialist}</Link></strong></div>
                 <div className="flex items-center gap-3"><TeamLogo name={lock.team} logoUrl={lock.teamLogoUrl} /><div><strong className="block">{lock.team}</strong><span className="block text-sm text-muted-foreground">{lock.fixture}</span></div></div>
                 <ResultBadge result={lock.result} />
               </article>

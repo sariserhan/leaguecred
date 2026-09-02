@@ -114,7 +114,7 @@ type ChallengeSide = {
   locks: number;
   wins: number;
   losses: number;
-  leaders: Array<{ id: string; name: string; locks: number; wins: number; losses: number; accuracy: number }>;
+  leaders: Array<{ id: string; handle: string | null; name: string; locks: number; wins: number; losses: number; accuracy: number }>;
 };
 
 export async function getCommunityChallenge(fixtureId?: string): Promise<CommunityChallenge | null> {
@@ -147,9 +147,9 @@ export async function getCommunityChallenge(fixtureId?: string): Promise<Communi
     select p.id, u.name supporter, st.name team, p.result, p.decision_reason reason, p.settled_at::text "settledAt"
     from picks p join "user" u on u.id = p.user_id join teams st on st.id = p.selected_team_id
     where u.primary_team_id in (${fixture.home_id}, ${fixture.away_id}) and p.result <> 'pending'
-    order by p.settled_at desc nulls last limit 12`, sqlClient<Array<{ id: string; name: string; team_id: string; locks: number; wins: number; losses: number; accuracy: number }>>`
+    order by p.settled_at desc nulls last limit 12`, sqlClient<Array<{ id: string; handle: string | null; name: string; team_id: string; locks: number; wins: number; losses: number; accuracy: number }>>`
     with ranked as (
-      select u.id, u.name, u.primary_team_id team_id,
+      select u.id, u.username as handle, u.name, u.primary_team_id team_id,
         count(p.id) filter (where p.result in ('win','loss'))::int locks,
         count(p.id) filter (where p.result='win')::int wins,
         count(p.id) filter (where p.result='loss')::int losses,
@@ -168,7 +168,7 @@ export async function getCommunityChallenge(fixtureId?: string): Promise<Communi
     return {
       id, name: fixture[`${prefix}_name`], slug: fixture[`${prefix}_slug`], logoUrl: fixture[`${prefix}_logo`],
       supporters: row?.supporters ?? 0, locks: row?.locks ?? 0, wins: row?.wins ?? 0, losses: row?.losses ?? 0,
-      leaders: leaderRows.filter((leader) => leader.team_id === id).map((leader) => ({ id: leader.id, name: leader.name, locks: leader.locks, wins: leader.wins, losses: leader.losses, accuracy: leader.accuracy })),
+      leaders: leaderRows.filter((leader) => leader.team_id === id).map((leader) => ({ id: leader.id, handle: leader.handle, name: leader.name, locks: leader.locks, wins: leader.wins, losses: leader.losses, accuracy: leader.accuracy })),
     };
   };
   return {

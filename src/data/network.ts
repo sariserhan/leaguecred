@@ -8,6 +8,7 @@ import { getRankThreshold } from "@/services/site-settings";
 export type NetworkSpecialist = {
   id: string;
   name: string;
+  handle: string | null;
   initials: string;
   wins: number;
   losses: number;
@@ -31,8 +32,8 @@ export type NetworkHubData = {
   leagues: NetworkLeague[];
   summary: { known: number; help: number; followed: number; attention: number };
 };
-export type NetworkActivity={id:string;specialistId:string;specialistName:string;league:string;leagueSlug:string;team:string;result:string;occurredAt:string};
-export const getNetworkActivity=cache(async(userId:string)=>{const rows=await sqlClient<Array<{id:string;specialist_id:string;specialist_name:string;league:string;league_slug:string;team:string;result:string;occurred_at:Date|string}>>`select p.id,u.id specialist_id,u.name specialist_name,l.name league,l.slug league_slug,t.name team,p.result,coalesce(p.settled_at,p.submitted_at) occurred_at from league_follows f join picks p on p.user_id=f.specialist_user_id and p.league_id=f.league_id join "user" u on u.id=p.user_id join leagues l on l.id=p.league_id join teams t on t.id=p.selected_team_id where f.follower_user_id=${userId} order by coalesce(p.settled_at,p.submitted_at) desc limit 60`;return rows.map(r=>({id:r.id,specialistId:r.specialist_id,specialistName:r.specialist_name,league:r.league,leagueSlug:r.league_slug,team:r.team,result:r.result,occurredAt:new Date(r.occurred_at).toISOString()}))});
+export type NetworkActivity={id:string;specialistId:string;specialistHandle:string|null;specialistName:string;league:string;leagueSlug:string;team:string;result:string;occurredAt:string};
+export const getNetworkActivity=cache(async(userId:string)=>{const rows=await sqlClient<Array<{id:string;specialist_id:string;specialist_handle:string|null;specialist_name:string;league:string;league_slug:string;team:string;result:string;occurred_at:Date|string}>>`select p.id,u.id specialist_id,u.username specialist_handle,u.name specialist_name,l.name league,l.slug league_slug,t.name team,p.result,coalesce(p.settled_at,p.submitted_at) occurred_at from league_follows f join picks p on p.user_id=f.specialist_user_id and p.league_id=f.league_id join "user" u on u.id=p.user_id join leagues l on l.id=p.league_id join teams t on t.id=p.selected_team_id where f.follower_user_id=${userId} order by coalesce(p.settled_at,p.submitted_at) desc limit 60`;return rows.map(r=>({id:r.id,specialistId:r.specialist_id,specialistHandle:r.specialist_handle,specialistName:r.specialist_name,league:r.league,leagueSlug:r.league_slug,team:r.team,result:r.result,occurredAt:new Date(r.occurred_at).toISOString()}))});
 
 type LeagueRow = { id: string; name: string; slug: string; enabled: boolean; kind: "know" | "help" | null };
 type SpecialistRow = {
@@ -44,12 +45,14 @@ type SpecialistRow = {
   settled_picks: number;
   adjusted_accuracy: string | null;
   followers: number;
+  handle: string | null;
 };
 
 function mapSpecialist(row: SpecialistRow, rankThreshold: number): NetworkSpecialist {
   return {
     id: row.id,
     name: row.name,
+    handle: row.handle,
     initials: row.name.split(/\s+/).map((part) => part[0]).join("").slice(0, 2).toUpperCase(),
     wins: row.wins,
     losses: row.losses,
@@ -71,7 +74,7 @@ export const getNetworkHub = cache(async (userId: string): Promise<NetworkHubDat
       where p.user_id is not null or f.follower_user_id is not null
       order by l.name`,
     sqlClient<SpecialistRow[]>`
-      select f.league_id, u.id, u.name, coalesce(r.wins, 0)::int wins,
+      select f.league_id, u.id, u.username as handle, u.name, coalesce(r.wins, 0)::int wins,
         coalesce(r.losses, 0)::int losses, coalesce(r.settled_picks, 0)::int settled_picks,
         r.confidence_adjusted_accuracy::text adjusted_accuracy,
         (select count(*)::int from league_follows all_follows where all_follows.specialist_user_id = u.id and all_follows.league_id = f.league_id) followers
@@ -82,7 +85,7 @@ export const getNetworkHub = cache(async (userId: string): Promise<NetworkHubDat
       order by u.name`,
     sqlClient<(SpecialistRow & { rank: number })[]>`
       with candidates as (
-        select l.id league_id, u.id, u.name, r.wins, r.losses, r.settled_picks,
+        select l.id league_id, u.id, u.username as handle, u.name, r.wins, r.losses, r.settled_picks,
           r.confidence_adjusted_accuracy::text adjusted_accuracy,
           (select count(*)::int from league_follows f where f.specialist_user_id = u.id and f.league_id = l.id) followers,
           row_number() over (partition by l.id order by r.confidence_adjusted_accuracy desc nulls last, r.settled_picks desc, r.last_settled_at asc) rank

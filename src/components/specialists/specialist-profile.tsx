@@ -48,7 +48,7 @@ export function SpecialistProfile({ data, recommendations = [], hasHelpPreferenc
 
   function followLeague(leagueId: string) {
     if (!data.viewer.authenticated) {
-      const destination = `/specialists/${data.specialist.id}`;
+      const destination = `/specialists/${data.specialist.handle ?? data.specialist.id}`;
       router.push(`/auth?next=${encodeURIComponent(destination)}`);
       return;
     }
@@ -129,7 +129,7 @@ export function SpecialistProfile({ data, recommendations = [], hasHelpPreferenc
                   <Link href={`/leagues/${league.slug}`} className="font-bold hover:text-primary">{league.name}</Link>
                   <p className="text-sm text-muted-foreground">
                     Following{" "}
-                    <Link href={`/specialists/${league.specialistId}`} className="font-semibold hover:text-primary">
+                    <Link href={`/specialists/${league.specialistHandle ?? league.specialistId}`} className="font-semibold hover:text-primary">
                       {league.specialistName}
                     </Link>
                   </p>
@@ -156,7 +156,7 @@ export function SpecialistProfile({ data, recommendations = [], hasHelpPreferenc
                   </div>
                   <p className="mt-2 text-sm">
                     Followed{" "}
-                    <Link href={`/specialists/${entry.specialistId}`} className="font-semibold hover:text-primary">
+                    <Link href={`/specialists/${entry.specialistHandle ?? entry.specialistId}`} className="font-semibold hover:text-primary">
                       {entry.specialistName}
                     </Link>
                     {"\u2019s "}

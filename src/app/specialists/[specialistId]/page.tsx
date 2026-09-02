@@ -44,7 +44,7 @@ export default async function SpecialistPage(props: SpecialistPageProps) {
           mainEntity: {
             "@type": "Person",
             name: data.specialist.name,
-            url: `https://leaguecred.com/specialists/${data.specialist.id}`,
+            url: `https://leaguecred.com/specialists/${data.specialist.handle ?? data.specialist.id}`,
           },
         }}
       />

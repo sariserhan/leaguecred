@@ -43,7 +43,7 @@ function SlipEntryCard({ entry, now }: { entry: WeeklySlipEntry; now: string }) 
         <div className="flex flex-wrap items-center gap-2"><Link href={`/leagues/${entry.league.slug}`} className="font-semibold hover:text-primary">{entry.league.name}</Link><Badge variant={entry.path === "independent" ? "default" : "outline"}>{entry.path === "independent" ? "Your lock" : "Following"}</Badge></div>
         <strong className="mt-1 block text-lg">{entry.selectedTeam.name}</strong>
         <p className="mt-1 text-sm text-muted-foreground">{entry.fixture.home} vs {entry.fixture.away} · {kickoff}</p>
-        {entry.specialist ? <p className="mt-1 text-sm text-muted-foreground">Call from <Link href={`/specialists/${entry.specialist.id}`} className="font-semibold text-foreground hover:text-primary hover:underline">{entry.specialist.name}</Link></p> : null}
+        {entry.specialist ? <p className="mt-1 text-sm text-muted-foreground">Call from <Link href={`/specialists/${entry.specialist.handle ?? entry.specialist.id}`} className="font-semibold text-foreground hover:text-primary hover:underline">{entry.specialist.name}</Link></p> : null}
         <LockTimeline entry={entry} now={now} />
       </div>
       <div className="flex items-center gap-3 sm:flex-col sm:items-end"><strong className="font-heading text-3xl">{score ?? "—"}</strong><ResultBadge result={entry.result} /></div>

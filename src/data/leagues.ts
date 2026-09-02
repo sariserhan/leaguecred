@@ -217,6 +217,7 @@ export type MatchweekHistoryData = {
   locks: Array<{
     id: string;
     specialistId: string;
+    specialistHandle: string | null;
     specialist: string;
     initials: string;
     team: string;
@@ -229,6 +230,7 @@ export type MatchweekHistoryData = {
 export type DatabaseSpecialist = {
   id: string;
   name: string;
+  handle: string | null;
   initials: string;
   accuracy: number;
   record: string;
@@ -241,6 +243,7 @@ export type DatabaseSpecialist = {
 export type LeagueLeaderboardEntry = {
   id: string;
   name: string;
+  handle: string | null;
   wins: number;
   losses: number;
   settledPicks: number;
@@ -353,8 +356,8 @@ export async function getLeagueExperience(slug: string, userId?: string): Promis
       join teams a on a.id = f.away_team_id
       where mw.id in (select id from recent_matchweeks) and f.kickoff_at < now()
       order by mw.start_at desc, f.kickoff_at`,
-    sqlClient<Array<{ id: string; name: string; wins: number; losses: number; settled_picks: number; followers: number; lock: string; source_pick_id: string }>>`
-      select u.id, u.name, r.wins, r.losses, r.settled_picks,
+    sqlClient<Array<{ id: string; name: string; handle: string | null; wins: number; losses: number; settled_picks: number; followers: number; lock: string; source_pick_id: string }>>`
+      select u.id, u.name, u.username as handle, r.wins, r.losses, r.settled_picks,
         (select count(*)::int from league_follows lf where lf.specialist_user_id = u.id and lf.league_id = ${league.id}) as followers,
         t.name as lock, p.id as source_pick_id
       from user_league_records r
@@ -375,15 +378,15 @@ export async function getLeagueExperience(slug: string, userId?: string): Promis
       select wins, losses, tier from user_league_records where user_id = ${viewerId} and league_id = ${league.id} limit 1`,
     sqlClient<Array<{ source_pick_id: string }>>`
       select source_pick_id from followed_picks where follower_user_id = ${viewerId} and league_id = ${league.id} and matchweek_id = ${matchweek.id} limit 1`,
-    sqlClient<Array<{ id: string; name: string; wins: number; losses: number; settled_picks: number; current_win_streak: number; confidence_adjusted_accuracy: string }>>`
-      select u.id, u.name, record.wins, record.losses, record.settled_picks, record.current_win_streak, record.confidence_adjusted_accuracy
+    sqlClient<Array<{ id: string; name: string; handle: string | null; wins: number; losses: number; settled_picks: number; current_win_streak: number; confidence_adjusted_accuracy: string }>>`
+      select u.id, u.name, u.username as handle, record.wins, record.losses, record.settled_picks, record.current_win_streak, record.confidence_adjusted_accuracy
       from user_league_season_records record
       join "user" u on u.id = record.user_id
       where record.league_id = ${league.id} and record.season_id = ${matchweek.season_id} and record.settled_picks >= ${rankThreshold}
       order by record.confidence_adjusted_accuracy desc nulls last, record.wins::numeric / nullif(record.wins + record.losses, 0) desc nulls last, record.settled_picks desc, record.last_settled_at asc nulls last, u.name asc
       limit 50`,
-    sqlClient<Array<{ id: string; name: string; wins: number; losses: number; settled_picks: number; current_win_streak: number; confidence_adjusted_accuracy: string }>>`
-      select u.id, u.name, record.wins, record.losses, record.settled_picks, record.current_win_streak, record.confidence_adjusted_accuracy
+    sqlClient<Array<{ id: string; name: string; handle: string | null; wins: number; losses: number; settled_picks: number; current_win_streak: number; confidence_adjusted_accuracy: string }>>`
+      select u.id, u.name, u.username as handle, record.wins, record.losses, record.settled_picks, record.current_win_streak, record.confidence_adjusted_accuracy
       from user_league_records record
       join "user" u on u.id = record.user_id
       where record.league_id = ${league.id} and record.settled_picks >= ${rankThreshold}
@@ -442,6 +445,7 @@ export async function getLeagueExperience(slug: string, userId?: string): Promis
     specialists: specialistRows.map((specialist) => ({
       id: specialist.id,
       name: specialist.name,
+      handle: specialist.handle,
       initials: specialist.name.split(/\s+/).map((part) => part[0]).join("").slice(0, 2).toUpperCase(),
       accuracy: Number(((specialist.wins / (specialist.wins + specialist.losses)) * 100).toFixed(1)),
       record: `${specialist.wins}–${specialist.losses}`,
@@ -452,12 +456,12 @@ export async function getLeagueExperience(slug: string, userId?: string): Promis
     })),
     leaderboard: {
       currentSeason: currentSeasonLeaderboardRows.map((entry) => ({
-        id: entry.id, name: entry.name, wins: entry.wins, losses: entry.losses,
+        id: entry.id, name: entry.name, handle: entry.handle, wins: entry.wins, losses: entry.losses,
         settledPicks: entry.settled_picks, currentWinStreak: entry.current_win_streak,
         confidenceAdjustedAccuracy: Number(entry.confidence_adjusted_accuracy),
       })),
       career: careerLeaderboardRows.map((entry) => ({
-        id: entry.id, name: entry.name, wins: entry.wins, losses: entry.losses,
+        id: entry.id, name: entry.name, handle: entry.handle, wins: entry.wins, losses: entry.losses,
         settledPicks: entry.settled_picks, currentWinStreak: entry.current_win_streak,
         confidenceAdjustedAccuracy: Number(entry.confidence_adjusted_accuracy),
       })),
@@ -544,6 +548,7 @@ export const getMatchweekHistory = cache(async function getMatchweekHistory(
     sqlClient<Array<{
       id: string;
       specialist_id: string;
+      specialist_handle: string | null;
       specialist: string;
       team: string;
       team_logo_url: string | null;
@@ -551,7 +556,7 @@ export const getMatchweekHistory = cache(async function getMatchweekHistory(
       away: string;
       result: MatchweekHistoryData["locks"][number]["result"];
     }>>`
-      select p.id, u.id as specialist_id, u.name as specialist, t.name as team, t.logo_url as team_logo_url,
+      select p.id, u.id as specialist_id, u.username as specialist_handle, u.name as specialist, t.name as team, t.logo_url as team_logo_url,
         h.name as home, a.name as away, p.result
       from picks p
       join "user" u on u.id = p.user_id
@@ -601,6 +606,7 @@ export const getMatchweekHistory = cache(async function getMatchweekHistory(
     locks: lockRows.map((lock) => ({
       id: lock.id,
       specialistId: lock.specialist_id,
+      specialistHandle: lock.specialist_handle,
       specialist: lock.specialist,
       initials: lock.specialist.split(/\s+/).map((part) => part[0]).join("").slice(0, 2).toUpperCase(),
       team: lock.team,

@@ -5,6 +5,9 @@ import { usePathname } from "next/navigation";
 import { CircleUserRoundIcon, HomeIcon, LockKeyholeIcon, RadioIcon, UsersRoundIcon } from "lucide-react";
 import { cn } from "@/lib/utils";
 
+/** `userId` is the address this member's profile lives at - their handle where
+ * they have one, since a link that redirects costs a round trip on every
+ * press, and their id otherwise. */
 export function MobileMemberNav({ userId, unread = 0, liveLocksEnabled = true }: { userId: string; unread?: number; liveLocksEnabled?: boolean }) {
   const pathname = usePathname();
   const items = [

@@ -73,7 +73,7 @@ export type SpecialistProfileData = {
   }>;
   /** Spec section 22 keeps leagues known and leagues followed visibly apart. */
   followedLeagues: Array<{
-    id: string; slug: string; name: string; specialistId: string; specialistName: string;
+    id: string; slug: string; name: string; specialistId: string; specialistHandle: string | null; specialistName: string;
   }>;
   recentLocks: Array<{
     id: string; leagueName: string; leagueSlug: string; team: string; result: "win" | "loss" | "void";
@@ -91,7 +91,7 @@ export type SpecialistProfileData = {
   /** Spec section 23: attributed, and never mixed into the independent record. */
   followedHistory: Array<{
     id: string; leagueName: string; leagueSlug: string; team: string;
-    specialistId: string; specialistName: string; result: "win" | "loss" | "void" | "pending"; followedAt: string;
+    specialistId: string; specialistHandle: string | null; specialistName: string; result: "win" | "loss" | "void" | "pending"; followedAt: string;
   }>;
   viewer: { authenticated: boolean; isSelf: boolean; locksDue: number };
 };
@@ -174,8 +174,8 @@ export const getSpecialistProfile = cache(async function getSpecialistProfile(
       where p.user_id = ${specialist.id} and p.result in ('win', 'loss', 'void')
       order by p.settled_at asc nulls last, p.submitted_at asc
       limit 400`,
-    sqlClient<Array<{ id: string; slug: string; name: string; specialist_id: string; specialist_name: string }>>`
-      select l.id, l.slug, l.name, u.id as specialist_id, u.name as specialist_name
+    sqlClient<Array<{ id: string; slug: string; name: string; specialist_id: string; specialist_handle: string | null; specialist_name: string }>>`
+      select l.id, l.slug, l.name, u.id as specialist_id, u.username as specialist_handle, u.name as specialist_name
       from league_follows f
       join leagues l on l.id = f.league_id
       join "user" u on u.id = f.specialist_user_id
@@ -183,10 +183,10 @@ export const getSpecialistProfile = cache(async function getSpecialistProfile(
       order by l.name`,
     sqlClient<Array<{
       id: string; league_name: string; league_slug: string; team: string;
-      specialist_id: string; specialist_name: string; result: "win" | "loss" | "void" | "pending"; followed_at: Date;
+      specialist_id: string; specialist_handle: string | null; specialist_name: string; result: "win" | "loss" | "void" | "pending"; followed_at: Date;
     }>>`
       select fp.id, l.name as league_name, l.slug as league_slug, t.name as team,
-        u.id as specialist_id, u.name as specialist_name, fp.result, fp.followed_at
+        u.id as specialist_id, u.username as specialist_handle, u.name as specialist_name, fp.result, fp.followed_at
       from followed_picks fp
       join leagues l on l.id = fp.league_id
       join picks sp on sp.id = fp.source_pick_id
@@ -235,7 +235,7 @@ export const getSpecialistProfile = cache(async function getSpecialistProfile(
     })),
     followedLeagues: followedLeagueRows.map((league) => ({
       id: league.id, slug: league.slug, name: league.name,
-      specialistId: league.specialist_id, specialistName: league.specialist_name,
+      specialistId: league.specialist_id, specialistHandle: league.specialist_handle, specialistName: league.specialist_name,
     })),
     recentLocks: recentLockRows.map((lock) => ({
       id: lock.id, leagueName: lock.league_name, leagueSlug: lock.league_slug, team: lock.team,
@@ -247,7 +247,7 @@ export const getSpecialistProfile = cache(async function getSpecialistProfile(
     })),
     followedHistory: followedHistoryRows.map((entry) => ({
       id: entry.id, leagueName: entry.league_name, leagueSlug: entry.league_slug, team: entry.team,
-      specialistId: entry.specialist_id, specialistName: entry.specialist_name, result: entry.result,
+      specialistId: entry.specialist_id, specialistHandle: entry.specialist_handle, specialistName: entry.specialist_name, result: entry.result,
       followedAt: new Date(entry.followed_at).toISOString(),
     })),
     viewer: { authenticated: Boolean(viewerId), isSelf: viewerId === specialist.id, locksDue: locksDueRows[0]?.count ?? 0 },

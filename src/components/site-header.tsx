@@ -46,12 +46,17 @@ export function SiteHeader({
   notificationCenter,
   challengeEnabled,
   liveLocksEnabled,
+  viewerHandle,
 }: {
   isAdmin?: boolean;
   leagues: LeagueNavOption[];
   notificationCenter: { items: AppNotification[]; preferences: NotificationPreferences } | null;
   challengeEnabled: boolean;
   liveLocksEnabled: boolean;
+  /** Where this member's own profile lives. The session carries an id; the
+   * profile is addressed by handle, and a link that redirects is a link that
+   * costs a round trip on every press. */
+  viewerHandle: string | null;
 }) {
   const pathname = usePathname();
   const router = useRouter();
@@ -210,7 +215,7 @@ export function SiteHeader({
             <DropdownMenuContent align="end" className="w-56 rounded-none p-2">
               <DropdownMenuGroup>
                 <DropdownMenuLabel className="px-2 py-2">{session.user.name}</DropdownMenuLabel>
-                <DropdownMenuItem render={<Link href={`/specialists/${session.user.id}`} />} className="cursor-pointer rounded-none px-2 py-2.5"><CircleUserRoundIcon />My dashboard</DropdownMenuItem>
+                <DropdownMenuItem render={<Link href={`/specialists/${viewerHandle ?? session.user.id}`} />} className="cursor-pointer rounded-none px-2 py-2.5"><CircleUserRoundIcon />My dashboard</DropdownMenuItem>
                 <DropdownMenuItem render={<Link href="/slip" />} className="cursor-pointer rounded-none px-2 py-2.5"><TrophyIcon />Weekly Slip</DropdownMenuItem>
                 <DropdownMenuItem render={<Link href="/network" />} className="cursor-pointer rounded-none px-2 py-2.5"><Settings2Icon />My network</DropdownMenuItem>
                 <DropdownMenuItem render={<Link href="/invite" />} className="cursor-pointer rounded-none px-2 py-2.5"><UsersRoundIcon />Invite supporters</DropdownMenuItem>

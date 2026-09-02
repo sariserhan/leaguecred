@@ -59,7 +59,7 @@ function FollowedSpecialist({ league, specialist, busy, onUnfollow }: {
       <Avatar className="size-10"><AvatarFallback>{specialist.initials}</AvatarFallback></Avatar>
       <div className="min-w-0 flex-1">
         <div className="flex flex-wrap items-center gap-2">
-          <Link href={`/specialists/${specialist.id}`} className="font-bold hover:text-primary">{specialist.name}</Link>
+          <Link href={`/specialists/${specialist.handle ?? specialist.id}`} className="font-bold hover:text-primary">{specialist.name}</Link>
           {unavailable ? <Badge variant="destructive"><ShieldAlertIcon data-icon="inline-start" />{league.enabled ? "No longer ranked" : "League inactive"}</Badge> : <Badge variant="outline"><CheckIcon data-icon="inline-start" />Active</Badge>}
         </div>
         <p className="mt-1 text-sm text-muted-foreground">{recordLabel(specialist)} · {specialist.followers} followers</p>
@@ -96,7 +96,7 @@ function LeagueCard({ league, pendingKey, onFollow, onSwitch, onUnfollow }: {
           </div>
           {league.alternatives.length ? <div className="divide-y border">{league.alternatives.map((specialist) => {
             const key = `${league.id}:${specialist.id}`;
-            return <div key={specialist.id} className="grid gap-3 p-4 sm:grid-cols-[1fr_auto] sm:items-center"><div><Link href={`/specialists/${specialist.id}`} className="font-bold hover:text-primary">{specialist.name}</Link><p className="mt-1 text-sm text-muted-foreground">{recordLabel(specialist)} · {specialist.followers} followers</p></div>{current ? <ConfirmAction trigger={<Button size="sm" disabled={Boolean(pendingKey)}><UserRoundCheckIcon data-icon="inline-start" />{pendingKey === key ? "Saving…" : `Switch from ${current.name.split(" ")[0]}`}</Button>} title={`Switch to ${specialist.name}?`} description={`This replaces ${current.name} as your ${league.name} specialist for future calls. Existing Weekly Slip entries will not change.`} confirmLabel="Switch specialist" onConfirm={() => onSwitch(league, current, specialist)} /> : <Button size="sm" disabled={Boolean(pendingKey)} onClick={() => onFollow(league, specialist)}><UserRoundCheckIcon data-icon="inline-start" />{pendingKey === key ? "Saving…" : "Follow"}</Button>}</div>;
+            return <div key={specialist.id} className="grid gap-3 p-4 sm:grid-cols-[1fr_auto] sm:items-center"><div><Link href={`/specialists/${specialist.handle ?? specialist.id}`} className="font-bold hover:text-primary">{specialist.name}</Link><p className="mt-1 text-sm text-muted-foreground">{recordLabel(specialist)} · {specialist.followers} followers</p></div>{current ? <ConfirmAction trigger={<Button size="sm" disabled={Boolean(pendingKey)}><UserRoundCheckIcon data-icon="inline-start" />{pendingKey === key ? "Saving…" : `Switch from ${current.name.split(" ")[0]}`}</Button>} title={`Switch to ${specialist.name}?`} description={`This replaces ${current.name} as your ${league.name} specialist for future calls. Existing Weekly Slip entries will not change.`} confirmLabel="Switch specialist" onConfirm={() => onSwitch(league, current, specialist)} /> : <Button size="sm" disabled={Boolean(pendingKey)} onClick={() => onFollow(league, specialist)}><UserRoundCheckIcon data-icon="inline-start" />{pendingKey === key ? "Saving…" : "Follow"}</Button>}</div>;
           })}</div> : <p className="border border-dashed p-4 text-sm text-muted-foreground">No other specialists currently meet the ranking threshold.</p>}
         </div>
       </CardContent>

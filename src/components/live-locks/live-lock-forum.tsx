@@ -79,7 +79,7 @@ function Opinion({ opinion, signedIn, onReply }: { opinion: LockOpinion; signedI
       <Avatar className="size-7"><AvatarFallback>{opinion.username.slice(0, 2).toUpperCase()}</AvatarFallback></Avatar>
       <div>
         <div className="flex flex-wrap items-center gap-x-3 gap-y-1 text-xs">
-          <Link href={`/specialists/${opinion.userId}`} className="font-bold hover:text-primary">{opinion.username}</Link>
+          <Link href={`/specialists/${opinion.handle ?? opinion.userId}`} className="font-bold hover:text-primary">{opinion.username}</Link>
           <LocalTime value={opinion.createdAt} />
         </div>
         <p className="mt-1 text-sm leading-6 whitespace-pre-wrap">{opinion.body}</p>
@@ -190,7 +190,7 @@ function LockCard({ lock, signedIn }: { lock: GlobalActiveLock; signedIn: boolea
         <div className="min-w-0">
           <div className="flex flex-wrap items-center gap-x-2 gap-y-1 text-xs text-muted-foreground">
             <Avatar className="size-6"><AvatarImage src={lock.userImage ?? undefined} /><AvatarFallback>{lock.username.slice(0, 2).toUpperCase()}</AvatarFallback></Avatar>
-            <Link href={`/specialists/${lock.userId}`} className="font-bold text-foreground hover:text-primary">{lock.username}</Link>
+            <Link href={`/specialists/${lock.handle ?? lock.userId}`} className="font-bold text-foreground hover:text-primary">{lock.username}</Link>
             <Badge variant="outline">{lock.league.name}</Badge>
             <span>{dayFormatter.format(new Date(lock.kickoffAt))}</span>
             <LocalTime value={lock.kickoffAt} />

@@ -67,7 +67,7 @@ export function LeagueLeaderboard({
                 {leaderboard.map((entry, index) => (
                   <tr key={entry.id}>
                     <td className="px-3 py-4 font-heading text-lg font-bold">{index + 1}</td>
-                    <td className="px-3 py-4 font-semibold"><Link href={`/specialists/${entry.id}`} className="hover:text-primary hover:underline">{entry.name}</Link></td>
+                    <td className="px-3 py-4 font-semibold"><Link href={`/specialists/${entry.handle ?? entry.id}`} className="hover:text-primary hover:underline">{entry.name}</Link></td>
                     <td className="px-3 py-4 font-semibold tabular-nums">
                       {entry.settledPicks > 0
                         ? ((entry.wins / entry.settledPicks) * 100).toFixed(1)

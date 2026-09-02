@@ -6,11 +6,6 @@ None.
 
 ## Next
 
-- [ ] Point the remaining internal links at handles rather than ids. A profile
-      link built from a user id still works — the page redirects — but every one
-      of those costs a hop. The lock cards, notifications and network pages build
-      theirs from ids because the data they read carries no handle yet.
-
 - [ ] Check any SUSPECT pair the admin Duplicate clubs panel reports (same
       report as `pnpm teams:dedupe`) and add an alias where the two really are
       one club. Boca Juniors beside Atlético Junior is the rule working, not a
@@ -48,6 +43,10 @@ None.
 - [ ] Decide whether expertise is scoped to clubs as well as leagues
 
 ## Completed
+
+- [x] Point every internal profile link at the handle rather than the id, so no
+      click inside the product pays for a redirect. The remaining id links are
+      the admin panel's and the deliberate /u/<id> alias.
 
 - [x] Give every member a handle, and let display names repeat again. The
       handle identifies and addresses a member — /specialists/<handle>, with

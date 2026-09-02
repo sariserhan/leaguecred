@@ -2,9 +2,9 @@ import "server-only";
 
 import { sqlClient } from "@/db";
 
-export type LockOpinion = { id: string; pickId: string; userId: string; username: string; body: string; parentId: string | null; createdAt: string; score: number; viewerVote: number };
+export type LockOpinion = { id: string; pickId: string; userId: string; username: string; handle: string | null; body: string; parentId: string | null; createdAt: string; score: number; viewerVote: number };
 export type GlobalActiveLock = {
-  id: string; userId: string; username: string; userImage: string | null; message: string | null; lockedAt: string; kickoffAt: string;
+  id: string; userId: string; username: string; handle: string | null; userImage: string | null; message: string | null; lockedAt: string; kickoffAt: string;
   /** The match itself, so a reader can take it into their own slip. */
   fixtureId: string;
   /** Agreement with the call, summed. Positive is agreement. */
@@ -33,7 +33,7 @@ export async function getGlobalActiveLocks(viewerId?: string): Promise<GlobalAct
     opponent_id: string; opponent_name: string; opponent_slug: string; opponent_logo: string | null;
     home_name: string; home_logo: string | null; away_name: string; away_logo: string | null;
   }>>`
-    select p.id, p.user_id "userId", u.name username, u.image "userImage", p.decision_reason message,
+    select p.id, p.user_id "userId", u.name username, u.username handle, u.image "userImage", p.decision_reason message,
       p.locked_at::text "lockedAt", f.kickoff_at::text "kickoffAt", f.id "fixtureId",
       l.id league_id, l.name league_name, l.slug league_slug,
       st.id selected_id, st.name selected_name, st.slug selected_slug, st.logo_url selected_logo,
@@ -60,13 +60,13 @@ export async function getGlobalActiveLocks(viewerId?: string): Promise<GlobalAct
   if (!locks.length) return [];
   const ids = locks.map((lock) => lock.id);
   const opinions = await sqlClient<LockOpinion[]>`
-    select o.id, o.pick_id "pickId", o.user_id "userId", u.name username, o.body, o.parent_id "parentId", o.created_at::text "createdAt",
+    select o.id, o.pick_id "pickId", o.user_id "userId", u.name username, u.username handle, o.body, o.parent_id "parentId", o.created_at::text "createdAt",
       coalesce(sum(v.value),0)::int score, coalesce(max(v.value) filter (where v.user_id=${viewerId ?? null}),0)::int "viewerVote"
     from pick_opinions o join "user" u on u.id=o.user_id left join pick_opinion_votes v on v.opinion_id=o.id
-    where o.pick_id=any(${ids}::uuid[]) group by o.id,u.name order by o.created_at asc`;
+    where o.pick_id=any(${ids}::uuid[]) group by o.id,u.name,u.username order by o.created_at asc`;
   const byPick = Map.groupBy(opinions, (opinion) => opinion.pickId);
   return locks.map((lock) => ({
-    id: lock.id, userId: lock.userId, username: lock.username, userImage: lock.userImage, message: lock.message, lockedAt: lock.lockedAt, kickoffAt: lock.kickoffAt,
+    id: lock.id, userId: lock.userId, username: lock.username, handle: lock.handle, userImage: lock.userImage, message: lock.message, lockedAt: lock.lockedAt, kickoffAt: lock.kickoffAt,
     fixtureId: lock.fixtureId, score: lock.score, viewerVote: lock.viewerVote,
     viewerFollows: lock.viewerFollows, inViewerSlip: lock.inViewerSlip,
     open: lock.open, viewerLockedThatDay: lock.viewerLockedThatDay,
