@@ -1,0 +1,108 @@
+# The gates in `pnpm check`, run on every push rather than when someone
+# remembers. Split into three jobs so a failure names itself in the summary,
+# and so the two that need a database do not hold up the one that does not.
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+env:
+  # Matches the port a GitHub service container publishes, not the 54329 the
+  # local compose file uses, so nothing here can reach a developer's database.
+  DATABASE_URL: postgresql://leaguecred:leaguecred@localhost:5432/leaguecred
+  BETTER_AUTH_SECRET: ci-only-secret-never-used-outside-this-runner
+  BETTER_AUTH_URL: http://localhost:3000
+
+jobs:
+  check:
+    name: Lint, types, unit tests, build
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: pnpm/action-setup@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24
+          cache: pnpm
+      - run: pnpm install --frozen-lockfile
+      - run: pnpm lint
+      - run: pnpm typecheck
+      - run: pnpm test
+      - run: pnpm build
+
+  integration:
+    name: PostgreSQL integration tests
+    runs-on: ubuntu-latest
+    services:
+      postgres:
+        image: postgres:17-alpine
+        env:
+          POSTGRES_DB: leaguecred
+          POSTGRES_USER: leaguecred
+          POSTGRES_PASSWORD: leaguecred
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U leaguecred -d leaguecred"
+          --health-interval 2s
+          --health-timeout 3s
+          --health-retries 20
+    steps:
+      - uses: actions/checkout@v4
+      - uses: pnpm/action-setup@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24
+          cache: pnpm
+      - run: pnpm install --frozen-lockfile
+      - run: pnpm db:migrate
+      - run: pnpm db:seed
+      - run: pnpm test:integration:run
+
+  e2e:
+    name: Browser tests
+    runs-on: ubuntu-latest
+    services:
+      postgres:
+        image: postgres:17-alpine
+        env:
+          POSTGRES_DB: leaguecred
+          POSTGRES_USER: leaguecred
+          POSTGRES_PASSWORD: leaguecred
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U leaguecred -d leaguecred"
+          --health-interval 2s
+          --health-timeout 3s
+          --health-retries 20
+    steps:
+      - uses: actions/checkout@v4
+      - uses: pnpm/action-setup@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24
+          cache: pnpm
+      - run: pnpm install --frozen-lockfile
+      # Both Playwright projects are Chromium; the system libraries are what a
+      # developer container usually lacks, and --with-deps is what installs them.
+      - run: pnpm exec playwright install --with-deps chromium
+      - run: pnpm db:migrate
+      - run: pnpm db:seed
+      - run: pnpm build
+      # playwright.config.ts starts the server itself and waits for the port.
+      - run: pnpm test:e2e
+      - if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: playwright-report
+          path: |
+            playwright-report/
+            test-results/
+          retention-days: 7
