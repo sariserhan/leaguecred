@@ -6,6 +6,8 @@ export const emptyLockFilters: LockFilters = { league: NO_FILTER, member: NO_FIL
 
 type FilterableLock = {
   userId: string;
+  /** The unique one. Two members may display the same name. */
+  handle?: string | null;
   username: string;
   kickoffAt: string;
   league: { slug: string };
@@ -36,28 +38,30 @@ export function filterLocks<Lock extends FilterableLock>(locks: Lock[], filters:
  * league or a member the board is not showing. */
 export function lockFilterOptions<Lock extends FilterableLock>(locks: Lock[]) {
   const leagues = new Map<string, string>();
-  const members = new Map<string, string>();
+  const members = new Map<string, { name: string; handle: string | null }>();
   const days = new Set<string>();
 
   for (const lock of locks) {
     leagues.set(lock.league.slug, (lock as Lock & { league: { name?: string } }).league.name ?? lock.league.slug);
-    members.set(lock.userId, lock.username);
+    members.set(lock.userId, { name: lock.username, handle: lock.handle ?? null });
     days.add(lockDay(lock));
   }
 
-  // Two members may display the same name, so an ambiguous one carries a short
-  // piece of its own id: a list with the same word twice is worse than a list
-  // with an ugly suffix.
+  // Two members may display the same name, so an ambiguous one is shown with
+  // the handle that is actually theirs. Named only when it has to be: an
+  // unambiguous list reads better without one.
   const nameCounts = new Map<string, number>();
-  for (const name of members.values()) nameCounts.set(name, (nameCounts.get(name) ?? 0) + 1);
+  for (const member of members.values()) nameCounts.set(member.name, (nameCounts.get(member.name) ?? 0) + 1);
 
   return {
     leagues: [...leagues].map(([slug, name]) => ({ slug, name })).sort((a, b) => a.name.localeCompare(b.name)),
     members: [...members]
-      .map(([id, name]) => ({
+      .map(([id, member]) => ({
         id,
-        name,
-        label: (nameCounts.get(name) ?? 0) > 1 ? `${name} · ${id.slice(0, 4)}` : name,
+        name: member.name,
+        label: (nameCounts.get(member.name) ?? 0) > 1
+          ? `${member.name} @${member.handle ?? id.slice(0, 4)}`
+          : member.name,
       }))
       .sort((a, b) => a.label.localeCompare(b.label)),
     days: [...days].sort(),

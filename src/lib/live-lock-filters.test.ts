@@ -44,14 +44,13 @@ describe("lockFilterOptions", () => {
   // filter still has to tell them apart, or picking one silently returns both.
   it("keeps two members with the same display name apart", () => {
     const shared = [
-      { userId: "one", username: "Kaan", kickoffAt: "2026-09-05T17:00:00.000Z", league: { slug: "super-lig", name: "Süper Lig" } },
-      { userId: "two", username: "Kaan", kickoffAt: "2026-09-05T19:30:00.000Z", league: { slug: "super-lig", name: "Süper Lig" } },
+      { userId: "one", handle: "kaan_bjk", username: "Kaan", kickoffAt: "2026-09-05T17:00:00.000Z", league: { slug: "super-lig", name: "Süper Lig" } },
+      { userId: "two", handle: "kaan_fb", username: "Kaan", kickoffAt: "2026-09-05T19:30:00.000Z", league: { slug: "super-lig", name: "Süper Lig" } },
     ];
 
     const options = lockFilterOptions(shared);
 
-    expect(options.members).toHaveLength(2);
-    expect(options.members.every((member) => member.label.startsWith("Kaan · "))).toBe(true);
+    expect(options.members.map((member) => member.label)).toEqual(["Kaan @kaan_bjk", "Kaan @kaan_fb"]);
     expect(filterLocks(shared, { league: NO_FILTER, member: "one", date: NO_FILTER })).toHaveLength(1);
   });
 });
