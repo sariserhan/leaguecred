@@ -14,14 +14,6 @@ None.
       /fixtures and /teams/[team] are the ones left that a recruit actually
       lands on; the member-only routes (/slip, /network, /settings, /admin) earn
       least, since nobody reaches them without a session anyway.
-- [ ] Decide what a signed-out visitor should see first on `/`. It is the last
-      public page with no prerendered shell, and the reason is the hero: the
-      headline and the call to action are personalised, so the page reads the
-      session before it renders anything. Two ways out, and it is a product call
-      rather than a technical one. Either the hero streams, and a member sees
-      the signed-out headline for an instant before it becomes "Welcome back" —
-      or the hero stops being personalised and the greeting moves into the
-      member block below it, which already exists and already says it.
 - [ ] Check any SUSPECT pair the admin Duplicate clubs panel reports (same
       report as `pnpm teams:dedupe`) and add an alias where the two really are
       one club. Boca Juniors beside Atlético Junior is the rule working, not a
@@ -92,6 +84,14 @@ None.
 
 ## Completed
 
+- [x] Decided to leave the homepage as it is. It is the one public page without
+      a prerendered shell, because its headline and button are personalised and
+      so the page has to know who you are before it draws anything. Making it
+      instant would mean either the headline visibly swapping for a member on
+      every visit, or the same headline for everyone. Neither is worth it: the
+      page works, and a greeting that flickers is worse than a page that takes a
+      moment. Not an oversight — do not "fix" the `ƒ` next to `/` in the build
+      output without reading this.
 - [x] Moved the maintenance wall into `proxy.ts`, which runs before the cache on
       every request. It covers every route now, including /communities, /recaps,
       /live-locks and /teams/*, which the per-page gate never touched. Verified
