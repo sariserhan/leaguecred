@@ -121,6 +121,15 @@ export function ParticipationPaths() {
       <h2 id="paths-heading" className="section-title text-center">
         Choose your path each matchweek.
       </h2>
+      {/* The "or" below is a choice within one league, not a choice about the
+          person. Said plainly here because the two-column layout reads as a
+          fork, and the exchange it describes is the reason the product exists. */}
+      <p className="mx-auto mt-5 max-w-3xl text-center text-lg leading-8 text-muted-foreground">
+        Most people do both, in different leagues. You might know the NBA well enough to call a
+        Tuesday night and have no real idea what happens in the Premier League — while someone in
+        Manchester has exactly the opposite problem. Make your surest call where you actually
+        watch, follow their record where you do not, and they do the same in reverse.
+      </p>
 
       <div className="relative mt-8 grid border lg:grid-cols-2">
         <article className="bg-inverted p-6 text-inverted-foreground sm:p-8 lg:p-10">
