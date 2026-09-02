@@ -36,7 +36,7 @@ export const featureFlagDefinitions: readonly FeatureFlagDefinition[] = [
     key: LEAGUE_LEADERBOARD_FLAG,
     label: "League leaderboards",
     description:
-      "Shows the current-season and career leaderboard on every league page.",
+      "Shows the leaderboard page, its link in the navigation, and the current-season and career table on every league page.",
     defaultEnabled: true,
   },
   {

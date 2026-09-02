@@ -39,6 +39,7 @@ import {
 import { Spinner } from "@/components/ui/spinner";
 import { ToggleGroup, ToggleGroupItem } from "@/components/ui/toggle-group";
 import { LeagueLeaderboard } from "@/components/leagues/league-leaderboard";
+import { SectionNav } from "@/components/leagues/section-nav";
 import { FixtureVotePoll } from "@/components/fixture-vote-poll";
 import { GameDiscussion } from "@/components/leagues/game-discussion";
 import { AddToSlipButton } from "@/components/slip/add-to-slip-button";
@@ -299,7 +300,16 @@ export function LeagueExperience({
         </div>
       </section>
 
-      <nav className="sticky top-0 z-20 border-b bg-background/95 backdrop-blur" aria-label="League sections"><div className="page-shell flex overflow-x-auto"><a href="#fixtures" className="shrink-0 border-b-2 border-primary px-4 py-3 text-sm font-bold">Fixtures</a><a href="#specialists" className="shrink-0 px-4 py-3 text-sm font-bold">Specialists</a><a href="#leaderboard" className="shrink-0 px-4 py-3 text-sm font-bold">Leaderboard</a><a href="#history" className="shrink-0 px-4 py-3 text-sm font-bold">History</a><span className="ml-auto hidden items-center text-xs text-muted-foreground lg:flex">Deadline:&nbsp;{nextDeadline ? <LocalTime value={nextDeadline} relative /> : "closed"}</span></div></nav>
+      <SectionNav
+        sections={[
+          { id: "fixtures", label: "Fixtures" },
+          { id: "specialists", label: "Specialists" },
+          { id: "leaderboard", label: "Leaderboard" },
+          { id: "history", label: "History" },
+        ]}
+      >
+        <span className="ml-auto hidden items-center text-xs text-muted-foreground lg:flex">Deadline:&nbsp;{nextDeadline ? <LocalTime value={nextDeadline} relative /> : "closed"}</span>
+      </SectionNav>
 
       <div className="page-shell py-6 sm:py-8">
         {error ? <Alert variant="destructive" className="mb-5"><AlertDescription>{error}</AlertDescription></Alert> : null}

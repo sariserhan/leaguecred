@@ -44,6 +44,11 @@ None.
 
 ## Completed
 
+- [x] Give the leaderboards a page of their own — one table across every league
+      and one per league — linked from the navigation, and mark the league page's
+      own section tabs against the section actually on screen rather than always
+      the first.
+
 - [x] Filter the fixtures board by league and by day, in the browser, with a day
       left empty by a filter dropped rather than shown as a bare heading.
 

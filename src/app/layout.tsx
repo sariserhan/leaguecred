@@ -9,7 +9,7 @@ import { SiteFooter } from "@/components/site-footer";
 import { viewerIsAdmin } from "@/lib/admin";
 import { getLeagueNavOptions } from "@/data/teams";
 import { getSession } from "@/lib/auth-session";
-import { COMMUNITY_CHALLENGE_FLAG, LIVE_LOCKS_FLAG, isFeatureEnabled } from "@/lib/site-settings";
+import { COMMUNITY_CHALLENGE_FLAG, LEAGUE_LEADERBOARD_FLAG, LIVE_LOCKS_FLAG, isFeatureEnabled } from "@/lib/site-settings";
 import { getFeatureFlags } from "@/services/site-settings";
 import { getNotificationCenter } from "@/data/notifications";
 import { Toaster } from "@/components/ui/toast";
@@ -71,6 +71,7 @@ export default async function RootLayout({ children }: LayoutProps<"/">) {
   ]);
   const challengeEnabled = isFeatureEnabled(flags, COMMUNITY_CHALLENGE_FLAG);
   const liveLocksEnabled = isFeatureEnabled(flags, LIVE_LOCKS_FLAG);
+  const leaderboardEnabled = isFeatureEnabled(flags, LEAGUE_LEADERBOARD_FLAG);
   const [notificationCenter, slipCandidates, lockedGames, viewerHandle] = session
     ? await Promise.all([
         getNotificationCenter(session.user.id),
@@ -107,9 +108,9 @@ export default async function RootLayout({ children }: LayoutProps<"/">) {
             }}
           />
           <SiteBanner />
-          <SiteHeader isAdmin={isAdmin} leagues={leagues} notificationCenter={notificationCenter} viewerHandle={viewerHandle} challengeEnabled={challengeEnabled} liveLocksEnabled={liveLocksEnabled} />
+          <SiteHeader isAdmin={isAdmin} leagues={leagues} notificationCenter={notificationCenter} viewerHandle={viewerHandle} challengeEnabled={challengeEnabled} liveLocksEnabled={liveLocksEnabled} leaderboardEnabled={leaderboardEnabled} />
           <main id="main-content" tabIndex={-1} className={session ? "flex-1 pb-16 md:pb-0" : "flex-1"}>{children}</main>
-          <SiteFooter challengeEnabled={challengeEnabled} liveLocksEnabled={liveLocksEnabled} />
+          <SiteFooter challengeEnabled={challengeEnabled} liveLocksEnabled={liveLocksEnabled} leaderboardEnabled={leaderboardEnabled} />
           {session ? <SlipDock candidates={slipCandidates} locked={lockedGames} /> : null}
           {session ? <MobileMemberNav userId={viewerHandle ?? session.user.id} liveLocksEnabled={liveLocksEnabled} unread={notificationCenter?.items.filter((item) => !item.readAt).length ?? 0} /> : null}
           <Toaster timeout={4500} />

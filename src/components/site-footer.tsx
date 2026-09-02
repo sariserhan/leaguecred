@@ -2,7 +2,7 @@ import Link from "next/link";
 import { BrandMark } from "@/components/brand-logo";
 import { FooterHelpLinks } from "@/components/site-footer-feedback";
 import { ThemeToggle } from "@/components/theme-toggle";
-import { COMMUNITY_CHALLENGE_FLAG, LIVE_LOCKS_FLAG } from "@/lib/site-settings";
+import { COMMUNITY_CHALLENGE_FLAG, LEAGUE_LEADERBOARD_FLAG, LIVE_LOCKS_FLAG } from "@/lib/site-settings";
 
 const footerGroups = [
   {
@@ -13,6 +13,7 @@ const footerGroups = [
       { href: "/challenges", label: "Community challenge", flag: COMMUNITY_CHALLENGE_FLAG },
       { href: "/fixtures", label: "Fixtures by day" },
       { href: "/live-locks", label: "Global active locks", flag: LIVE_LOCKS_FLAG },
+      { href: "/leaderboard", label: "Leaderboard", flag: LEAGUE_LEADERBOARD_FLAG },
       { href: "/communities", label: "Communities" },
       { href: "/recaps", label: "Weekly recap" },
     ],
@@ -27,12 +28,13 @@ const footerGroups = [
   },
 ] as const;
 
-export function SiteFooter({ challengeEnabled, liveLocksEnabled }: { challengeEnabled: boolean; liveLocksEnabled: boolean }) {
+export function SiteFooter({ challengeEnabled, liveLocksEnabled, leaderboardEnabled }: { challengeEnabled: boolean; liveLocksEnabled: boolean; leaderboardEnabled: boolean }) {
   // A footer link to a route the flag has turned into a 404 is worse than no
   // link, so a flagged entry is dropped along with the page it points at.
   const enabledByFlag: Record<string, boolean> = {
     [COMMUNITY_CHALLENGE_FLAG]: challengeEnabled,
     [LIVE_LOCKS_FLAG]: liveLocksEnabled,
+    [LEAGUE_LEADERBOARD_FLAG]: leaderboardEnabled,
   };
 
   return (

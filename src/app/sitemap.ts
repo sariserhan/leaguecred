@@ -3,7 +3,7 @@ import type { MetadataRoute } from "next";
 import { sqlClient } from "@/db";
 import { getLeagueDirectory } from "@/data/leagues";
 import { getSpecialistDirectory } from "@/data/specialists";
-import { COMMUNITY_CHALLENGE_FLAG, LIVE_LOCKS_FLAG, isFeatureEnabled } from "@/lib/site-settings";
+import { COMMUNITY_CHALLENGE_FLAG, LEAGUE_LEADERBOARD_FLAG, LIVE_LOCKS_FLAG, isFeatureEnabled } from "@/lib/site-settings";
 import { getFeatureFlags } from "@/services/site-settings";
 
 const BASE_URL = "https://leaguecred.com";
@@ -43,6 +43,9 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
       : []),
     { url: `${BASE_URL}/communities`, changeFrequency: "daily", priority: 0.8 },
     { url: `${BASE_URL}/specialists`, changeFrequency: "daily", priority: 0.7 },
+    ...(isFeatureEnabled(flags, LEAGUE_LEADERBOARD_FLAG)
+      ? [{ url: `${BASE_URL}/leaderboard`, changeFrequency: "daily" as const, priority: 0.8 }]
+      : []),
     { url: `${BASE_URL}/recaps`, changeFrequency: "daily", priority: 0.7 },
     ...leagues.flatMap((league) => [
       { url: `${BASE_URL}/leagues/${league.slug}`, changeFrequency: "daily" as const, priority: 0.8 },

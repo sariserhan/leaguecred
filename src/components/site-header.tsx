@@ -46,6 +46,7 @@ export function SiteHeader({
   notificationCenter,
   challengeEnabled,
   liveLocksEnabled,
+  leaderboardEnabled,
   viewerHandle,
 }: {
   isAdmin?: boolean;
@@ -53,6 +54,7 @@ export function SiteHeader({
   notificationCenter: { items: AppNotification[]; preferences: NotificationPreferences } | null;
   challengeEnabled: boolean;
   liveLocksEnabled: boolean;
+  leaderboardEnabled: boolean;
   /** Where this member's own profile lives. The session carries an id; the
    * profile is addressed by handle, and a link that redirects is a link that
    * costs a round trip on every press. */
@@ -106,6 +108,7 @@ export function SiteHeader({
                   </DialogClose>
                 ))}
                 <DialogClose nativeButton={false} render={<Link href="/specialists" className="flex min-h-16 items-center gap-3 px-5 font-semibold hover:bg-muted" />}><UsersRoundIcon className="size-5 text-primary" />Specialists<ChevronRightIcon className="ml-auto size-5 text-muted-foreground" /></DialogClose>
+                {leaderboardEnabled ? <DialogClose nativeButton={false} render={<Link href="/leaderboard" className="flex min-h-16 items-center gap-3 px-5 font-semibold hover:bg-muted" />}><TrophyIcon className="size-5 text-primary" />Leaderboard<ChevronRightIcon className="ml-auto size-5 text-muted-foreground" /></DialogClose> : null}
                 <HowItWorksDialog mobile />
                 {challengeEnabled ? <DialogClose nativeButton={false} render={<Link href="/challenges" className="flex min-h-16 items-center gap-3 px-5 font-semibold hover:bg-muted" />}><SwordsIcon className="size-5 text-primary" />Community challenge<ChevronRightIcon className="ml-auto size-5 text-muted-foreground" /></DialogClose> : null}
                 <DialogClose nativeButton={false} render={<Link href="/fixtures" className="flex min-h-16 items-center gap-3 px-5 font-semibold hover:bg-muted" />}><CalendarDaysIcon className="size-5 text-primary" />Fixtures by day<ChevronRightIcon className="ml-auto size-5 text-muted-foreground" /></DialogClose>
@@ -204,6 +207,7 @@ export function SiteHeader({
           </Menu.Root>
           <Link href="/fixtures" className={cn("relative py-2 transition-colors hover:text-foreground", pathname.startsWith("/fixtures") ? "text-foreground" : "text-muted-foreground")}>Fixtures{pathname.startsWith("/fixtures") ? <span className="absolute inset-x-0 -bottom-[1.58rem] h-0.5 bg-primary" /> : null}</Link>
           <Link href="/specialists" className={cn("relative py-2 transition-colors hover:text-foreground", pathname.startsWith("/specialists") ? "text-foreground" : "text-muted-foreground")}>Specialists{pathname.startsWith("/specialists") ? <span className="absolute inset-x-0 -bottom-[1.58rem] h-0.5 bg-primary" /> : null}</Link>
+          {leaderboardEnabled ? <Link href="/leaderboard" className={cn("relative py-2 transition-colors hover:text-foreground", pathname.startsWith("/leaderboard") ? "text-foreground" : "text-muted-foreground")}>Leaderboard{pathname.startsWith("/leaderboard") ? <span className="absolute inset-x-0 -bottom-[1.58rem] h-0.5 bg-primary" /> : null}</Link> : null}
           {challengeEnabled ? <Link href="/challenges" className={cn("relative py-2 transition-colors hover:text-foreground", pathname.startsWith("/challenges") ? "text-foreground" : "text-muted-foreground")}>Challenge{pathname.startsWith("/challenges") ? <span className="absolute inset-x-0 -bottom-[1.58rem] h-0.5 bg-primary" /> : null}</Link> : null}
           {liveLocksEnabled ? <Link href="/live-locks" className={cn("relative py-2 transition-colors hover:text-foreground", pathname.startsWith("/live-locks") ? "text-foreground" : "text-muted-foreground")}>Live{pathname.startsWith("/live-locks") ? <span className="absolute inset-x-0 -bottom-[1.58rem] h-0.5 bg-primary" /> : null}</Link> : null}
           <HowItWorksDialog />
