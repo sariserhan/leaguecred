@@ -339,7 +339,7 @@ export function LiveLockForum({ locks, signedIn, viewerId }: { locks: GlobalActi
           <span className="text-xs font-bold tracking-[.12em] uppercase">Member</span>
           <select className={selectClass} value={filters.member} onChange={(event) => set("member", event.target.value)}>
             <option value={NO_FILTER}>Everyone</option>
-            {options.members.map((member) => <option key={member} value={member}>{member}</option>)}
+            {options.members.map((member) => <option key={member.id} value={member.id}>{member.label}</option>)}
           </select>
         </label>
         <label className="grid gap-1.5">

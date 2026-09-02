@@ -3,9 +3,9 @@ import { describe, expect, it } from "vitest";
 import { NO_FILTER, filterLocks, lockDay, lockFilterOptions } from "@/lib/live-lock-filters";
 
 const locks = [
-  { username: "Ada", kickoffAt: "2026-09-05T17:00:00.000Z", league: { slug: "super-lig", name: "Süper Lig" } },
-  { username: "Bo", kickoffAt: "2026-09-05T19:30:00.000Z", league: { slug: "premier-league", name: "Premier League" } },
-  { username: "Ada", kickoffAt: "2026-09-06T14:00:00.000Z", league: { slug: "super-lig", name: "Süper Lig" } },
+  { userId: "ada", username: "Ada", kickoffAt: "2026-09-05T17:00:00.000Z", league: { slug: "super-lig", name: "Süper Lig" } },
+  { userId: "bo", username: "Bo", kickoffAt: "2026-09-05T19:30:00.000Z", league: { slug: "premier-league", name: "Premier League" } },
+  { userId: "ada", username: "Ada", kickoffAt: "2026-09-06T14:00:00.000Z", league: { slug: "super-lig", name: "Süper Lig" } },
 ];
 
 describe("filterLocks", () => {
@@ -14,14 +14,14 @@ describe("filterLocks", () => {
   });
 
   it("narrows by league, member and day together", () => {
-    const filtered = filterLocks(locks, { league: "super-lig", member: "Ada", date: "2026-09-05" });
+    const filtered = filterLocks(locks, { league: "super-lig", member: "ada", date: "2026-09-05" });
 
     expect(filtered).toHaveLength(1);
     expect(filtered[0]?.kickoffAt).toBe("2026-09-05T17:00:00.000Z");
   });
 
   it("can narrow to nothing rather than falling back to everything", () => {
-    expect(filterLocks(locks, { league: "premier-league", member: "Ada", date: NO_FILTER })).toHaveLength(0);
+    expect(filterLocks(locks, { league: "premier-league", member: "ada", date: NO_FILTER })).toHaveLength(0);
   });
 
   // A kickoff at 19:30 UTC is the same matchday as one at 17:00, and a reader
@@ -36,7 +36,22 @@ describe("lockFilterOptions", () => {
     const options = lockFilterOptions(locks);
 
     expect(options.leagues.map((league) => league.slug)).toEqual(["premier-league", "super-lig"]);
-    expect(options.members).toEqual(["Ada", "Bo"]);
+    expect(options.members.map((member) => member.label)).toEqual(["Ada", "Bo"]);
     expect(options.days).toEqual(["2026-09-05", "2026-09-06"]);
+  });
+
+  // Display names are not unique, so two members can present the same one. The
+  // filter still has to tell them apart, or picking one silently returns both.
+  it("keeps two members with the same display name apart", () => {
+    const shared = [
+      { userId: "one", username: "Kaan", kickoffAt: "2026-09-05T17:00:00.000Z", league: { slug: "super-lig", name: "Süper Lig" } },
+      { userId: "two", username: "Kaan", kickoffAt: "2026-09-05T19:30:00.000Z", league: { slug: "super-lig", name: "Süper Lig" } },
+    ];
+
+    const options = lockFilterOptions(shared);
+
+    expect(options.members).toHaveLength(2);
+    expect(options.members.every((member) => member.label.startsWith("Kaan · "))).toBe(true);
+    expect(filterLocks(shared, { league: NO_FILTER, member: "one", date: NO_FILTER })).toHaveLength(1);
   });
 });
