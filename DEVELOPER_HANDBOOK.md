@@ -163,6 +163,12 @@ pnpm test:integration
 
 ### Quality gates
 
+`pnpm build` needs the database running — `/sitemap.xml` is prerendered and reads the league,
+team and specialist tables at build time — so `pnpm check` wants `pnpm db:up` first. And
+`typecheck` runs `next typegen` before `tsc`, because `PageProps`, `LayoutProps` and
+`RouteContext` are generated into `.next/types` by a build: on a fresh clone, without that
+step, every one of them is an undefined name.
+
 | Command | What it does |
 |---|---|
 | `pnpm check` | Runs lint, typecheck, unit tests, and the production build. |

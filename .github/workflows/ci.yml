@@ -20,8 +20,12 @@ env:
   BETTER_AUTH_URL: http://localhost:3000
 
 jobs:
+  # No database service here on purpose, which is also why this job does not
+  # build: `next build` prerenders /sitemap.xml, and that route queries the
+  # catalogue, so a build needs Postgres reachable. The e2e job builds against
+  # a seeded one, so the build is still proven on every push.
   check:
-    name: Lint, types, unit tests, build
+    name: Lint, types, unit tests
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
@@ -32,9 +36,11 @@ jobs:
           cache: pnpm
       - run: pnpm install --frozen-lockfile
       - run: pnpm lint
+      # `typecheck` runs `next typegen` first: PageProps, LayoutProps and
+      # RouteContext are generated into .next/types by a build, so on a fresh
+      # checkout tsc cannot find any of them.
       - run: pnpm typecheck
       - run: pnpm test
-      - run: pnpm build
 
   integration:
     name: PostgreSQL integration tests

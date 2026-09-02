@@ -8,7 +8,7 @@
     "vercel-build": "tsx src/db/migrate-deploy.ts && next build",
     "start": "next start",
     "lint": "eslint",
-    "typecheck": "tsc --noEmit",
+    "typecheck": "next typegen && tsc --noEmit",
     "test": "vitest run --exclude **/*.integration.test.ts",
     "test:integration": "pnpm db:test:up && DATABASE_URL=postgresql://leaguecred:leaguecred@localhost:54330/leaguecred_test pnpm db:migrate && DATABASE_URL=postgresql://leaguecred:leaguecred@localhost:54330/leaguecred_test pnpm db:seed && DATABASE_URL=postgresql://leaguecred:leaguecred@localhost:54330/leaguecred_test BETTER_AUTH_SECRET=leaguecred-integration-test-secret pnpm test:integration:run",
     "test:integration:run": "vitest run --config vitest.integration.config.mts",
