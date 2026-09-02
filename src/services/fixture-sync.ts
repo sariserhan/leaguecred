@@ -1,3 +1,4 @@
+import { fixtureWindowStart } from "@/lib/fixture-window";
 import type postgres from "postgres";
 
 import { sqlClient } from "@/db";
@@ -17,6 +18,7 @@ type LeagueConfig = {
   provider_season: string;
   season_id: string;
   season_start_date: string;
+  sport: string;
   source_external_id: string;
 };
 
@@ -38,7 +40,7 @@ export async function synchronizeFixtures(provider: FixtureProvider, now = new D
     const availableConfigs = await sqlClient<Omit<LeagueConfig, "source_external_id">[]>`
       select l.id, l.slug, l.name, l.provider, l.provider_external_id, l.country_id, l.region,
         c.is_region as country_is_region, s.provider_season, s.id as season_id,
-        s.start_date as season_start_date
+        s.start_date as season_start_date, l.sport
       from leagues l
       join countries c on c.id = l.country_id
       join seasons s on s.league_id = l.id and s.is_current = true
@@ -70,7 +72,11 @@ export async function synchronizeFixtures(provider: FixtureProvider, now = new D
           batch: await provider.fetchFixtures({
             leagueExternalId: config.source_external_id,
             season: config.provider_season,
-            from: config.season_start_date,
+            from: fixtureWindowStart({
+              sport: config.sport,
+              seasonStartDate: config.season_start_date,
+              now,
+            }),
             to: isoDate(to),
           }),
         };
