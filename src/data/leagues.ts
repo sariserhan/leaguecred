@@ -149,7 +149,7 @@ export async function getLeagueTeamCatalog(slug: string): Promise<LeagueTeamCata
 }
 
 type LeagueRow = {
-  id: string; slug: string; name: string; short_name: string; country: string; country_code: string;
+  id: string; slug: string; name: string; short_name: string; sport: string; country: string; country_code: string;
 };
 type MatchweekRow = {
   id: string; season_id: string; display_name: string; lock_at: Date; status: "upcoming" | "locked" | "settling" | "settled";
@@ -270,7 +270,7 @@ export type LeagueLeaderboardEntry = {
 export type LeagueExperienceData = {
   /** What the leaderboard tells a reader public rank costs. */
   rankThreshold: number;
-  league: { id: string; slug: string; name: string; shortName: string; country: string; countryCode: string };
+  league: { id: string; slug: string; name: string; shortName: string; sport: string; country: string; countryCode: string };
   matchweek: { id: string; seasonId: string; displayName: string; lockAt: string; status: MatchweekRow["status"] };
   fixtures: DatabaseFixture[];
   pastMatchweeks: PastMatchweek[];
@@ -296,7 +296,7 @@ export type LeagueExperienceData = {
 export async function getLeagueExperience(slug: string, userId?: string): Promise<LeagueExperienceData | null> {
   const rankThreshold = await getRankThreshold();
   const [league] = await sqlClient<LeagueRow[]>`
-    select l.id, l.slug, l.name, l.short_name, c.name as country, c.code as country_code
+    select l.id, l.slug, l.name, l.short_name, l.sport, c.name as country, c.code as country_code
     from leagues l join countries c on c.id = l.country_id
     where l.slug = ${slug} and l.enabled = true limit 1`;
   if (!league) return null;
@@ -443,7 +443,7 @@ export async function getLeagueExperience(slug: string, userId?: string): Promis
 
   return {
     rankThreshold,
-    league: { id: league.id, slug: league.slug, name: league.name, shortName: league.short_name, country: league.country, countryCode: league.country_code },
+    league: { id: league.id, slug: league.slug, name: league.name, shortName: league.short_name, sport: league.sport, country: league.country, countryCode: league.country_code },
     matchweek: { id: matchweek.id, seasonId: matchweek.season_id, displayName: matchweek.display_name, lockAt: new Date(matchweek.lock_at).toISOString(), status: matchweek.status },
     fixtures: fixtureRows.map((fixture) => ({
       id: fixture.id, home: fixture.home, homeCode: fixture.home_code, homeLogoUrl: fixture.home_logo_url, homeTeamId: fixture.home_id,

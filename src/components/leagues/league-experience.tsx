@@ -122,6 +122,26 @@ function PastMatchweekHistory({ leagueSlug, matchweeks }: { leagueSlug: string; 
   );
 }
 
+/**
+ * The discipline the product is built on, said where it applies rather than
+ * only in the pitch: a record is judged on how right the calls are, so an
+ * unsure call is worse than no call, and a skipped day costs nothing.
+ *
+ * The draw sentence is football's alone. A drawn match has no winner, so a pick
+ * on one settles as a loss — while basketball, baseball, hockey and the NFL
+ * produce a winner every time, and telling those leagues to avoid draws would
+ * be advice about something that cannot happen.
+ */
+function SelectivityNote({ sport }: { sport: string }) {
+  return (
+    <p className="mt-3 text-center text-xs leading-5 text-muted-foreground">
+      Only call what you are nearly certain of. A day you leave alone costs you nothing — this
+      record is judged on how right you are, not how often you play.
+      {sport === "football" ? " A draw settles as a loss, so a match you expect to end level is one to skip." : ""}
+    </p>
+  );
+}
+
 export function LeagueExperience({
   data,
   leaderboardEnabled,
@@ -377,7 +397,8 @@ export function LeagueExperience({
                 </p>
               ) : null}
               {mode === "prove" ? (
-                daysLeft > 0 ? (
+                <>
+                {daysLeft > 0 ? (
                   <Button size="lg" className="w-full" disabled={chosen.length === 0 || pending || interactionLocked} onClick={() => requireAuthentication() && setLockConfirmOpen(true)}>
                     {pending ? <Spinner data-icon="inline-start" /> : <LockKeyholeIcon data-icon="inline-start" />}
                     {/* One call per day, so what is left is days, not picks. */}
@@ -389,7 +410,9 @@ export function LeagueExperience({
                   <div className="flex min-h-11 items-center justify-center gap-2 text-sm text-muted-foreground">
                     Every day in this week is called.
                   </div>
-                )
+                )}
+                <SelectivityNote sport={data.league.sport} />
+                </>
               ) : (
                 <div className="flex min-h-11 items-center justify-center gap-2 text-sm text-muted-foreground"><UsersRoundIcon aria-hidden="true" className="size-5" />Follow mode selected — choose a specialist call</div>
               )}
