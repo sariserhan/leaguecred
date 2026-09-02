@@ -27,7 +27,9 @@ test("authenticated dashboard regression", async ({ page }) => {
   test.skip(!process.env.E2E_EMAIL || !process.env.E2E_PASSWORD, "Set E2E_EMAIL and E2E_PASSWORD for authenticated coverage");
   await page.goto("/auth");
   await page.getByRole("textbox", { name: "Email" }).fill(process.env.E2E_EMAIL!);
-  await page.getByRole("textbox", { name: "Password" }).fill(process.env.E2E_PASSWORD!);
+  // input[type=password] has no textbox role, so this only ever passed by not
+  // running: the test is skipped unless E2E_PASSWORD is set.
+  await page.getByLabel("Password").fill(process.env.E2E_PASSWORD!);
   await page.getByRole("button", { name: "Sign in and continue" }).click();
   await page.getByRole("button", { name: /Open account menu/ }).click();
   await page.getByRole("menuitem", { name: "My dashboard" }).click();
