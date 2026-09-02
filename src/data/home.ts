@@ -7,6 +7,7 @@ export type HomeLeague = {
   shortName: string;
   slug: string;
   logoUrl: string | null;
+  sport: string;
   homeTeam: string | null;
   awayTeam: string | null;
 };
@@ -67,7 +68,7 @@ export async function getHomeData(): Promise<HomeData> {
         (select count(*)::int from picks where result = 'pending') as active_locks
     `,
     sqlClient<Array<HomeLeague & { home_team: string | null; away_team: string | null; logo_url: string | null; short_name: string }>>`
-      select l.name, l.short_name, l.slug, l.logo_url,
+      select l.name, l.short_name, l.slug, l.logo_url, l.sport,
         fixture.home_team, fixture.away_team
       from leagues l
       left join lateral (
@@ -79,7 +80,12 @@ export async function getHomeData(): Promise<HomeData> {
         order by f.kickoff_at asc limit 1
       ) fixture on true
       where l.enabled = true
-      order by l.priority desc, l.name asc
+      -- Ascending, like every other ordering of this column: priority 1 is the
+      -- Premier League. Descending here meant the homepage led with whatever
+      -- competition the catalogue rated lowest - the Danish Superliga, in
+      -- practice - and put it in the practice lock as the first thing a
+      -- stranger saw.
+      order by l.priority asc, l.name asc
     `,
     sqlClient<Array<{ user_id: string; handle: string | null; name: string; league: string; league_slug: string; wins: number; settled_picks: number; current_win_streak: number }>>`
       select r.user_id, u.username as handle, u.name, l.name as league, l.slug as league_slug,
@@ -121,6 +127,7 @@ export async function getHomeData(): Promise<HomeData> {
       shortName: row.short_name,
       slug: row.slug,
       logoUrl: row.logo_url,
+      sport: row.sport,
       homeTeam: row.home_team,
       awayTeam: row.away_team,
     })),

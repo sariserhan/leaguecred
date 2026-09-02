@@ -32,27 +32,29 @@ export type UsLeague = {
   season: { providerSeason: string; name: string; start: string; end: string };
 };
 
+// Priority is ascending importance: 1 is the Premier League. These sit after
+// the football catalogue, which runs to 24, rather than in front of it.
 export const US_LEAGUES: UsLeague[] = [
   {
     slug: "nfl", code: "nfl", name: "NFL", shortName: "NFL",
-    sport: "american-football", countryCode: "US", priority: 40,
+    sport: "american-football", countryCode: "US", priority: 30,
     season: { providerSeason: "2026", name: "2026", start: "2026-09-01", end: "2027-02-28" },
   },
   {
     slug: "nba", code: "nba", name: "NBA", shortName: "NBA",
     // Toronto plays in it, which is the same reason MLS is filed under the
     // combined country rather than the United States alone.
-    sport: "basketball", countryCode: "US-CA", priority: 41,
+    sport: "basketball", countryCode: "US-CA", priority: 31,
     season: { providerSeason: "2027", name: "2026-27", start: "2026-10-01", end: "2027-06-30" },
   },
   {
     slug: "mlb", code: "mlb", name: "MLB", shortName: "MLB",
-    sport: "baseball", countryCode: "US-CA", priority: 42,
+    sport: "baseball", countryCode: "US-CA", priority: 32,
     season: { providerSeason: "2026", name: "2026", start: "2026-03-25", end: "2026-11-05" },
   },
   {
     slug: "nhl", code: "nhl", name: "NHL", shortName: "NHL",
-    sport: "ice-hockey", countryCode: "US-CA", priority: 43,
+    sport: "ice-hockey", countryCode: "US-CA", priority: 33,
     season: { providerSeason: "2027", name: "2026-27", start: "2026-10-01", end: "2027-06-30" },
   },
 ];

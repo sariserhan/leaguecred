@@ -7,10 +7,11 @@ import { ArrowRightIcon, CheckIcon, LockKeyholeIcon, RotateCcwIcon } from "lucid
 import type { HomeLeague } from "@/data/home";
 import { Button, buttonVariants } from "@/components/ui/button";
 import { Crest } from "@/components/ui/crest";
+import { pickDemoLeagues } from "@/lib/demo-leagues";
 import { cn } from "@/lib/utils";
 
 export function InteractiveDemo({ leagues }: { leagues: HomeLeague[] }) {
-  const demoLeagues = leagues.filter((league) => league.homeTeam && league.awayTeam).slice(0, 4);
+  const demoLeagues = pickDemoLeagues(leagues.filter((league) => league.homeTeam && league.awayTeam));
   const [leagueIndex, setLeagueIndex] = useState(0);
   const [team, setTeam] = useState<string | null>(null);
   const [locked, setLocked] = useState(false);
