@@ -19,6 +19,7 @@
     "db:migrate:deploy": "tsx src/db/migrate-deploy.ts",
     "db:seed": "tsx src/db/seed.ts",
     "db:seed:catalog": "tsx src/db/seed-catalog.ts",
+    "db:seed:nba": "tsx src/db/seed-nba.ts",
     "db:up": "docker compose up -d --wait postgres",
     "db:down": "docker compose down",
     "db:test:up": "docker compose up -d --wait postgres-test",

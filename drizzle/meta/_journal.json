@@ -232,6 +232,13 @@
       "when": 1788308831752,
       "tag": "0032_aspiring_wind_dancer",
       "breakpoints": true
+    },
+    {
+      "idx": 33,
+      "version": "7",
+      "when": 1788377484343,
+      "tag": "0033_league_sport",
+      "breakpoints": true
     }
   ]
 }

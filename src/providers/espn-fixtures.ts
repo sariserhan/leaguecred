@@ -35,7 +35,24 @@ export type EspnEvent = {
 
 type EspnScoreboardResponse = { events?: EspnEvent[] };
 
+const DEFAULT_ESPN_SPORT = "soccer";
+
+/**
+ * The path segment ESPN files a competition under. Read from the registry
+ * rather than passed around, because the services that call these providers
+ * carry a league's external id and nothing else.
+ */
+export function espnSport(externalId: string): string {
+  const competition = ESPN_FIXTURE_COMPETITIONS.find((entry) => entry.externalId === externalId);
+  return competition && "sport" in competition ? competition.sport : DEFAULT_ESPN_SPORT;
+}
+
 // ESPN provides the shared fixture source for every enabled LeagueCred competition.
+//
+// `sport` is the segment ESPN files a competition under, and it is left off the
+// football entries because that is what nearly all of them are. The shape of
+// the response is identical across sports, which is the only reason adding one
+// is a line here rather than a second provider.
 export const ESPN_FIXTURE_COMPETITIONS = [
   { leagueSlug: "premier-league", externalId: "eng.1" },
   { leagueSlug: "uefa-champions-league", externalId: "uefa.champions" },
@@ -60,6 +77,7 @@ export const ESPN_FIXTURE_COMPETITIONS = [
   { leagueSlug: "austria-bundesliga", externalId: "aut.1" },
   { leagueSlug: "denmark-superliga", externalId: "den.1" },
   { leagueSlug: "super-league-greece", externalId: "gre.1" },
+  { leagueSlug: "nba", externalId: "nba", sport: "basketball" },
 ] as const;
 
 function compactDate(isoDate: string) {
@@ -137,7 +155,7 @@ export class EspnFixtureProvider implements FixtureProvider {
     to: string;
   }): Promise<FixtureBatch> {
     const url = new URL(
-      `https://site.api.espn.com/apis/site/v2/sports/soccer/${input.leagueExternalId}/scoreboard`,
+      `https://site.api.espn.com/apis/site/v2/sports/${espnSport(input.leagueExternalId)}/${input.leagueExternalId}/scoreboard`,
     );
     url.searchParams.set("dates", `${compactDate(input.from)}-${compactDate(input.to)}`);
     url.searchParams.set("limit", "200");

@@ -136,6 +136,9 @@ export const leagues = pgTable("leagues", {
   slug: text("slug").notNull().unique(),
   shortName: text("short_name").notNull(),
   region: text("region").notNull(),
+  /** The sport this league plays. Everything downstream keys off the league,
+   * so this is the only place the distinction has to exist. */
+  sport: text("sport").default("football").notNull(),
   logoUrl: text("logo_url"),
   enabled: boolean("enabled").default(true).notNull(),
   priority: integer("priority").default(0).notNull(),
@@ -145,6 +148,7 @@ export const leagues = pgTable("leagues", {
   uniqueIndex("leagues_provider_external_unique").on(table.provider, table.providerExternalId),
   index("leagues_country_id_idx").on(table.countryId),
   index("leagues_enabled_priority_idx").on(table.enabled, table.priority),
+  index("leagues_sport_idx").on(table.sport),
 ]);
 
 export const seasons = pgTable("seasons", {

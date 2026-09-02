@@ -14,6 +14,29 @@ None.
       /fixtures and /teams/[team] are the ones left that a recruit actually
       lands on; the member-only routes (/slip, /network, /settings, /admin) earn
       least, since nobody reaches them without a session anyway.
+- [ ] Decide how a leaderboard compares sports before enabling the NBA. Football
+      has three outcomes and basketball has two, and NBA favourites win about
+      two thirds of the time, so the same accuracy means a different thing in
+      each. Per-league records are unaffected — that is the whole product — but
+      the global leaderboard would rank an NBA specialist above a Premier League
+      one for identical skill. Either scope the board by sport, or score against
+      a baseline like always-pick-the-home-team.
+- [ ] Enable the NBA when the above is settled: `update leagues set enabled =
+      true where slug = 'nba';`. It is seeded and syncing correctly but switched
+      off, so nothing about it is visible yet. The copy is still football's
+      throughout — "club", "kickoff", "football supporters" — which is the next
+      real chunk of work if a second sport is going ahead.
+- [ ] `pnpm test:integration` cannot be run twice locally without wiping the test
+      database first. The tests insert fixed ids and nothing cleans up, so the
+      second run dies on a duplicate username. CI never sees it, because its
+      service container is new every time. Either give the suite a truncate step
+      or make the ids unique per run.
+- [ ] The local development database's migration bookkeeping has drifted: the
+      preflight check refuses every `pnpm db:migrate`, reporting that 0032 was
+      edited after it was applied. Nothing wrong with the repository — the test
+      database migrates from scratch and so does CI — but it means schema
+      changes have to be applied to the dev database by hand. `pnpm db:reset`
+      would fix it and lose local data.
 - [ ] Check any SUSPECT pair the admin Duplicate clubs panel reports (same
       report as `pnpm teams:dedupe`) and add an alias where the two really are
       one club. Boca Juniors beside Atlético Junior is the rule working, not a
@@ -84,6 +107,14 @@ None.
 
 ## Completed
 
+- [x] Proved a second sport fits: the NBA is seeded from ESPN, synced, and
+      rendering, behind `enabled = false`. Three things made it small — the
+      settlement rule only asks whether the winner is the team that was picked,
+      a matchweek is already the calendar week a game falls in rather than a
+      competition round, and ESPN answers the same shape at
+      `sports/basketball/nba` as at `sports/soccer/eng.1`. What it needed was a
+      `sport` column on leagues and that path segment read from the registry
+      instead of hardcoded.
 - [x] Decided to leave the homepage as it is. It is the one public page without
       a prerendered shell, because its headline and button are personalised and
       so the page has to know who you are before it draws anything. Making it

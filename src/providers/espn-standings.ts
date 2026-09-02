@@ -10,11 +10,12 @@
  * feed uses, so rows map onto our clubs by id rather than by name.
  */
 
+import { espnSport } from "@/providers/espn-fixtures";
 import { cacheLife, cacheTag } from "next/cache";
 
 import { assertUnderstood } from "@/providers/upstream-shape";
 
-const STANDINGS_ENDPOINT = "https://site.api.espn.com/apis/v2/sports/soccer";
+const STANDINGS_ENDPOINT = "https://site.api.espn.com/apis/v2/sports";
 
 /**
  * Names the cached table for one competition, so an admin refreshing a league
@@ -106,7 +107,7 @@ export async function fetchEspnStandings(input: {
   cacheTag(espnStandingsTag(input.leagueExternalId));
   cacheLife({ revalidate: input.revalidate ?? 300 });
 
-  const url = `${STANDINGS_ENDPOINT}/${input.leagueExternalId}/standings?season=${input.season}`;
+  const url = `${STANDINGS_ENDPOINT}/${espnSport(input.leagueExternalId)}/${input.leagueExternalId}/standings?season=${input.season}`;
   const response = await fetch(url);
   if (!response.ok) throw new Error(`ESPN standings responded ${response.status}.`);
 

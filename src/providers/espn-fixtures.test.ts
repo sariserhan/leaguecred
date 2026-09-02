@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 
-import { ESPN_FIXTURE_COMPETITIONS, mapEspnEvent, normalizeEspnStatus } from "@/providers/espn-fixtures";
+import { ESPN_FIXTURE_COMPETITIONS, espnSport, mapEspnEvent, normalizeEspnStatus } from "@/providers/espn-fixtures";
 
 const scheduledFixture = {
   date: "2026-09-06T16:00:00Z",
@@ -9,12 +9,31 @@ const scheduledFixture = {
 
 describe("ESPN fixture provider", () => {
   it("covers every enabled competition", () => {
-    expect(ESPN_FIXTURE_COMPETITIONS).toHaveLength(23);
+    expect(ESPN_FIXTURE_COMPETITIONS).toHaveLength(24);
     expect(ESPN_FIXTURE_COMPETITIONS.map((entry) => entry.leagueSlug)).toContain("denmark-superliga");
     expect(ESPN_FIXTURE_COMPETITIONS.map((entry) => entry.leagueSlug)).toContain("premier-league");
     expect(ESPN_FIXTURE_COMPETITIONS.map((entry) => entry.leagueSlug)).toContain("efl-championship");
     expect(ESPN_FIXTURE_COMPETITIONS.map((entry) => entry.leagueSlug)).not.toContain("switzerland-super-league");
     expect(ESPN_FIXTURE_COMPETITIONS.map((entry) => entry.leagueSlug)).not.toContain("czech-republic-czech-liga");
+  });
+
+  describe("espnSport", () => {
+    // ESPN files every competition under a sport, and the response shape is the
+    // same for all of them. Football is left implicit because it is nearly all
+    // of the catalogue; anything else has to say so, or its requests quietly go
+    // to the soccer endpoint and come back empty.
+    it("defaults a competition to football", () => {
+      expect(espnSport("eng.1")).toBe("soccer");
+      expect(espnSport("uefa.champions")).toBe("soccer");
+    });
+
+    it("reads the sport off a competition that declares one", () => {
+      expect(espnSport("nba")).toBe("basketball");
+    });
+
+    it("falls back to football for an id it has never heard of", () => {
+      expect(espnSport("not-a-competition")).toBe("soccer");
+    });
   });
 
   it("maps scheduled and finished matches", () => {
