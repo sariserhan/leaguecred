@@ -1,10 +1,11 @@
 "use client";
 
 import { useState } from "react";
+import Link from "next/link";
 import { ArrowRightIcon, CheckIcon, LockKeyholeIcon, RotateCcwIcon } from "lucide-react";
 
 import type { HomeLeague } from "@/data/home";
-import { Button } from "@/components/ui/button";
+import { Button, buttonVariants } from "@/components/ui/button";
 import { Crest } from "@/components/ui/crest";
 import { cn } from "@/lib/utils";
 
@@ -70,13 +71,29 @@ export function InteractiveDemo({ leagues }: { leagues: HomeLeague[] }) {
           <div className="flex min-h-52 flex-col items-center justify-center border border-primary bg-primary/10 p-6 text-center" aria-live="polite">
             <span className="flex size-12 items-center justify-center rounded-full bg-primary text-primary-foreground"><CheckIcon /></span>
             <p className="mt-4 font-heading text-3xl font-bold uppercase">{team} locked</p>
-            <p className="mt-2 max-w-sm text-sm leading-6 text-muted-foreground">That is the whole idea: one clear call, permanently recorded after the real submission.</p>
-            <Button className="mt-5" variant="outline" onClick={() => reset()}><RotateCcwIcon />Try another</Button>
+            <p className="mt-2 max-w-sm text-sm leading-6 text-muted-foreground">
+              That is the whole idea. The real one goes on your {league.shortName} record and cannot be taken back.
+            </p>
+            {/* The moment somebody has just done the thing and understood it is
+                the moment to offer them the real one. It used to offer only
+                another practice run, which made the demo a dead end at exactly
+                the point it had earned a decision. Straight to the league they
+                chose rather than to a sign-in wall: the page is public, and the
+                sign-in comes when they actually lock. */}
+            <div className="mt-5 flex flex-col items-center gap-3 sm:flex-row">
+              <Link href={`/leagues/${league.slug}`} className={buttonVariants()}>
+                Make this call for real<ArrowRightIcon data-icon="inline-end" />
+              </Link>
+              <Button variant="outline" onClick={() => reset()}><RotateCcwIcon />Try another</Button>
+            </div>
           </div>
         ) : (
           <>
-            <p className="mb-3 text-sm font-semibold">Who wins this fixture?</p>
-            <div className="grid gap-3 sm:grid-cols-2">
+            {/* The question names the pair of buttons rather than merely sitting
+                above them, so the choice reaches a screen reader as one thing
+                being asked rather than two unexplained buttons. */}
+            <p id="demo-question" className="mb-3 text-sm font-semibold">Who wins this fixture?</p>
+            <div role="group" aria-labelledby="demo-question" className="grid gap-3 sm:grid-cols-2">
               {[league.homeTeam, league.awayTeam].map((name) => (
                 <button
                   key={name}

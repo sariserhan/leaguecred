@@ -59,3 +59,28 @@ test("a member gets a 404 at /admin rather than a locked door", async ({ page })
   // look exactly like a route that was never there.
   await expect(page.getByRole("heading", { name: "That league is off the fixture list." })).toBeVisible();
 });
+
+/**
+ * The practice lock is the only thing a visitor can do without an account, and
+ * the point of it is the offer at the end. This walks it because that offer
+ * only exists after two clicks: no amount of reading the served HTML shows it.
+ */
+test("the practice lock ends by offering the real one", async ({ page }) => {
+  await page.goto("/");
+
+  const demo = page.locator("section", {
+    has: page.getByRole("heading", { name: "Make a practice lock" }),
+  }).first();
+  await expect(demo).toBeVisible();
+
+  await demo.getByRole("group", { name: "Who wins this fixture?" }).getByRole("button").first().click();
+  await demo.getByRole("button", { name: "Lock this practice call" }).click();
+
+  const offer = demo.getByRole("link", { name: "Make this call for real" });
+  await expect(offer).toBeVisible();
+  // A league, not a sign-in wall: the league page is public, and the account is
+  // asked for at the point of actually locking.
+  await expect(offer).toHaveAttribute("href", /^\/leagues\/[a-z0-9-]+$/);
+
+  await expect(demo.getByRole("button", { name: "Try another" })).toBeVisible();
+});
