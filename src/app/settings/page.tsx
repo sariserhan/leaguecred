@@ -12,6 +12,6 @@ export const metadata: Metadata = { title: "Settings", robots: { index: false, f
 export default async function SettingsPage() {
   const session = await getSession();
   if (!session) redirect("/auth?next=/settings");
-  const [notifications,profile,leagues]=await Promise.all([getNotificationCenter(session.user.id),sqlClient<Array<{bio:string|null;image:string|null;profile_theme:string;featured_league_id:string|null;pinned_milestone:string|null}>>`select bio,image,profile_theme,featured_league_id,pinned_milestone from "user" where id=${session.user.id}`,sqlClient<Array<{id:string;name:string}>>`select id,name from leagues where enabled=true order by name`]);
+  const [notifications,profile,leagues]=await Promise.all([getNotificationCenter(session.user.id),sqlClient<Array<{username:string|null;bio:string|null;image:string|null;profile_theme:string;featured_league_id:string|null;pinned_milestone:string|null}>>`select username,bio,image,profile_theme,featured_league_id,pinned_milestone from "user" where id=${session.user.id}`,sqlClient<Array<{id:string;name:string}>>`select id,name from leagues where enabled=true order by name`]);
   return <AccountSettings user={{ name: session.user.name, email: session.user.email, id: session.user.id, ...profile[0] }} leagues={leagues} initialPreferences={notifications.preferences} />;
 }

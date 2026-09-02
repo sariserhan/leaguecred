@@ -1,8 +1,8 @@
 import { randomUUID } from "node:crypto";
 
 import { sqlClient } from "@/db";
-import { NAME_TAKEN_MESSAGE, displayNameTaken } from "@/lib/display-name";
 import { toIsoTimestamp } from "@/lib/timestamps";
+import { freeHandleFor } from "@/services/handles";
 import { settlePick } from "@/services/settlement";
 
 /**
@@ -74,13 +74,15 @@ export function seedEmailFor(id: string) {
 export async function createMember(input: { name: string; actorUserId: string }) {
   const validated = validateMemberName(input.name);
   if (!validated.ok) throw new Error(validated.message);
-  if (await displayNameTaken(validated.name)) throw new Error(NAME_TAKEN_MESSAGE);
 
   const id = randomUUID();
+  // A seeded member is a member: their record is public and followed like any
+  // other, so they are reachable at a handle rather than only at a uuid.
+  const handle = await freeHandleFor(validated.name);
   return sqlClient.begin(async (sql) => {
     await sql`
-      insert into "user" (id, name, email, email_verified)
-      values (${id}, ${validated.name}, ${seedEmailFor(id)}, false)`;
+      insert into "user" (id, name, email, email_verified, username)
+      values (${id}, ${validated.name}, ${seedEmailFor(id)}, false, ${handle})`;
     await sql`
       insert into admin_audit_log (actor_user_id, action, target, before, after)
       values (${input.actorUserId}, 'member_created', ${id}, null, ${JSON.stringify({ name: validated.name })}::jsonb)`;

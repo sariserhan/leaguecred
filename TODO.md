@@ -6,6 +6,11 @@ None.
 
 ## Next
 
+- [ ] Point the remaining internal links at handles rather than ids. A profile
+      link built from a user id still works — the page redirects — but every one
+      of those costs a hop. The lock cards, notifications and network pages build
+      theirs from ids because the data they read carries no handle yet.
+
 - [ ] Check any SUSPECT pair the admin Duplicate clubs panel reports (same
       report as `pnpm teams:dedupe`) and add an alias where the two really are
       one club. Boca Juniors beside Atlético Junior is the rule working, not a
@@ -44,11 +49,11 @@ None.
 
 ## Completed
 
-- [x] Make a display name belong to one member. Nothing checked it at sign-up,
-      in settings or in admin seeding, so two members could wear the same name
-      in a product whose whole proposition is following a name. A unique index
-      backs it and all three write paths refuse it in words. The dormant
-      `user.username` column is still unwritten and still a decision to make.
+- [x] Give every member a handle, and let display names repeat again. The
+      handle identifies and addresses a member — /specialists/<handle>, with
+      ids permanently redirecting — while the display name goes back to being
+      what someone is called. Backfilled from existing names; chosen at sign-up
+      and changeable in settings.
 
 - [x] Offer the slip wherever a match is shown — the global board, the fixtures
       board, a league's matchweek and a club's upcoming games — and have every

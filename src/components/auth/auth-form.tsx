@@ -41,12 +41,16 @@ export function AuthForm({ nextPath = "/leagues" }: { nextPath?: string }) {
     const email = String(formData.get("email") ?? "").trim();
     const password = String(formData.get("password") ?? "");
     const name = String(formData.get("name") ?? "").trim();
+    const handle = String(formData.get("handle") ?? "").trim();
 
     setError(null);
     startTransition(async () => {
       const response =
         mode === "sign-up"
-          ? await authClient.signUp.email({ email, password, name, callbackURL: `/auth/verify-email?next=${encodeURIComponent(nextPath)}` })
+          // A blank handle is left out rather than sent empty: the server
+          // derives one from the display name, and sending "" would look like a
+          // choice it has to refuse.
+          ? await authClient.signUp.email({ email, password, name, ...(handle ? { username: handle } : {}), callbackURL: `/auth/verify-email?next=${encodeURIComponent(nextPath)}` })
           : await authClient.signIn.email({ email, password });
 
       if (response.error) {
@@ -86,10 +90,28 @@ export function AuthForm({ nextPath = "/leagues" }: { nextPath?: string }) {
             </ToggleGroup>
 
             {mode === "sign-up" ? (
-              <Field>
-                <FieldLabel htmlFor="name">Display name</FieldLabel>
-                <Input id="name" name="name" autoComplete="name" minLength={2} required />
-              </Field>
+              <>
+                <Field>
+                  <FieldLabel htmlFor="name">Display name</FieldLabel>
+                  <Input id="name" name="name" autoComplete="name" minLength={2} required />
+                </Field>
+                <Field>
+                  <FieldLabel htmlFor="handle">Handle</FieldLabel>
+                  <Input
+                    id="handle"
+                    name="handle"
+                    autoComplete="username"
+                    minLength={3}
+                    maxLength={20}
+                    placeholder="kaan_99"
+                    pattern="[A-Za-z0-9_]+"
+                  />
+                  <FieldError>
+                    Optional. Where your record lives — leaguecred.com/specialists/your_handle. Left
+                    blank, one is made from your name.
+                  </FieldError>
+                </Field>
+              </>
             ) : null}
 
             <Field>

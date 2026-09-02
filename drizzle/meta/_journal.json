@@ -225,6 +225,13 @@
       "when": 1788307898258,
       "tag": "0031_public_the_watchers",
       "breakpoints": true
+    },
+    {
+      "idx": 32,
+      "version": "7",
+      "when": 1788308831752,
+      "tag": "0032_aspiring_wind_dancer",
+      "breakpoints": true
     }
   ]
 }

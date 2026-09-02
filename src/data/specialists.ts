@@ -9,6 +9,10 @@ import { getRankThreshold } from "@/services/site-settings";
 export type SpecialistDirectoryEntry = {
   id: string;
   name: string;
+  /** The address this record is linked by. Null only for a member created
+   * before handles existed and never migrated, which the backfill leaves none
+   * of. */
+  handle: string | null;
   initials: string;
   leagueId: string;
   leagueName: string;
@@ -25,11 +29,11 @@ export type SpecialistDirectoryEntry = {
 export async function getSpecialistDirectory(): Promise<SpecialistDirectoryEntry[]> {
   const rankThreshold = await getRankThreshold();
   const rows = await sqlClient<Array<{
-    id: string; name: string; league_id: string; league_name: string; league_slug: string;
+    id: string; name: string; username: string | null; league_id: string; league_name: string; league_slug: string;
     wins: number; losses: number; settled_picks: number; current_win_streak: number;
     confidence_adjusted_accuracy: string; followers: number;
   }>>`
-    select u.id, u.name, strongest.league_id, strongest.league_name, strongest.league_slug,
+    select u.id, u.name, u.username, strongest.league_id, strongest.league_name, strongest.league_slug,
       strongest.wins, strongest.losses, strongest.settled_picks, strongest.current_win_streak,
       strongest.confidence_adjusted_accuracy,
       (select count(*)::int from league_follows lf where lf.specialist_user_id = u.id) as followers
@@ -47,7 +51,7 @@ export async function getSpecialistDirectory(): Promise<SpecialistDirectoryEntry
     limit 100`;
 
   return rows.map((row) => ({
-    id: row.id, name: row.name,
+    id: row.id, name: row.name, handle: row.username,
     initials: row.name.split(/\s+/).map((part) => part[0]).join("").slice(0, 2).toUpperCase(),
     leagueId: row.league_id, leagueName: row.league_name, leagueSlug: row.league_slug,
     wins: row.wins, losses: row.losses, settledPicks: row.settled_picks,
@@ -58,7 +62,7 @@ export async function getSpecialistDirectory(): Promise<SpecialistDirectoryEntry
 }
 
 export type SpecialistProfileData = {
-  specialist: { id:string;name:string;initials:string;followers:number;referrals:number;memberSince:string;bio:string|null;image:string|null;profileTheme:string;featuredLeague:string|null;pinnedMilestone:string|null;teamName:string|null;teamSlug:string|null;communityRole:"member"|"founding_member"|"captain";homeRegion:string|null };
+  specialist: { id:string;name:string;handle:string|null;initials:string;followers:number;referrals:number;memberSince:string;bio:string|null;image:string|null;profileTheme:string;featuredLeague:string|null;pinnedMilestone:string|null;teamName:string|null;teamSlug:string|null;communityRole:"member"|"founding_member"|"captain";homeRegion:string|null };
   totals: { wins: number; losses: number; settledPicks: number; bestWinStreak: number };
   leagues: Array<{
     id: string; slug: string; name: string; wins: number; losses: number; settledPicks: number;
@@ -92,20 +96,27 @@ export type SpecialistProfileData = {
   viewer: { authenticated: boolean; isSelf: boolean; locksDue: number };
 };
 
+/**
+ * A profile by handle or by id.
+ *
+ * The handle is what a profile is linked and shared by now, but ids are in
+ * every link already sent, every share card and every crawler's index, so both
+ * resolve here and the page redirects an id to the handle.
+ */
 export const getSpecialistProfile = cache(async function getSpecialistProfile(
   specialistId: string,
   viewerId?: string,
 ): Promise<SpecialistProfileData | null> {
   const rankThreshold = await getRankThreshold();
   const [specialist] = await sqlClient<Array<{
-    id:string;name:string;followers:number;referrals:number;created_at:Date|string;bio:string|null;image:string|null;profile_theme:string;featured_league:string|null;pinned_milestone:string|null;team_name:string|null;team_slug:string|null;community_role:"member"|"founding_member"|"captain";home_region:string|null;
+    id:string;name:string;username:string|null;followers:number;referrals:number;created_at:Date|string;bio:string|null;image:string|null;profile_theme:string;featured_league:string|null;pinned_milestone:string|null;team_name:string|null;team_slug:string|null;community_role:"member"|"founding_member"|"captain";home_region:string|null;
   }>>`
-    select u.id,u.name,u.created_at,u.bio,u.image,u.profile_theme,u.pinned_milestone,l.name as featured_league,
+    select u.id,u.name,u.username,u.created_at,u.bio,u.image,u.profile_theme,u.pinned_milestone,l.name as featured_league,
       t.name team_name,t.slug team_slug,u.community_role,u.home_region,
       (select count(*)::int from league_follows lf where lf.specialist_user_id = u.id) as followers
       ,(select count(*)::int from referrals r where r.inviter_user_id=u.id) as referrals
     from "user" u left join leagues l on l.id=u.featured_league_id left join teams t on t.id=u.primary_team_id
-    where u.id = ${specialistId}
+    where u.id = ${specialistId} or lower(u.username) = lower(${specialistId})
     limit 1`;
   if (!specialist) return null;
 
@@ -204,6 +215,7 @@ export const getSpecialistProfile = cache(async function getSpecialistProfile(
   return {
     specialist: {
       id: specialist.id,
+      handle: specialist.username,
       name: specialist.name,
       initials: specialist.name.split(/\s+/).map((part) => part[0]).join("").slice(0, 2).toUpperCase(),
       followers: specialist.followers,

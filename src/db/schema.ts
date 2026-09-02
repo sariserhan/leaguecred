@@ -57,6 +57,8 @@ export const user = pgTable("user", {
   profileTheme: text("profile_theme").default("pitch-dark").notNull(),
   featuredLeagueId: uuid("featured_league_id"),
   pinnedMilestone: text("pinned_milestone"),
+  /** The handle a member is identified and linked by: unique, readable, and
+   * separate from the display name so two people can both be Mehmet Yılmaz. */
   username: text("username"),
   primaryTeamId: uuid("primary_team_id").references((): AnyPgColumn => teams.id, { onDelete: "set null" }),
   homeRegion: text("home_region"),
@@ -68,11 +70,6 @@ export const user = pgTable("user", {
   createdAt,
   updatedAt,
 }, (table) => [
-  /** A display name only one member can hold. The product asks people to
-   * follow a name and stake a record on it, so two members wearing the same one
-   * is not a cosmetic clash: it is one reputation being mistaken for another.
-   * Case-insensitive, since "Kaan" and "kaan" read as the same person. */
-  uniqueIndex("user_name_unique").on(sql`lower(${table.name})`),
   uniqueIndex("user_username_unique").on(sql`lower(${table.username})`).where(sql`${table.username} is not null`),
   uniqueIndex("user_referral_code_unique").on(sql`lower(${table.referralCode})`).where(sql`${table.referralCode} is not null`),
   index("user_primary_team_id_idx").on(table.primaryTeamId),

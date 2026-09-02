@@ -57,7 +57,9 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
       priority: 0.5,
     })),
     ...specialists.map((specialist) => ({
-      url: `${BASE_URL}/specialists/${specialist.id}`,
+      // The handle, since an id only redirects to it and a sitemap should list
+      // the address itself.
+      url: `${BASE_URL}/specialists/${specialist.handle ?? specialist.id}`,
       changeFrequency: "weekly" as const,
       priority: 0.5,
     })),
