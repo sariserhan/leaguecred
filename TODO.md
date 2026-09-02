@@ -6,6 +6,28 @@ None.
 
 ## Next
 
+- [ ] Confirm the three crons in `vercel.json` are actually running on their
+      stated schedules. Hobby allows two and runs them about once a day whatever
+      the expression says, so on Hobby the hourly `/api/jobs/results` pull
+      quietly becomes a daily one and an evening match waits for the 04:00
+      chain — the delay that job exists to remove. Vercel's Cron Jobs tab
+      against `vercel.json` settles it.
+- [ ] Set `RESEND_FROM_EMAIL` in Vercel, or confirm it is already set. Unset, it
+      falls back to Resend's test sender, which only delivers to Resend's own
+      addresses — so the lock reminders and specialist-lock notifications, the
+      two things that create a reason to come back daily, reach nobody and say
+      nothing about it. `ALERT_EMAIL` is worth setting at the same time.
+- [ ] Finish the Cache Components migration. The flag is off; a trial run
+      showed the mechanical part is removing 24 `force-dynamic` exports, and the
+      real work is that the root layout reads the session outside a `<Suspense>`
+      boundary, so nothing in the app can prerender. It needs the header, slip
+      dock and member nav moved behind boundaries with a neutral fallback (not a
+      signed-out one, which would flash the wrong state), `use cache` plus
+      `cacheTag` on leagues, flags and settings, and `updateTag` from the admin
+      actions. It also turns on PPR and `<Activity>` navigation app-wide, which
+      preserves component state across navigations — dialogs and dropdowns need
+      a look. Wait until CI has run green at least once; that is the net this
+      was sequenced behind.
 - [ ] Check any SUSPECT pair the admin Duplicate clubs panel reports (same
       report as `pnpm teams:dedupe`) and add an alias where the two really are
       one club. Boca Juniors beside Atlético Junior is the rule working, not a
@@ -54,10 +76,38 @@ None.
       old URL listed until the next build. Fixing it properly means making the
       sitemap dynamic, which puts its league, team and specialist queries on
       every crawl.
+- [ ] A tested restore, not just Neon's retention. The product promise is that
+      a Daily Lock record is permanent and cannot be rebuilt, which is load
+      bearing enough to deserve a restore somebody has actually performed once.
+- [ ] Move the production Neon credentials out of `.env.local`. Rotating the
+      password (above) fixes the exposure; keeping ten `PROD_*` keys on a laptop
+      recreates it. `vercel env pull` on demand, or a read-only role for the
+      scratch scripts.
+- [ ] A real Content-Security-Policy. The other four security headers now ship;
+      a script-src does not, because the theme script in the root layout runs
+      inline before first paint and a correct CSP needs a per-request nonce.
+      Written without one it would either break the page or be loose enough to
+      be theatre.
+- [ ] Add the trigram indexes when the catalogue justifies them. Measured at
+      20,000 synthetic clubs the GIN index takes global search from 9.1ms to
+      1.4ms, but Postgres declines to use it at the current 504, so shipping it
+      now would add an unused index and a `pg_trgm` extension for nothing.
 - [ ] Decide whether expertise is scoped to clubs as well as leagues
 
 ## Completed
 
+- [x] Run the quality gates on push: a CI workflow with lint, typecheck, unit
+      tests and build; the integration suite against a Postgres service
+      container; and Playwright against a real build, including the browser
+      coverage no container without the system libraries could run. New e2e
+      specs cover sign-up, the `/admin` 404, and the offline path — the device
+      check the PWA work left open. Their first CI run is what proves them.
+- [x] Report the failures nobody was going to be told about: every server error
+      Next.js catches, with the digest the browser shows, and every failed cron
+      step, both on one greppable token, plus an optional `ALERT_EMAIL`.
+- [x] Stop the open endpoints costing more than they need to: global search is
+      rate limited and debounced, and the notification poll backs off when
+      nothing is happening.
 - [x] Make the site installable and survive a dropped connection: a full
       manifest with maskable icons and shortcuts, a service worker that caches
       shared assets but never a page, an /offline fallback, an install button in
