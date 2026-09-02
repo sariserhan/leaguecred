@@ -7,6 +7,7 @@ import { db } from "@/db";
 import * as schema from "@/db/schema";
 import { resolveTrustedOrigins } from "@/lib/auth-origins";
 import { isDisposableEmailDomain } from "@/lib/disposable-email-domains";
+import { NAME_TAKEN_MESSAGE, displayNameTaken } from "@/lib/display-name";
 import { sendEmail } from "@/lib/email";
 import { passwordResetEmail, verificationEmail } from "@/lib/email-templates";
 import { requireBetterAuthSecret, serverEnv } from "@/lib/env";
@@ -66,6 +67,13 @@ export const auth = betterAuth({
             throw new APIError("BAD_REQUEST", {
               message: "Use a permanent email address. A Daily Lock record cannot be rebuilt under a new account.",
             });
+          }
+
+          // Checked here as well as by the unique index, so the answer is a
+          // sentence rather than a constraint violation. The index is what
+          // makes it true under a race; this is what makes it readable.
+          if (await displayNameTaken(user.name)) {
+            throw new APIError("BAD_REQUEST", { message: NAME_TAKEN_MESSAGE });
           }
         },
       },

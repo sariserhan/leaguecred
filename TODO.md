@@ -44,6 +44,12 @@ None.
 
 ## Completed
 
+- [x] Make a display name belong to one member. Nothing checked it at sign-up,
+      in settings or in admin seeding, so two members could wear the same name
+      in a product whose whole proposition is following a name. A unique index
+      backs it and all three write paths refuse it in words. The dormant
+      `user.username` column is still unwritten and still a decision to make.
+
 - [x] Offer the slip wherever a match is shown — the global board, the fixtures
       board, a league's matchweek and a club's upcoming games — and have every
       lock and every addition land in the docks without a page change.

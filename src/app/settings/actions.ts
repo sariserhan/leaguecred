@@ -5,6 +5,7 @@ import { z } from "zod";
 
 import { sqlClient } from "@/db";
 import { getSession } from "@/lib/auth-session";
+import { NAME_TAKEN_MESSAGE, displayNameTaken } from "@/lib/display-name";
 
 const profileSchema = z.object({ name:z.string().trim().min(2).max(80),bio:z.string().trim().max(160),image:z.string().max(400_000),profileTheme:z.enum(["pitch-dark","paper-light","high-contrast"]),featuredLeagueId:z.string().uuid().nullable(),pinnedMilestone:z.string().max(80).nullable() });
 const avatarSchema=z.string().max(400_000).refine(v=>!v||v.startsWith("data:image/jpeg;base64,"),"Use a cropped JPEG avatar.");
@@ -16,6 +17,9 @@ export async function updateProfile(input: z.infer<typeof profileSchema>) {
   if (!session) return { ok: false as const, message: "Sign in to update your profile." };
   const parsed = profileSchema.safeParse(input);
   if (!parsed.success) return { ok: false as const, message: "Use a name between 2 and 80 characters." };
+  if (await displayNameTaken(parsed.data.name, session.user.id)) {
+    return { ok: false as const, message: NAME_TAKEN_MESSAGE };
+  }
   await sqlClient`update "user" set name=${parsed.data.name},bio=${parsed.data.bio||null},image=${parsed.data.image||null},profile_theme=${parsed.data.profileTheme},featured_league_id=${parsed.data.featuredLeagueId},pinned_milestone=${parsed.data.pinnedMilestone},updated_at=now() where id=${session.user.id}`;
   revalidatePath("/");
   revalidatePath("/settings");

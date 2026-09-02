@@ -68,6 +68,11 @@ export const user = pgTable("user", {
   createdAt,
   updatedAt,
 }, (table) => [
+  /** A display name only one member can hold. The product asks people to
+   * follow a name and stake a record on it, so two members wearing the same one
+   * is not a cosmetic clash: it is one reputation being mistaken for another.
+   * Case-insensitive, since "Kaan" and "kaan" read as the same person. */
+  uniqueIndex("user_name_unique").on(sql`lower(${table.name})`),
   uniqueIndex("user_username_unique").on(sql`lower(${table.username})`).where(sql`${table.username} is not null`),
   uniqueIndex("user_referral_code_unique").on(sql`lower(${table.referralCode})`).where(sql`${table.referralCode} is not null`),
   index("user_primary_team_id_idx").on(table.primaryTeamId),

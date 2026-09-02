@@ -1,6 +1,7 @@
 import { randomUUID } from "node:crypto";
 
 import { sqlClient } from "@/db";
+import { NAME_TAKEN_MESSAGE, displayNameTaken } from "@/lib/display-name";
 import { toIsoTimestamp } from "@/lib/timestamps";
 import { settlePick } from "@/services/settlement";
 
@@ -73,6 +74,7 @@ export function seedEmailFor(id: string) {
 export async function createMember(input: { name: string; actorUserId: string }) {
   const validated = validateMemberName(input.name);
   if (!validated.ok) throw new Error(validated.message);
+  if (await displayNameTaken(validated.name)) throw new Error(NAME_TAKEN_MESSAGE);
 
   const id = randomUUID();
   return sqlClient.begin(async (sql) => {

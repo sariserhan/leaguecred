@@ -250,8 +250,12 @@ describe("LeagueCred database integrity", () => {
         round,
         kickoffAt: delayedKickoff,
         status: "scheduled",
-        home: { externalId: `integration-late-home-${suffix}`, name: "Late Home", shortName: "LHM", logoUrl: null },
-        away: { externalId: `integration-late-away-${suffix}`, name: "Late Away", shortName: "LAW", logoUrl: null },
+        // Named per run like the clubs above. Fixed names resolved to an
+        // earlier run's clubs, and a day offset that eventually repeats then
+        // made this match look like one already recorded - so the assertion
+        // below failed on the dedupe rather than on the behaviour it guards.
+        home: { externalId: `integration-late-home-${suffix}`, name: `Late Home ${suffix}`, shortName: "LHM", logoUrl: null },
+        away: { externalId: `integration-late-away-${suffix}`, name: `Late Away ${suffix}`, shortName: "LAW", logoUrl: null },
         homeScore: null,
         awayScore: null,
         winnerExternalId: null,
