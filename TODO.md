@@ -9,30 +9,19 @@ None.
 - [ ] Send one real reminder and confirm it arrives. `RESEND_FROM_EMAIL` is set
       and now live, but only a delivered message proves the sender domain is
       actually verified — an unverified one fails at Resend, not here.
-- [ ] Move the maintenance wall into `proxy.ts`, then convert the public pages.
-      These are one job, in that order. `enforceMaintenanceGate()` is called at
-      the top of eight pages, and a page that prerenders answers its own body at
-      build time — so on `/` and `/fixtures` the gate is now frozen into the
-      shell and the switch is wired to nothing. Verified locally: maintenance
-      enabled in the database, those two serve 200 and no redirect, while
-      /leagues and /specialists still redirect. A wall that protects some routes
-      is the worst of both.
-      A proxy runs before any cache, on every request, for every route, which is
-      what a site-wide wall needs — and it would also cover /communities,
-      /recaps, /live-locks and /teams/*, which never called the gate at all and
-      so have never been walled. Only once that exists can the public pages drop
-      `instant = false` safely; a first attempt at converting them is what turned
-      this up.
-- [ ] Remove the `instant = false` opt-outs one route at a time. The codemod put
-      one on 35 segments so the app would build; each is a route whose data still
-      blocks its own shell. The public ones earn the most from being converted —
-      /, /leagues, /specialists, /teams/[team] are what a recruit lands on — and
-      the member-only ones (/slip, /network, /settings, /admin) earn least, since
-      nobody reaches them without a session anyway.
-- [ ] Work out why `/` is still fully dynamic. Most routes came out of the
-      migration as Partial Prerender; the homepage is marked `ƒ`, so something
-      in it reaches runtime data outside a boundary and no shell is being built
-      for the page a recruit sees first.
+- [ ] Remove the remaining `instant = false` opt-outs. Four of the public ones
+      are done — /leagues, /specialists, /communities and /recaps prerender now.
+      /fixtures and /teams/[team] are the ones left that a recruit actually
+      lands on; the member-only routes (/slip, /network, /settings, /admin) earn
+      least, since nobody reaches them without a session anyway.
+- [ ] Decide what a signed-out visitor should see first on `/`. It is the last
+      public page with no prerendered shell, and the reason is the hero: the
+      headline and the call to action are personalised, so the page reads the
+      session before it renders anything. Two ways out, and it is a product call
+      rather than a technical one. Either the hero streams, and a member sees
+      the signed-out headline for an instant before it becomes "Welcome back" —
+      or the hero stops being personalised and the greeting moves into the
+      member block below it, which already exists and already says it.
 - [ ] Check any SUSPECT pair the admin Duplicate clubs panel reports (same
       report as `pnpm teams:dedupe`) and add an alias where the two really are
       one club. Boca Juniors beside Atlético Junior is the rule working, not a
@@ -103,6 +92,17 @@ None.
 
 ## Completed
 
+- [x] Moved the maintenance wall into `proxy.ts`, which runs before the cache on
+      every request. It covers every route now, including /communities, /recaps,
+      /live-locks and /teams/*, which the per-page gate never touched. Verified
+      by switching it in the database with no deploy: nine routes answer 307 to
+      /maintenance, prerendered pages included; /auth and /admin stay open so the
+      wall can be lowered from the product; it comes down again within seconds.
+- [x] Converted /leagues, /specialists, /communities and /recaps to prerendered
+      shells. Routes that prerender went from 8 to 28 in one build, and most of
+      that was not the pages: the site banner reads the settings row, and left
+      outside a boundary in the layout that single uncached read was holding
+      back the shell of every page on the site.
 - [x] Stopped caching the site settings row. Caching it for an hour put the
       maintenance switch an hour behind, which is the wrong property for the
       control you reach for when the site is in trouble.
