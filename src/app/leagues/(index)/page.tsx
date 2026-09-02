@@ -1,13 +1,10 @@
 import type { Metadata } from "next";
+import { Suspense } from "react";
 
+import { AppLoadingShell } from "@/components/app-loading-shell";
 import { LeagueExplorer } from "@/components/leagues/league-explorer";
 import { getLeagueDirectory } from "@/data/leagues";
 import { getSession } from "@/lib/auth-session";
-import { enforceMaintenanceGate } from "@/lib/maintenance";
-
-// TODO: Cache Components adoption. Refactor this route so this opt-out can be removed.
-// See: https://nextjs.org/docs/app/guides/migrating-to-cache-components
-export const instant = false;
 
 export const metadata: Metadata = {
   title: "Explore leagues",
@@ -16,14 +13,18 @@ export const metadata: Metadata = {
   alternates: { canonical: "/leagues" },
 };
 
-export default async function LeaguesPage({ searchParams }: PageProps<"/leagues">) {
-  await enforceMaintenanceGate();
-
+/** The directory carries each viewer's own record per league, so it streams;
+ *  the headline above it comes from a prerendered shell. */
+async function Explorer({ searchParams }: { searchParams: PageProps<"/leagues">["searchParams"] }) {
   const requestedIntent = (await searchParams).intent;
   const intent = requestedIntent === "follow" ? "follow" : "prove";
   const session = await getSession();
   const leagues = await getLeagueDirectory(session?.user.id);
 
+  return <LeagueExplorer leagues={leagues} authenticated={Boolean(session)} initialIntent={intent} />;
+}
+
+export default function LeaguesPage({ searchParams }: PageProps<"/leagues">) {
   return (
     <div className="page-shell py-14 sm:py-20">
       <header className="mb-10 flex max-w-5xl flex-col gap-4">
@@ -35,7 +36,9 @@ export default async function LeaguesPage({ searchParams }: PageProps<"/leagues"
         </p>
       </header>
 
-      <LeagueExplorer leagues={leagues} authenticated={Boolean(session)} initialIntent={intent} />
+      <Suspense fallback={<AppLoadingShell variant="directory" />}>
+        <Explorer searchParams={searchParams} />
+      </Suspense>
     </div>
   );
 }

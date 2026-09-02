@@ -5,7 +5,6 @@ import { notFound } from "next/navigation";
 import { LeaderboardBoard } from "@/components/leaderboard/leaderboard-board";
 import { getLeaderboards } from "@/data/leaderboard";
 import { JsonLd } from "@/lib/json-ld";
-import { enforceMaintenanceGate } from "@/lib/maintenance";
 import { LEAGUE_LEADERBOARD_FLAG, isFeatureEnabled } from "@/lib/site-settings";
 import { getFeatureFlags } from "@/services/site-settings";
 
@@ -39,8 +38,6 @@ export const metadata: Metadata = {
  * decision rather than two that can disagree.
  */
 export default async function LeaderboardPage() {
-  await enforceMaintenanceGate();
-
   const [flags, data] = await Promise.all([getFeatureFlags(), getLeaderboards()]);
   if (!isFeatureEnabled(flags, LEAGUE_LEADERBOARD_FLAG)) notFound();
 

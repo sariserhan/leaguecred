@@ -4,7 +4,6 @@ import { notFound, permanentRedirect } from "next/navigation";
 import { SpecialistProfile } from "@/components/specialists/specialist-profile";
 import { getSpecialistProfile } from "@/data/specialists";
 import { getSession } from "@/lib/auth-session";
-import { enforceMaintenanceGate } from "@/lib/maintenance";
 import { getPersonalizedRecommendations } from "@/data/recommendations";
 import { getLeaguePreferences } from "@/data/league-preferences";
 import { JsonLd } from "@/lib/json-ld";
@@ -24,8 +23,6 @@ export async function generateMetadata(props: SpecialistPageProps): Promise<Meta
 }
 
 export default async function SpecialistPage(props: SpecialistPageProps) {
-  await enforceMaintenanceGate();
-
   const [{ specialistId }, session] = await Promise.all([props.params, getSession()]);
   const data = await getSpecialistProfile(specialistId, session?.user.id);
   if (!data) notFound();

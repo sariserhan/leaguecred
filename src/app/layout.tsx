@@ -121,7 +121,13 @@ export default async function RootLayout({ children }: LayoutProps<"/">) {
               description,
             }}
           />
-          <SiteBanner />
+          {/* The banner reads the settings row, which is deliberately uncached so
+              the maintenance switch stays immediate. Left in the open that one
+              read would hold back the whole shell, so it streams like the rest
+              of what depends on the moment. */}
+          <Suspense fallback={null}>
+            <SiteBanner />
+          </Suspense>
           <Suspense
             fallback={
               <SiteHeader isAdmin={false} leagues={leagues} notificationCenter={null} viewerHandle={null} {...headerFlags} />

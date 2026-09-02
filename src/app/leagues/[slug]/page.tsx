@@ -7,7 +7,6 @@ import { TeamCatalogSection } from "@/components/leagues/team-catalog-section";
 import { LeagueCommunityPulse } from "@/components/leagues/league-community-pulse";
 import { getLeagueDirectory, getLeagueExperience, getLeagueTeamCatalog } from "@/data/leagues";
 import { getSession } from "@/lib/auth-session";
-import { enforceMaintenanceGate } from "@/lib/maintenance";
 import {
   COMMUNITY_CHALLENGE_FLAG,
   LEAGUE_LEADERBOARD_FLAG,
@@ -47,8 +46,6 @@ export async function generateMetadata(
 }
 
 export default async function LeaguePage(props: LeaguePageProps) {
-  await enforceMaintenanceGate();
-
   const [{ slug }, session, flags] = await Promise.all([
     props.params,
     getSession(),

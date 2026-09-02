@@ -12,7 +12,6 @@ import { ParticipationPaths, RecordAndQuestions } from "@/components/home/produc
 import { buttonVariants } from "@/components/ui/button";
 import { getHomeData, getMemberHome } from "@/data/home";
 import { getSession } from "@/lib/auth-session";
-import { enforceMaintenanceGate } from "@/lib/maintenance";
 import { HOMEPAGE_ACTIVITY_FLAG, LIVE_LOCKS_FLAG, isFeatureEnabled } from "@/lib/site-settings";
 import { getFeatureFlags } from "@/services/site-settings";
 
@@ -36,7 +35,6 @@ const steps = [
 ] as const;
 
 export default async function HomePage() {
-  await enforceMaintenanceGate();
   const sessionPromise = getSession();
   const memberPromise = sessionPromise.then((current) => current ? getMemberHome(current.user.id) : null);
   const [session, data, flags, member] = await Promise.all([sessionPromise, getHomeData(), getFeatureFlags(), memberPromise]);

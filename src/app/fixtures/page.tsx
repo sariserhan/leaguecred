@@ -4,7 +4,6 @@ import { CalendarDaysIcon } from "lucide-react";
 import { FixtureBoard } from "@/components/fixtures/fixture-board";
 import { getFixtureBoard } from "@/data/fixtures";
 import { getSession } from "@/lib/auth-session";
-import { enforceMaintenanceGate } from "@/lib/maintenance";
 
 // TODO: Cache Components adoption. Refactor this route so this opt-out can be removed.
 // See: https://nextjs.org/docs/app/guides/migrating-to-cache-components
@@ -24,7 +23,6 @@ export const metadata: Metadata = {
  * the question this page is for — and calls can be made straight from it.
  */
 export default async function FixturesPage() {
-  await enforceMaintenanceGate();
   const session = await getSession();
   const board = await getFixtureBoard(session?.user.id);
   const matches = board.days.reduce((total, day) => total + day.fixtures.length, 0);
