@@ -1,12 +1,25 @@
 import { NextRequest, NextResponse } from "next/server";
 
 import { sqlClient } from "@/db";
+import { rateLimitActor, withinRateLimit } from "@/services/rate-limit";
 
 export type GlobalSearchResult = { id: string; type: "League" | "Club" | "Specialist"; label: string; detail: string; href: string };
 
 export async function GET(request: NextRequest) {
   const query = request.nextUrl.searchParams.get("q")?.trim() ?? "";
   if (query.length < 2) return NextResponse.json({ results: [] satisfies GlobalSearchResult[] });
+
+  // Every other rate-limited path here is a server action behind a session.
+  // This one is open to anyone, so the actor is the caller's address: reading
+  // the session instead would put an auth lookup in front of every keystroke
+  // to protect a query that is cheaper than the lookup.
+  if (!(await withinRateLimit("globalSearch", await rateLimitActor()))) {
+    return NextResponse.json(
+      { results: [] satisfies GlobalSearchResult[], message: "Too many searches. Wait a moment and try again." },
+      { status: 429, headers: { "Retry-After": "60" } },
+    );
+  }
+
   const needle = `%${query}%`;
   const rows = await sqlClient<GlobalSearchResult[]>`
     select l.id::text, 'League'::text as type, l.name as label, c.name as detail, '/leagues/' || l.slug as href

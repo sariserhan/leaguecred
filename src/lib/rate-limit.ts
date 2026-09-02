@@ -43,6 +43,11 @@ export const RATE_LIMITS = {
   /** A bug report, contact message, or support request from the footer. No
    * account required; five is plenty for a real visitor in one minute. */
   submitSiteFeedback: { limit: 5, windowSeconds: 60 },
+  /** The most expensive read on the site and the only unauthenticated one:
+   * three substring matches across leagues, clubs and members, fired while
+   * somebody types. Debounced in the client to a few calls per search, so this
+   * is generous for a person and far below what a script would want. */
+  globalSearch: { limit: 40, windowSeconds: 60 },
 } as const satisfies Record<string, RateLimitPolicy>;
 
 export type RateLimitedAction = keyof typeof RATE_LIMITS;

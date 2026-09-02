@@ -10,7 +10,17 @@ import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } f
 import { toast } from "@/components/ui/toast";
 import type { AppNotification, NotificationPreferences } from "@/data/notifications";
 
+/**
+ * A visible tab already costs a query every 30 seconds whether or not anything
+ * has happened, and most of the day nothing has. Each poll that finds nothing
+ * doubles the wait, up to five minutes; anything new, or the member coming back
+ * to the tab, drops it straight back to 30 seconds. An idle tab left open all
+ * afternoon settles at a twelfth of the queries it used to make, and a tab
+ * being watched during a matchweek is unchanged.
+ */
 const POLL_INTERVAL_MS = 30_000;
+const MAX_POLL_INTERVAL_MS = 300_000;
+const MAX_BACKOFF_STEPS = 4;
 const preferenceOptions: Array<[keyof NotificationPreferences, string]> = [["lockDeadlines", "Lock deadlines"], ["specialistLocks", "Specialist locks"], ["pickResults", "My results"], ["followedResults", "Followed results"]];
 
 function notificationGroup(item: AppNotification) {
@@ -33,7 +43,9 @@ export function NotificationCenter({ initialItems, initialPreferences }: { initi
   const pollErrorShown = useRef(false);
   const unread = items.filter((item) => !item.readAt).length;
 
-  const refresh = useCallback(async (announce = false) => {
+  /** Returns how many notifications were new, which is what the poll interval
+   *  below backs off on. */
+  const refresh = useCallback(async (announce = false): Promise<number> => {
     try {
       const response = await fetch("/api/notifications", { cache: "no-store" });
       const result = await response.json() as { items?: AppNotification[]; message?: string };
@@ -46,17 +58,46 @@ export function NotificationCenter({ initialItems, initialPreferences }: { initi
       setItems(result.items);
       pollErrorShown.current = false;
       if (announce) toast.add({ title: "Notifications refreshed", description: freshItems.length ? `${freshItems.length} new update${freshItems.length === 1 ? "" : "s"}.` : "You are up to date.", type: "success" });
+      return freshItems.length;
     } catch (error) {
       if (announce || !pollErrorShown.current) toast.add({ title: "Notifications unavailable", description: error instanceof Error ? error.message : "Try again shortly.", type: "error" });
       pollErrorShown.current = true;
+      // A failed poll backs off like a quiet one: a server that is down does
+      // not get retried harder for being down.
+      return 0;
     }
   }, [router]);
 
   useEffect(() => {
-    const poll = () => { if (document.visibilityState === "visible") void refresh(); };
-    const interval = window.setInterval(poll, POLL_INTERVAL_MS);
-    document.addEventListener("visibilitychange", poll);
-    return () => { window.clearInterval(interval); document.removeEventListener("visibilitychange", poll); };
+    let timer = 0;
+    let stopped = false;
+    let quietPolls = 0;
+
+    const schedule = () => {
+      if (stopped) return;
+      timer = window.setTimeout(poll, Math.min(POLL_INTERVAL_MS * 2 ** quietPolls, MAX_POLL_INTERVAL_MS));
+    };
+
+    const poll = async () => {
+      if (document.visibilityState === "visible") {
+        const fresh = await refresh();
+        quietPolls = fresh > 0 ? 0 : Math.min(quietPolls + 1, MAX_BACKOFF_STEPS);
+      }
+      schedule();
+    };
+
+    // Coming back to the tab is the moment to be current, so it polls now
+    // rather than at whatever point the backoff had drifted to.
+    const wake = () => {
+      if (document.visibilityState !== "visible") return;
+      quietPolls = 0;
+      window.clearTimeout(timer);
+      void poll();
+    };
+
+    schedule();
+    document.addEventListener("visibilitychange", wake);
+    return () => { stopped = true; window.clearTimeout(timer); document.removeEventListener("visibilitychange", wake); };
   }, [refresh]);
 
   function read(id: string) {
