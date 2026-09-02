@@ -5,6 +5,8 @@ import { ArrowRightIcon, CheckIcon, LockKeyholeIcon, RotateCcwIcon } from "lucid
 
 import type { HomeLeague } from "@/data/home";
 import { Button } from "@/components/ui/button";
+import { Crest } from "@/components/ui/crest";
+import { cn } from "@/lib/utils";
 
 export function InteractiveDemo({ leagues }: { leagues: HomeLeague[] }) {
   const demoLeagues = leagues.filter((league) => league.homeTeam && league.awayTeam).slice(0, 4);
@@ -38,9 +40,27 @@ export function InteractiveDemo({ leagues }: { leagues: HomeLeague[] }) {
               key={item.slug}
               type="button"
               onClick={() => reset(index)}
-              className={index === leagueIndex ? "shrink-0 border border-inverted bg-inverted px-3 py-2 text-sm font-semibold text-inverted-foreground" : "shrink-0 border px-3 py-2 text-sm font-semibold hover:bg-muted"}
+              className={cn(
+                "inline-flex shrink-0 items-center gap-2 border px-3 py-2 text-sm font-semibold",
+                index === leagueIndex
+                  ? "border-inverted bg-inverted text-inverted-foreground"
+                  : "hover:bg-muted",
+              )}
               aria-pressed={index === leagueIndex}
             >
+              {/* A competition logo is usually a wordmark, and the selected tab
+                  is dark in both themes rather than only in the dark one — so
+                  the plate is forced white there instead of being left to
+                  `plate`'s dark-mode default, which would let black type
+                  disappear into the tab on a light page. */}
+              {item.logoUrl ? (
+                <Crest
+                  src={item.logoUrl}
+                  size={20}
+                  plate
+                  className={index === leagueIndex ? "bg-white" : undefined}
+                />
+              ) : null}
               {item.shortName}
             </button>
           ))}
