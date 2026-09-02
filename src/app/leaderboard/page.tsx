@@ -4,16 +4,28 @@ import { notFound } from "next/navigation";
 
 import { LeaderboardBoard } from "@/components/leaderboard/leaderboard-board";
 import { getLeaderboards } from "@/data/leaderboard";
+import { JsonLd } from "@/lib/json-ld";
 import { enforceMaintenanceGate } from "@/lib/maintenance";
 import { LEAGUE_LEADERBOARD_FLAG, isFeatureEnabled } from "@/lib/site-settings";
 import { getFeatureFlags } from "@/services/site-settings";
 
 export const dynamic = "force-dynamic";
 
+const description =
+  "Every proven football specialist on LeagueCred, ranked across every league and within each one. Only settled independent Daily Locks count.";
+
 export const metadata: Metadata = {
   title: "Leaderboard",
-  description: "Every proven football specialist on LeagueCred, across every league and within each one.",
+  description,
   alternates: { canonical: "/leaderboard" },
+  // A ranking is the most shared thing this product has, so it carries a card
+  // of its own rather than falling back to a bare link.
+  openGraph: {
+    title: "Leaderboard · LeagueCred",
+    description,
+    type: "website",
+    images: ["/opengraph-image"],
+  },
 };
 
 /**
@@ -32,6 +44,27 @@ export default async function LeaderboardPage() {
 
   return (
     <main className="page-shell py-8 sm:py-12">
+      {/* The ranking a reader sees, in the form a crawler reads. Ordered and
+          named exactly as the table above is, since structured data that says
+          something the page does not is worse than none. */}
+      {data.global.length > 0 ? (
+        <JsonLd
+          data={{
+            "@context": "https://schema.org",
+            "@type": "ItemList",
+            name: "LeagueCred leaderboard",
+            description,
+            numberOfItems: data.global.length,
+            itemListOrder: "https://schema.org/ItemListOrderDescending",
+            itemListElement: data.global.slice(0, 10).map((row, index) => ({
+              "@type": "ListItem",
+              position: index + 1,
+              url: `https://leaguecred.com/specialists/${row.handle ?? row.userId}`,
+              name: row.name,
+            })),
+          }}
+        />
+      ) : null}
       <header className="border-b border-inverted bg-inverted px-5 py-8 text-inverted-foreground sm:px-8 sm:py-10">
         <p className="flex items-center gap-2 font-semibold text-primary">
           <TrophyIcon aria-hidden="true" className="size-5" />Proven records
