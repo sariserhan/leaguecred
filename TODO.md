@@ -6,11 +6,9 @@ None.
 
 ## Next
 
-- [ ] Redeploy production so the new `RESEND_FROM_EMAIL` and `ALERT_EMAIL` take
-      effect. Both are set in Vercel, but an environment variable only reaches a
-      deployment built after it was added, and the live one predates them — so
-      the reminder mail is still going out under the old sender and a failed
-      cron step still alerts nobody.
+- [ ] Send one real reminder and confirm it arrives. `RESEND_FROM_EMAIL` is set
+      and now live, but only a delivered message proves the sender domain is
+      actually verified — an unverified one fails at Resend, not here.
 - [ ] Finish the Cache Components migration. The flag is off; a trial run
       showed the mechanical part is removing 24 `force-dynamic` exports, and the
       real work is that the root layout reads the session outside a `<Suspense>`
@@ -36,14 +34,11 @@ None.
 
 ## Later
 
-- [ ] Verify the installed app on real devices. The manifest, the four icon
-      sizes and the offline page were checked over HTTP, but the service worker
-      itself — install, precache, offline navigation, the update toast — was
-      never exercised in a browser: Chromium will not launch in this dev
-      container (`libatk-1.0.so.0` missing), so the whole Playwright suite is
-      unrunnable here. Test on a preview deploy with Chrome DevTools
-      (Application > Service Workers, then Network > Offline) and by adding it
-      to an iPhone home screen.
+- [ ] Add the app to an iPhone home screen and check it there. CI now proves
+      registration, precache and offline navigation in Chromium on every push,
+      which leaves the two things Chromium cannot answer: how it looks launched
+      standalone from an iOS home screen, and the update toast, which needs two
+      deploys with a tab held open across them.
 - [ ] Decide whether web push is worth it now the app installs. It would reach
       members on the lock reminder and settle paths that only email covers
       today, but it needs VAPID keys as real secrets, a table of subscriptions
@@ -86,10 +81,19 @@ None.
       20,000 synthetic clubs the GIN index takes global search from 9.1ms to
       1.4ms, but Postgres declines to use it at the current 504, so shipping it
       now would add an unused index and a `pg_trgm` extension for nothing.
+- [ ] Silence the Node 20 deprecation warning on every CI run. The three
+      actions in the workflow still target Node 20 and are being forced onto 24;
+      it is a warning today and a broken pipeline whenever GitHub finishes the
+      removal. Bumping them is a version bump nobody should guess at — check
+      what each action's current major actually is.
 - [ ] Decide whether expertise is scoped to clubs as well as leagues
 
 ## Completed
 
+- [x] Shipped everything above to production and got CI green on it. First run
+      failed on typecheck for a reason that would have bitten any clean clone;
+      the fix is in `next typegen`, and the build moved to the jobs that have a
+      database, because /sitemap.xml is prerendered and reads one.
 - [x] Confirmed the crons run. Three entries and an hourly schedule are within
       Pro's limits, and the runtime logs show 24 consecutive hourly results runs
       plus the nightly and reminder runs, all 200. The worry came from the repo's
