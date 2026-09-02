@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 
-import { ESPN_FIXTURE_COMPETITIONS, espnSport, mapEspnEvent, normalizeEspnStatus } from "@/providers/espn-fixtures";
+import { ESPN_FIXTURE_COMPETITIONS, espnSportPath, mapEspnEvent, normalizeEspnStatus } from "@/providers/espn-fixtures";
 
 const scheduledFixture = {
   date: "2026-09-06T16:00:00Z",
@@ -9,7 +9,7 @@ const scheduledFixture = {
 
 describe("ESPN fixture provider", () => {
   it("covers every enabled competition", () => {
-    expect(ESPN_FIXTURE_COMPETITIONS).toHaveLength(24);
+    expect(ESPN_FIXTURE_COMPETITIONS).toHaveLength(27);
     expect(ESPN_FIXTURE_COMPETITIONS.map((entry) => entry.leagueSlug)).toContain("denmark-superliga");
     expect(ESPN_FIXTURE_COMPETITIONS.map((entry) => entry.leagueSlug)).toContain("premier-league");
     expect(ESPN_FIXTURE_COMPETITIONS.map((entry) => entry.leagueSlug)).toContain("efl-championship");
@@ -17,22 +17,31 @@ describe("ESPN fixture provider", () => {
     expect(ESPN_FIXTURE_COMPETITIONS.map((entry) => entry.leagueSlug)).not.toContain("czech-republic-czech-liga");
   });
 
-  describe("espnSport", () => {
+  describe("espnSportPath", () => {
     // ESPN files every competition under a sport, and the response shape is the
     // same for all of them. Football is left implicit because it is nearly all
     // of the catalogue; anything else has to say so, or its requests quietly go
     // to the soccer endpoint and come back empty.
     it("defaults a competition to football", () => {
-      expect(espnSport("eng.1")).toBe("soccer");
-      expect(espnSport("uefa.champions")).toBe("soccer");
+      expect(espnSportPath("eng.1")).toBe("soccer");
+      expect(espnSportPath("uefa.champions")).toBe("soccer");
     });
 
-    it("reads the sport off a competition that declares one", () => {
-      expect(espnSport("nba")).toBe("basketball");
+    it("reads the path off a competition that declares one", () => {
+      expect(espnSportPath("nba")).toBe("basketball");
+      expect(espnSportPath("mlb")).toBe("baseball");
+      expect(espnSportPath("nhl")).toBe("hockey");
+    });
+
+    // The trap this exists to catch: ESPN files the NFL under "football",
+    // which is this product's word for what ESPN calls "soccer".
+    it("sends the NFL to ESPN's football, which is not our football", () => {
+      expect(espnSportPath("nfl")).toBe("football");
+      expect(espnSportPath("eng.1")).toBe("soccer");
     });
 
     it("falls back to football for an id it has never heard of", () => {
-      expect(espnSport("not-a-competition")).toBe("soccer");
+      expect(espnSportPath("not-a-competition")).toBe("soccer");
     });
   });
 

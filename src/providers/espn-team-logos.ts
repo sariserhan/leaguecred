@@ -1,4 +1,4 @@
-import { espnSport } from "@/providers/espn-fixtures";
+import { espnSportPath } from "@/providers/espn-fixtures";
 export type EspnTeam = {
   id: string;
   displayName: string;
@@ -42,7 +42,7 @@ export const espnTeamCompetitions = [
 
 export class EspnTeamProvider {
   async fetchTeams(code: string): Promise<EspnTeam[]> {
-    const url = new URL(`https://site.api.espn.com/apis/site/v2/sports/${espnSport(code)}/${code}/teams`);
+    const url = new URL(`https://site.api.espn.com/apis/site/v2/sports/${espnSportPath(code)}/${code}/teams`);
     url.searchParams.set("limit", "100");
     const response = await fetch(url, { cache: "no-store" });
     if (!response.ok) throw new Error(`ESPN team request failed with ${response.status}`);

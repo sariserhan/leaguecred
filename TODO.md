@@ -21,11 +21,18 @@ None.
       the global leaderboard would rank an NBA specialist above a Premier League
       one for identical skill. Either scope the board by sport, or score against
       a baseline like always-pick-the-home-team.
-- [ ] Enable the NBA when the above is settled: `update leagues set enabled =
-      true where slug = 'nba';`. It is seeded and syncing correctly but switched
-      off, so nothing about it is visible yet. The copy is still football's
-      throughout — "club", "kickoff", "football supporters" — which is the next
-      real chunk of work if a second sport is going ahead.
+- [ ] Enable the North American leagues when the above is settled. All four are
+      seeded and sync correctly but ship disabled:
+      `update leagues set enabled = true where slug in ('nfl','mlb','nhl','nba');`
+      Only the NBA is seeded in production so far — `pnpm db:seed:us` adds the
+      other three, and needs running against the production database, which this
+      session was not permitted to write to.
+      Timing is worth a thought: the NFL and MLB are in season now and pulled 14
+      and 200 fixtures, while the NBA and NHL are in preseason and pulled 2 and
+      28. Enabling the two live ones first gives a full board on day one.
+      The copy is still football's throughout — "club", "kickoff", "football
+      supporters" — which is the next real chunk of work if a second sport is
+      going ahead.
 - [ ] `pnpm test:integration` cannot be run twice locally without wiping the test
       database first. The tests insert fixed ids and nothing cleans up, so the
       second run dies on a duplicate username. CI never sees it, because its
@@ -107,6 +114,13 @@ None.
 
 ## Completed
 
+- [x] Added the NFL, MLB and NHL alongside the NBA, all from ESPN, all behind
+      `enabled = false`. One seed and one registry line each; the sync pulled
+      244 fixtures between them with no faults. `sportPath` on the registry is
+      kept distinct from the league's own `sport` because ESPN files the NFL
+      under "football", which is this product's word for what ESPN calls soccer
+      — a test pins that apart. Team slugs are checked for collisions before
+      insert, since `teams.slug` is unique across the whole catalogue.
 - [x] Proved a second sport fits: the NBA is seeded from ESPN, synced, and
       rendering, behind `enabled = false`. Three things made it small — the
       settlement rule only asks whether the winner is the team that was picked,

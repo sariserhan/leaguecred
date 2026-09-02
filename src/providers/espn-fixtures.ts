@@ -42,17 +42,22 @@ const DEFAULT_ESPN_SPORT = "soccer";
  * rather than passed around, because the services that call these providers
  * carry a league's external id and nothing else.
  */
-export function espnSport(externalId: string): string {
+export function espnSportPath(externalId: string): string {
   const competition = ESPN_FIXTURE_COMPETITIONS.find((entry) => entry.externalId === externalId);
-  return competition && "sport" in competition ? competition.sport : DEFAULT_ESPN_SPORT;
+  return competition && "sportPath" in competition ? competition.sportPath : DEFAULT_ESPN_SPORT;
 }
 
 // ESPN provides the shared fixture source for every enabled LeagueCred competition.
 //
-// `sport` is the segment ESPN files a competition under, and it is left off the
+// `sportPath` is the segment ESPN files a competition under, left off the
 // football entries because that is what nearly all of them are. The shape of
 // the response is identical across sports, which is the only reason adding one
 // is a line here rather than a second provider.
+//
+// Named for the path and not for the sport on purpose: ESPN files the NFL under
+// "football", which is the word this product uses for what ESPN calls "soccer".
+// The league row's own `sport` column carries our vocabulary; this carries
+// theirs, and conflating the two would file the NFL as a football league.
 export const ESPN_FIXTURE_COMPETITIONS = [
   { leagueSlug: "premier-league", externalId: "eng.1" },
   { leagueSlug: "uefa-champions-league", externalId: "uefa.champions" },
@@ -77,7 +82,10 @@ export const ESPN_FIXTURE_COMPETITIONS = [
   { leagueSlug: "austria-bundesliga", externalId: "aut.1" },
   { leagueSlug: "denmark-superliga", externalId: "den.1" },
   { leagueSlug: "super-league-greece", externalId: "gre.1" },
-  { leagueSlug: "nba", externalId: "nba", sport: "basketball" },
+  { leagueSlug: "nba", externalId: "nba", sportPath: "basketball" },
+  { leagueSlug: "nfl", externalId: "nfl", sportPath: "football" },
+  { leagueSlug: "mlb", externalId: "mlb", sportPath: "baseball" },
+  { leagueSlug: "nhl", externalId: "nhl", sportPath: "hockey" },
 ] as const;
 
 function compactDate(isoDate: string) {
@@ -155,7 +163,7 @@ export class EspnFixtureProvider implements FixtureProvider {
     to: string;
   }): Promise<FixtureBatch> {
     const url = new URL(
-      `https://site.api.espn.com/apis/site/v2/sports/${espnSport(input.leagueExternalId)}/${input.leagueExternalId}/scoreboard`,
+      `https://site.api.espn.com/apis/site/v2/sports/${espnSportPath(input.leagueExternalId)}/${input.leagueExternalId}/scoreboard`,
     );
     url.searchParams.set("dates", `${compactDate(input.from)}-${compactDate(input.to)}`);
     url.searchParams.set("limit", "200");
