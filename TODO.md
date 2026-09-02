@@ -44,6 +44,9 @@ None.
 
 ## Completed
 
+- [x] Filter the fixtures board by league and by day, in the browser, with a day
+      left empty by a filter dropped rather than shown as a bare heading.
+
 - [x] Point every internal profile link at the handle rather than the id, so no
       click inside the product pays for a redirect. The remaining id links are
       the admin panel's and the deliberate /u/<id> alias.

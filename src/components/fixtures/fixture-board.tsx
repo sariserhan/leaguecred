@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useTransition } from "react";
+import { useMemo, useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { CheckIcon, LockKeyholeIcon, TriangleAlertIcon } from "lucide-react";
@@ -20,6 +20,14 @@ import {
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
 import { AddToSlipButton } from "@/components/slip/add-to-slip-button";
+import {
+  NO_FILTER,
+  countFixtures,
+  emptyFixtureFilters,
+  filterFixtureDays,
+  fixtureFilterOptions,
+  type FixtureFilters,
+} from "@/lib/fixture-filters";
 import { useDockClearance } from "@/components/slip/dock-clearance";
 import { BackToTop } from "@/components/ui/back-to-top";
 import { Button } from "@/components/ui/button";
@@ -57,6 +65,7 @@ export function FixtureBoard({ board, authenticated }: { board: FixtureBoard; au
   const [success, setSuccess] = useState("");
   // A lock cannot be taken back, so it is never one press away here either.
   const [confirming, setConfirming] = useState(false);
+  const [filters, setFilters] = useState<FixtureFilters>(emptyFixtureFilters);
   const [pending, startTransition] = useTransition();
   const router = useRouter();
 
@@ -86,6 +95,13 @@ export function FixtureBoard({ board, authenticated }: { board: FixtureBoard; au
   }
 
   useDockClearance(chosen.length > 0);
+
+  const options = useMemo(() => fixtureFilterOptions(board.days), [board.days]);
+  // A choice already made is kept when the board narrows: a call chosen on
+  // Friday should not be lost by looking at Saturday.
+  const visibleDays = useMemo(() => filterFixtureDays(board.days, filters), [board.days, filters]);
+  const shown = countFixtures(visibleDays);
+  const total = countFixtures(board.days);
 
   function submit() {
     if (chosen.length === 0) return;
@@ -129,8 +145,47 @@ export function FixtureBoard({ board, authenticated }: { board: FixtureBoard; au
         </p>
       ) : null}
 
+      <div className="mb-6 flex flex-wrap items-end gap-3 border p-4">
+        <label className="grid gap-1.5">
+          <span className="text-xs font-bold tracking-[.12em] uppercase">League</span>
+          <select
+            className="h-10 min-w-44 border bg-background px-3 text-sm"
+            value={filters.league}
+            onChange={(event) => setFilters((current) => ({ ...current, league: event.target.value }))}
+          >
+            <option value={NO_FILTER}>Every league</option>
+            {options.leagues.map((league) => <option key={league.slug} value={league.slug}>{league.name}</option>)}
+          </select>
+        </label>
+        <label className="grid gap-1.5">
+          <span className="text-xs font-bold tracking-[.12em] uppercase">Day</span>
+          <select
+            className="h-10 min-w-44 border bg-background px-3 text-sm"
+            value={filters.date}
+            onChange={(event) => setFilters((current) => ({ ...current, date: event.target.value }))}
+          >
+            <option value={NO_FILTER}>Every day</option>
+            {options.days.map((day) => (
+              <option key={day} value={day}>{dayHeading.format(new Date(`${day}T12:00:00Z`))}</option>
+            ))}
+          </select>
+        </label>
+        {filters === emptyFixtureFilters ? null : (
+          <Button variant="ghost" onClick={() => setFilters(emptyFixtureFilters)}>Clear</Button>
+        )}
+        <p className="ml-auto text-sm text-muted-foreground">
+          {shown} of {total} match{total === 1 ? "" : "es"}
+        </p>
+      </div>
+
+      {visibleDays.length === 0 ? (
+        <p className="border p-8 text-center text-sm text-muted-foreground">
+          No match in the next fortnight matches those filters.
+        </p>
+      ) : null}
+
       <div className="flex flex-col gap-8 pb-28">
-        {board.days.map((day) => (
+        {visibleDays.map((day) => (
           <section key={day.date} aria-labelledby={`day-${day.date}`}>
             {/* Pinned while its own day is on screen, then pushed off by the
                 next one, so a long scroll always says which day you are in.
