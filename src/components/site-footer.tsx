@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { BrandMark } from "@/components/brand-logo";
 import { FooterHelpLinks } from "@/components/site-footer-feedback";
+import { InstallApp } from "@/components/install-app";
 import { ThemeToggle } from "@/components/theme-toggle";
 import { COMMUNITY_CHALLENGE_FLAG, LEAGUE_LEADERBOARD_FLAG, LIVE_LOCKS_FLAG } from "@/lib/site-settings";
 
@@ -68,6 +69,7 @@ export function SiteFooter({ challengeEnabled, liveLocksEnabled, leaderboardEnab
         <div className="page-shell flex flex-col items-start justify-between gap-3 py-4 text-xs text-inverted-foreground/60 sm:flex-row sm:items-center">
           <div>© {new Date().getFullYear()} LeagueCred. Built on independent records.</div>
           <div className="flex items-center gap-2 text-inverted-foreground/80">
+            <InstallApp className="text-inverted-foreground/80 hover:bg-inverted-foreground/10 hover:text-inverted-foreground" />
             <span>Theme:</span>
             <ThemeToggle variant="dropdown" className="size-8 text-inverted-foreground/80 hover:text-inverted-foreground" />
           </div>

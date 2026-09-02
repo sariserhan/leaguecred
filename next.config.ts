@@ -29,6 +29,20 @@ const nextConfig: NextConfig = {
       },
     ],
   },
+  async headers() {
+    return [
+      {
+        // The worker is the one file that must never be served from the
+        // browser's HTTP cache: a stale copy pins every visitor to the deploy
+        // that installed it, and it is the file that decides what else caches.
+        source: "/sw.js",
+        headers: [
+          { key: "Cache-Control", value: "no-cache, no-store, must-revalidate" },
+          { key: "Service-Worker-Allowed", value: "/" },
+        ],
+      },
+    ];
+  },
 };
 
 export default nextConfig;

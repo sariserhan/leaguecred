@@ -28,6 +28,7 @@ export default function robots(): MetadataRoute.Robots {
         "/notifications",
         "/seasons",
         "/maintenance",
+        "/offline",
         "/u/",
         "/r/",
       ],

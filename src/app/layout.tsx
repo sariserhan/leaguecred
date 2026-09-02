@@ -1,6 +1,6 @@
 import Script from "next/script";
 
-import type { Metadata } from "next";
+import type { Metadata, Viewport } from "next";
 import { Barlow_Condensed, Inter } from "next/font/google";
 
 import { SiteBanner } from "@/components/site-banner";
@@ -19,6 +19,7 @@ import { getSlipCandidates } from "@/data/slip-candidates";
 import { getLockedGames, getViewerHandle } from "@/data/locked-games";
 import { ThemeProvider } from "@/components/theme-provider";
 import { JsonLd } from "@/lib/json-ld";
+import { ServiceWorkerManager } from "@/components/service-worker";
 
 import "./globals.css";
 
@@ -55,6 +56,25 @@ export const metadata: Metadata = {
   twitter: {
     card: "summary",
   },
+  applicationName: "LeagueCred",
+  // Installed on an iPhone, the site runs without Safari's chrome around it and
+  // under this name rather than the page title of whatever route was open when
+  // it was added.
+  appleWebApp: {
+    capable: true,
+    title: "LeagueCred",
+    statusBarStyle: "default",
+  },
+};
+
+// Matched to the header, which is what sits under the browser's own bar: the
+// page background in each theme, not the brand navy the manifest paints the
+// splash screen with.
+export const viewport: Viewport = {
+  themeColor: [
+    { media: "(prefers-color-scheme: light)", color: "#f5f7f9" },
+    { media: "(prefers-color-scheme: dark)", color: "#0a121e" },
+  ],
 };
 
 // Analytics runs on the real site only. leaguecred.com is served by Vercel, so a
@@ -114,6 +134,7 @@ export default async function RootLayout({ children }: LayoutProps<"/">) {
           {session ? <SlipDock candidates={slipCandidates} locked={lockedGames} /> : null}
           {session ? <MobileMemberNav userId={viewerHandle ?? session.user.id} liveLocksEnabled={liveLocksEnabled} unread={notificationCenter?.items.filter((item) => !item.readAt).length ?? 0} /> : null}
           <Toaster timeout={4500} />
+          <ServiceWorkerManager />
           {isProduction ? (
             <Script
               src="https://cdn.visitorping.com/site/vp_RJPP6CJD.js"

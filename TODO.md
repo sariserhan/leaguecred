@@ -20,6 +20,20 @@ None.
 
 ## Later
 
+- [ ] Verify the installed app on real devices. The manifest, the four icon
+      sizes and the offline page were checked over HTTP, but the service worker
+      itself — install, precache, offline navigation, the update toast — was
+      never exercised in a browser: Chromium will not launch in this dev
+      container (`libatk-1.0.so.0` missing), so the whole Playwright suite is
+      unrunnable here. Test on a preview deploy with Chrome DevTools
+      (Application > Service Workers, then Network > Offline) and by adding it
+      to an iPhone home screen.
+- [ ] Decide whether web push is worth it now the app installs. It would reach
+      members on the lock reminder and settle paths that only email covers
+      today, but it needs VAPID keys as real secrets, a table of subscriptions
+      per device, and a sending path alongside `send-lock-reminders`. iOS only
+      delivers it to an app added to the home screen, which is the piece that
+      was missing until now.
 - [ ] Additional launch leagues with current provider mappings
 - [ ] Leagues outside football-data.org's free-tier list (Liga MX, MLS,
       Saudi Pro League, Argentina, and the rest not in FOOTBALL_DATA_ORG_
@@ -44,6 +58,11 @@ None.
 
 ## Completed
 
+- [x] Make the site installable and survive a dropped connection: a full
+      manifest with maskable icons and shortcuts, a service worker that caches
+      shared assets but never a page, an /offline fallback, an install button in
+      the footer with Safari's Share-sheet instructions, and a toast offering
+      the new version when a deploy lands under an open app.
 - [x] Give the leaderboards a page of their own — one table across every league
       and one per league — linked from the navigation, and mark the league page's
       own section tabs against the section actually on screen rather than always
