@@ -86,7 +86,7 @@ function PastMatchweekHistory({ leagueSlug, matchweeks }: { leagueSlug: string; 
             <summary className="flex cursor-pointer list-none flex-col items-start justify-between gap-2 px-4 py-4 font-semibold marker:content-none hover:bg-muted sm:flex-row sm:items-center sm:gap-3 sm:px-5">
               <span>{matchweek.displayName}</span>
               <span className="flex w-full items-center justify-between gap-3 text-sm text-muted-foreground sm:w-auto sm:justify-start">
-                <Link href={`/leagues/${leagueSlug}/weeks/${matchweek.id}`} className="relative z-10 font-semibold text-foreground underline-offset-4 hover:text-primary hover:underline">
+                <Link href={`/leagues/${leagueSlug}/weeks/${matchweek.slug}`} className="relative z-10 font-semibold text-foreground underline-offset-4 hover:text-primary hover:underline">
                   Week details
                 </Link>
                 <span className="group-open:hidden">Show results</span>

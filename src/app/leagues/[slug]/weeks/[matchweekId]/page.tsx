@@ -1,11 +1,12 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 import { ArrowLeftIcon, CheckIcon, UsersRoundIcon } from "lucide-react";
-import { notFound } from "next/navigation";
+import { notFound, permanentRedirect } from "next/navigation";
 
 import { Badge } from "@/components/ui/badge";
 import { buttonVariants } from "@/components/ui/button";
 import { getMatchweekHistory } from "@/data/leagues";
+import { isMatchweekId } from "@/lib/matchweek-slug";
 import { cn } from "@/lib/utils";
 import { Crest } from "@/components/ui/crest";
 
@@ -41,7 +42,10 @@ export async function generateMetadata(props: MatchweekPageProps): Promise<Metad
   return {
     title: `${data.league.name} ${data.matchweek.displayName}`,
     description,
-    alternates: { canonical: `/leagues/${slug}/weeks/${matchweekId}` },
+    // Always the slug, whichever address was asked for, so a link shared under
+    // the old uuid consolidates onto the readable one rather than competing
+    // with it.
+    alternates: { canonical: `/leagues/${slug}/weeks/${data.matchweek.slug}` },
     openGraph: { title: `${data.league.name} ${data.matchweek.displayName} · LeagueCred`, description, type: "website", images: ["/opengraph-image"] },
   };
 }
@@ -50,6 +54,11 @@ export default async function MatchweekHistoryPage(props: MatchweekPageProps) {
   const { slug, matchweekId } = await props.params;
   const data = await getMatchweekHistory(slug, matchweekId);
   if (!data) notFound();
+
+  // This page was addressed by row id until slugs existed. Those links are out
+  // in the world and are answered permanently rather than broken — but they are
+  // sent on to the readable address so nothing new is shared under a uuid.
+  if (isMatchweekId(matchweekId)) permanentRedirect(`/leagues/${slug}/weeks/${data.matchweek.slug}`);
 
   const accuracy = data.summary.settledLocks === 0
     ? null

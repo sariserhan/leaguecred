@@ -1,4 +1,5 @@
 import { fixtureWindowStart } from "@/lib/fixture-window";
+import { matchweekSlugBase } from "@/lib/matchweek-slug";
 import type postgres from "postgres";
 
 import { sqlClient } from "@/db";
@@ -264,9 +265,18 @@ async function synchronizeRound(providerName: string, config: LeagueConfig, roun
         select count(*)::int + 1 as number from matchweeks
         where league_id = ${config.id} and season_id = ${config.season_id} and start_at < ${startAt}::timestamptz`;
       const displayName = `${config.name} — Week ${week?.number ?? 1}`;
+      // The public address. Counted inside the insert rather than read first,
+      // so two weeks starting on the same day cannot both take the bare date:
+      // this runs in the same transaction that already holds the row lock.
+      const slugBase = matchweekSlugBase(startAt);
       [matchweek] = await sql<Array<{ id: string; status: string; has_participation: boolean }>>`
-        insert into matchweeks (league_id, season_id, provider_round_name, display_name, start_at, lock_at, end_at, status)
-        values (${config.id}, ${config.season_id}, ${round}, ${displayName}, ${startAt}, ${startAt}, ${endAt}, 'upcoming')
+        insert into matchweeks (league_id, season_id, provider_round_name, display_name, slug, start_at, lock_at, end_at, status)
+        values (${config.id}, ${config.season_id}, ${round}, ${displayName},
+          (select case when count(*) = 0 then ${slugBase} else ${slugBase} || '-' || (count(*) + 1) end
+           from matchweeks existing
+           where existing.league_id = ${config.id}
+             and (existing.slug = ${slugBase} or existing.slug like ${`${slugBase}-%`})),
+          ${startAt}, ${startAt}, ${endAt}, 'upcoming')
         returning id, status, false as has_participation`;
     }
     if (!matchweek) throw new Error("Could not upsert matchweek.");

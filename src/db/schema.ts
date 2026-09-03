@@ -238,6 +238,9 @@ export const matchweeks = pgTable("matchweeks", {
   seasonId: uuid("season_id").notNull().references(() => seasons.id, { onDelete: "cascade" }),
   providerRoundName: text("provider_round_name").notNull(),
   displayName: text("display_name").notNull(),
+  /** The public address of this week: the UTC day it starts, numbered where a
+   *  league holds two weeks beginning on the same day. */
+  slug: text("slug").notNull(),
   startAt: timestamp("start_at", { withTimezone: true }).notNull(),
   lockAt: timestamp("lock_at", { withTimezone: true }).notNull(),
   endAt: timestamp("end_at", { withTimezone: true }).notNull(),
@@ -246,6 +249,7 @@ export const matchweeks = pgTable("matchweeks", {
   updatedAt,
 }, (table) => [
   uniqueIndex("matchweeks_league_round_unique").on(table.leagueId, table.providerRoundName),
+  uniqueIndex("matchweeks_league_slug_unique").on(table.leagueId, table.slug),
   index("matchweeks_league_status_lock_idx").on(table.leagueId, table.status, table.lockAt),
   index("matchweeks_season_id_idx").on(table.seasonId),
 ]);

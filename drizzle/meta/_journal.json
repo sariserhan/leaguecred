@@ -239,6 +239,13 @@
       "when": 1788377484343,
       "tag": "0033_league_sport",
       "breakpoints": true
+    },
+    {
+      "idx": 34,
+      "version": "7",
+      "when": 1788453607767,
+      "tag": "0034_matchweek_slugs",
+      "breakpoints": true
     }
   ]
 }

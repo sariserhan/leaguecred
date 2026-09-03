@@ -2,6 +2,7 @@ import "server-only";
 
 import { cache } from "react";
 
+import { isMatchweekId, isMatchweekSlug } from "@/lib/matchweek-slug";
 import { sqlClient } from "@/db";
 import { ESPN_FIXTURE_COMPETITIONS } from "@/providers/espn-fixtures";
 import { fetchEspnStandings } from "@/providers/espn-standings";
@@ -188,6 +189,8 @@ export type GameDiscussion = { id: string; author: string; body: string; created
 
 export type PastMatchweek = {
   id: string;
+  /** Its public address. See `matchweek-slug.ts`. */
+  slug: string;
   displayName: string;
   fixtures: Array<{
     id: string;
@@ -205,7 +208,7 @@ export type PastMatchweek = {
 
 export type MatchweekHistoryData = {
   league: { slug: string; name: string; country: string };
-  matchweek: { id: string; displayName: string };
+  matchweek: { id: string; slug: string; displayName: string };
   fixtures: Array<{
     id: string;
     home: string;
@@ -346,7 +349,7 @@ export async function getLeagueExperience(slug: string, userId?: string): Promis
       from game_discussions d left join "user" u on u.id = d.user_id
       where d.fixture_id in (select id from fixtures where matchweek_id = ${matchweek.id})
       order by d.created_at asc`,
-    sqlClient<Array<{ matchweek_id: string; display_name: string; kickoff_at: Date; id: string; status: PastMatchweek["fixtures"][number]["status"]; home: string; home_code: string; home_logo_url: string | null; home_score: number | null; away: string; away_code: string; away_logo_url: string | null; away_score: number | null }>>`
+    sqlClient<Array<{ matchweek_id: string; matchweek_slug: string; display_name: string; kickoff_at: Date; id: string; status: PastMatchweek["fixtures"][number]["status"]; home: string; home_code: string; home_logo_url: string | null; home_score: number | null; away: string; away_code: string; away_logo_url: string | null; away_score: number | null }>>`
       -- Any week holding a match that has been played, the current one
       -- included. A week used to have to be entirely in the past to appear
       -- here, so a Monday match sitting in a week whose remaining fixtures are
@@ -363,7 +366,7 @@ export async function getLeagueExperience(slug: string, userId?: string): Promis
         order by mw.start_at desc
         limit 8
       )
-      select mw.id as matchweek_id, mw.display_name, f.kickoff_at, f.id, f.status,
+      select mw.id as matchweek_id, mw.slug as matchweek_slug, mw.display_name, f.kickoff_at, f.id, f.status,
         h.name as home, h.short_name as home_code, h.logo_url as home_logo_url, f.home_score,
         a.name as away, a.short_name as away_code, a.logo_url as away_logo_url, f.away_score
       from matchweeks mw
@@ -423,6 +426,7 @@ export async function getLeagueExperience(slug: string, userId?: string): Promis
   for (const fixture of pastFixtureRows) {
     const matchweekHistory = pastMatchweeks.get(fixture.matchweek_id) ?? {
       id: fixture.matchweek_id,
+      slug: fixture.matchweek_slug,
       displayName: fixture.display_name,
       fixtures: [],
     };
@@ -497,24 +501,25 @@ export async function getLeagueExperience(slug: string, userId?: string): Promis
 
 export const getMatchweekHistory = cache(async function getMatchweekHistory(
   slug: string,
+  /** Either the week's slug or, for a link shared before slugs existed, its id. */
   matchweekId: string,
 ): Promise<MatchweekHistoryData | null> {
-  if (!/^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(matchweekId)) {
-    return null;
-  }
+  const byId = isMatchweekId(matchweekId);
+  if (!byId && !isMatchweekSlug(matchweekId)) return null;
 
   const [matchweek] = await sqlClient<Array<{
     id: string;
+    slug: string;
     display_name: string;
     league_slug: string;
     league_name: string;
     country: string;
   }>>`
-    select mw.id, mw.display_name, l.slug as league_slug, l.name as league_name, c.name as country
+    select mw.id, mw.slug, mw.display_name, l.slug as league_slug, l.name as league_name, c.name as country
     from matchweeks mw
     join leagues l on l.id = mw.league_id
     join countries c on c.id = l.country_id
-    where mw.id = ${matchweekId}
+    where ${byId ? sqlClient`mw.id = ${matchweekId}` : sqlClient`mw.slug = ${matchweekId}`}
       and l.slug = ${slug}
       and l.enabled = true
       and mw.end_at < now()
@@ -594,7 +599,7 @@ export const getMatchweekHistory = cache(async function getMatchweekHistory(
 
   return {
     league: { slug: matchweek.league_slug, name: matchweek.league_name, country: matchweek.country },
-    matchweek: { id: matchweek.id, displayName: matchweek.display_name },
+    matchweek: { id: matchweek.id, slug: matchweek.slug, displayName: matchweek.display_name },
     fixtures: fixtureRows.map((fixture) => ({
       id: fixture.id,
       status: fixture.status,
