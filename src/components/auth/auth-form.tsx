@@ -60,7 +60,12 @@ export function AuthForm({ nextPath = "/leagues" }: { nextPath?: string }) {
 
       if (mode === "sign-up") await claimPendingReferral();
 
-      router.push(mode === "sign-up" ? "/onboarding" : nextPath);
+      // Onboarding still runs for a new account, but it now knows where the
+      // person was going. Dropping that was the leak: somebody who chose a team,
+      // pressed Lock and was sent here to sign up came back out at whichever
+      // league they happened to name during onboarding, rather than the one
+      // they had a pick waiting on.
+      router.push(mode === "sign-up" ? `/onboarding?next=${encodeURIComponent(nextPath)}` : nextPath);
       router.refresh();
     });
   }

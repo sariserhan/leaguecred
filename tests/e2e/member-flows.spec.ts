@@ -21,8 +21,8 @@ function newMember(page: Page) {
   };
 }
 
-async function signUp(member: ReturnType<typeof newMember>) {
-  await member.page.goto("/auth");
+async function signUp(member: ReturnType<typeof newMember>, from = "/auth") {
+  await member.page.goto(from);
   // Exact, because the submit button is "Create account and continue" and role
   // names match on substring by default - both would answer to "Create account".
   await member.page.getByRole("button", { name: "Create account", exact: true }).click();
@@ -83,4 +83,17 @@ test("the practice lock ends by offering the real one", async ({ page }) => {
   await expect(offer).toHaveAttribute("href", /^\/leagues\/[a-z0-9-]+$/);
 
   await expect(demo.getByRole("button", { name: "Try another" })).toBeVisible();
+});
+
+/**
+ * Signing up used to lose where you were going: the form sent a new account to
+ * onboarding and dropped the destination, so somebody who had chosen a team and
+ * pressed Lock came back out at whichever league they happened to name during
+ * onboarding rather than the one their pick was waiting on.
+ */
+test("signing up mid-lock keeps the league you were on", async ({ page }) => {
+  const member = newMember(page);
+  await signUp(member, "/auth?next=%2Fleagues%2Fpremier-league");
+
+  await expect(page).toHaveURL(/\/onboarding\?next=%2Fleagues%2Fpremier-league/);
 });
