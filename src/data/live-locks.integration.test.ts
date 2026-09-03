@@ -17,8 +17,8 @@ async function activeLock(suffix: string, userId: string) {
     select id from seasons where league_id = ${superLig} and is_current = true limit 1`;
   const kickoff = new Date(Date.now() + 2 * 24 * 3_600_000).toISOString();
   const [matchweek] = await sqlClient<Array<{ id: string }>>`
-    insert into matchweeks (league_id, season_id, provider_round_name, display_name, start_at, lock_at, end_at)
-    values (${superLig}, ${season!.id}, ${`board-round-${suffix}`}, ${`Board week ${suffix}`},
+    insert into matchweeks (league_id, season_id, provider_round_name, display_name, slug, start_at, lock_at, end_at)
+    values (${superLig}, ${season!.id}, ${`board-round-${suffix}`}, ${`Board week ${suffix}`}, ${`board-slug-${suffix}`},
       ${kickoff}::timestamptz, ${kickoff}::timestamptz, ${kickoff}::timestamptz + interval '3 hours')
     returning id`;
   const teams: string[] = [];

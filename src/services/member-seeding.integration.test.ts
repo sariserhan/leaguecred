@@ -17,8 +17,8 @@ async function fixtureAt(suffix: string, kickoff: string, status: "scheduled" | 
   const [season] = await sqlClient<Array<{ id: string }>>`
     select id from seasons where league_id = ${superLig} and is_current = true limit 1`;
   const [matchweek] = await sqlClient<Array<{ id: string }>>`
-    insert into matchweeks (league_id, season_id, provider_round_name, display_name, start_at, lock_at, end_at)
-    values (${superLig}, ${season!.id}, ${`seed-round-${suffix}`}, ${`Seed week ${suffix}`},
+    insert into matchweeks (league_id, season_id, provider_round_name, display_name, slug, start_at, lock_at, end_at)
+    values (${superLig}, ${season!.id}, ${`seed-round-${suffix}`}, ${`Seed week ${suffix}`}, ${`seed-slug-${suffix}`},
       ${kickoff}::timestamptz, ${kickoff}::timestamptz, ${kickoff}::timestamptz + interval '3 hours')
     returning id`;
   const [home] = await sqlClient<Array<{ id: string }>>`

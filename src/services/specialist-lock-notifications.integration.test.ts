@@ -17,8 +17,8 @@ async function createUser(id: string) {
 async function lockAPick(specialistId: string, hoursUntilLock: number) {
   const lockAt = new Date(Date.now() + hoursUntilLock * 3_600_000).toISOString();
   const [matchweek] = await sqlClient<Array<{ id: string }>>`
-    insert into matchweeks (league_id, season_id, provider_round_name, display_name, start_at, lock_at, end_at, status)
-    values (${superLig}, ${season}, ${`specialist-lock-test-${crypto.randomUUID()}`}, 'Specialist lock test matchweek', ${lockAt}, ${lockAt}, ${lockAt}, 'upcoming')
+    insert into matchweeks (league_id, season_id, provider_round_name, display_name, slug, start_at, lock_at, end_at, status)
+    values (${superLig}, ${season}, ${`specialist-lock-test-${crypto.randomUUID()}`}, 'Specialist lock test matchweek', ${`specialist-lock-slug-${crypto.randomUUID()}`}, ${lockAt}, ${lockAt}, ${lockAt}, 'upcoming')
     returning id`;
   const [fixture] = await sqlClient<Array<{ id: string }>>`
     insert into fixtures (provider, provider_external_id, league_id, season_id, matchweek_id, home_team_id, away_team_id, kickoff_at, status, last_synced_at)

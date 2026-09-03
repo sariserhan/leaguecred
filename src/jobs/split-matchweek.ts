@@ -1,4 +1,5 @@
 import { sqlClient } from "@/db";
+import { matchweekSlugBase } from "@/lib/matchweek-slug";
 import { describeDatabaseTarget } from "@/lib/env";
 import { planMatchweekRounds } from "@/services/matchweek-split";
 
@@ -123,10 +124,19 @@ async function main() {
 
         for (const [index, round] of rest.entries()) {
           const [created] = await sql<Array<{ id: string }>>`
-            insert into matchweeks (league_id, season_id, provider_round_name, display_name, start_at, lock_at, end_at, status)
+            insert into matchweeks (league_id, season_id, provider_round_name, display_name, slug, start_at, lock_at, end_at, status)
             values (${week.league_id}, ${week.season_id},
               ${`${week.provider_round_name}:split-${index + 1}`},
               ${`${week.league_name} — split ${index + 1}`},
+              -- Counted in the insert, like the sync does: two halves of a split
+              -- often begin on the same day, and only one of them can hold the
+              -- bare date.
+              (select case when count(*) = 0 then ${matchweekSlugBase(round.startAt)}
+                           else ${matchweekSlugBase(round.startAt)} || '-' || (count(*) + 1) end
+               from matchweeks existing
+               where existing.league_id = ${week.league_id}
+                 and (existing.slug = ${matchweekSlugBase(round.startAt)}
+                      or existing.slug like ${`${matchweekSlugBase(round.startAt)}-%`})),
               ${stamp(round.startAt)}::timestamptz, ${stamp(round.startAt)}::timestamptz,
               ${stamp(round.endAt)}::timestamptz, 'upcoming')
             returning id`;

@@ -44,8 +44,8 @@ describe("applyTeamMerge", () => {
     const [season] = await sqlClient<Array<{ id: string }>>`
       select id from seasons where league_id = ${superLig} and is_current = true limit 1`;
     const [matchweek] = await sqlClient<Array<{ id: string }>>`
-      insert into matchweeks (league_id, season_id, provider_round_name, display_name, start_at, lock_at, end_at)
-      values (${superLig}, ${season!.id}, ${`merge-round-${suffix}`}, ${`Merge week ${suffix}`},
+      insert into matchweeks (league_id, season_id, provider_round_name, display_name, slug, start_at, lock_at, end_at)
+      values (${superLig}, ${season!.id}, ${`merge-round-${suffix}`}, ${`Merge week ${suffix}`}, ${`merge-slug-${suffix}`},
         now() + interval '30 days', now() + interval '30 days', now() + interval '31 days')
       returning id`;
     const [fixture] = await sqlClient<Array<{ id: string }>>`
@@ -86,8 +86,8 @@ describe("applyTeamMerge", () => {
     const [season] = await sqlClient<Array<{ id: string }>>`
       select id from seasons where league_id = ${superLig} and is_current = true limit 1`;
     const [matchweek] = await sqlClient<Array<{ id: string }>>`
-      insert into matchweeks (league_id, season_id, provider_round_name, display_name, start_at, lock_at, end_at)
-      values (${superLig}, ${season!.id}, ${`rival-round-${suffix}`}, ${`Rival week ${suffix}`},
+      insert into matchweeks (league_id, season_id, provider_round_name, display_name, slug, start_at, lock_at, end_at)
+      values (${superLig}, ${season!.id}, ${`rival-round-${suffix}`}, ${`Rival week ${suffix}`}, ${`rival-slug-${suffix}`},
         now() + interval '60 days', now() + interval '60 days', now() + interval '61 days')
       returning id`;
     await sqlClient`

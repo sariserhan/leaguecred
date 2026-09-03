@@ -14,8 +14,8 @@ async function createUser(id: string) {
 async function createUpcomingMatchweek(hoursUntilLock: number) {
   const lockAt = new Date(Date.now() + hoursUntilLock * 3_600_000).toISOString();
   const [matchweek] = await sqlClient<Array<{ id: string }>>`
-    insert into matchweeks (league_id, season_id, provider_round_name, display_name, start_at, lock_at, end_at, status)
-    values (${superLig}, ${season}, ${`reminder-test-${crypto.randomUUID()}`}, 'Reminder test matchweek', ${lockAt}, ${lockAt}, ${lockAt}, 'upcoming')
+    insert into matchweeks (league_id, season_id, provider_round_name, display_name, slug, start_at, lock_at, end_at, status)
+    values (${superLig}, ${season}, ${`reminder-test-${crypto.randomUUID()}`}, 'Reminder test matchweek', ${`reminder-slug-${crypto.randomUUID()}`}, ${lockAt}, ${lockAt}, ${lockAt}, 'upcoming')
     returning id`;
   return matchweek!.id;
 }

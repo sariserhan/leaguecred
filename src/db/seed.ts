@@ -1,4 +1,5 @@
 import { sqlClient } from "@/db";
+import { matchweekSlugBase } from "@/lib/matchweek-slug";
 import { teamSlug } from "@/lib/team-path";
 
 const ids = {
@@ -80,8 +81,8 @@ async function main() {
         on conflict (provider, provider_external_id) do update set name = excluded.name, short_name = excluded.short_name`;
     }
 
-    await sql`insert into matchweeks (id, league_id, season_id, provider_round_name, display_name, start_at, lock_at, end_at, status)
-      values (${ids.matchweek}, ${ids.superLig}, ${ids.season}, 'Regular Season - 8', 'Matchweek 8', ${lockAt}, ${lockAt}, ${kickoff(3, 22)}, 'upcoming')
+    await sql`insert into matchweeks (id, league_id, season_id, provider_round_name, display_name, slug, start_at, lock_at, end_at, status)
+      values (${ids.matchweek}, ${ids.superLig}, ${ids.season}, 'Regular Season - 8', 'Matchweek 8', ${matchweekSlugBase(lockAt)}, ${lockAt}, ${lockAt}, ${kickoff(3, 22)}, 'upcoming')
       on conflict (league_id, provider_round_name) do update set start_at = excluded.start_at, lock_at = excluded.lock_at, end_at = excluded.end_at, status = 'upcoming'`;
 
     const fixtureRows = [

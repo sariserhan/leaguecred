@@ -40,8 +40,8 @@ async function createAndSettlePick(input: {
   // matchweek lookup by date window in fixture-sync.ts.
   const endAt = new Date(kickoff.getTime() + 3 * 3_600_000).toISOString();
   const [createdMatchweek] = await sqlClient<Array<{ id: string }>>`
-    insert into matchweeks (league_id, season_id, provider_round_name, display_name, start_at, lock_at, end_at, status)
-    values (${superLig}, ${input.seasonId}, ${input.round}, ${input.round}, ${kickoff.toISOString()}, ${endAt}, ${endAt}, 'upcoming') returning id`;
+    insert into matchweeks (league_id, season_id, provider_round_name, display_name, slug, start_at, lock_at, end_at, status)
+    values (${superLig}, ${input.seasonId}, ${input.round}, ${input.round}, ${`slug-${input.round}`}, ${kickoff.toISOString()}, ${endAt}, ${endAt}, 'upcoming') returning id`;
   const [createdFixture] = await sqlClient<Array<{ id: string }>>`
     insert into fixtures (provider, provider_external_id, league_id, season_id, matchweek_id, home_team_id, away_team_id, kickoff_at, status, last_synced_at)
     values ('settlement-test', ${input.round}, ${superLig}, ${input.seasonId}, ${createdMatchweek!.id}, ${besiktas}, ${konyaspor}, ${kickoff.toISOString()}, 'scheduled', now()) returning id`;
