@@ -8,6 +8,7 @@ import { CheckIcon, LockKeyholeIcon, TriangleAlertIcon } from "lucide-react";
 import { submitDailyLocks } from "@/app/leagues/actions";
 import type { BoardFixture, FixtureBoard } from "@/data/fixtures";
 import { FixtureVotePoll } from "@/components/fixture-vote-poll";
+import { LocalTime } from "@/components/local-time";
 import { GameDiscussion } from "@/components/leagues/game-discussion";
 import {
   AlertDialog,
@@ -43,6 +44,10 @@ type Choice = {
   matchDate: string;
 };
 
+// The day a fixture belongs to, not a moment in time. A Daily Lock is one per
+// league per day and that day is decided in UTC on the server, so this heading
+// has to stay in UTC or a late kickoff would appear under a day whose lock it
+// does not belong to. Only the clock beside each match is localised.
 const dayHeading = new Intl.DateTimeFormat("en", {
   weekday: "long", day: "numeric", month: "long", timeZone: "UTC",
 });
@@ -213,7 +218,7 @@ export function FixtureBoard({ board, authenticated }: { board: FixtureBoard; au
                         {fixture.leagueName}
                       </Link>
                       <span className="flex items-center gap-3">
-                        <span className="text-xs text-muted-foreground">{kickoffTime.format(new Date(fixture.kickoff))}</span>
+                        <span className="text-xs text-muted-foreground"><LocalTime value={fixture.kickoff} mode="time" fallback={kickoffTime.format(new Date(fixture.kickoff))} /></span>
                         {authenticated && !held ? (
                           <AddToSlipButton
                             fixtureId={fixture.id}

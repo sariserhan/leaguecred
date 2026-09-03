@@ -35,3 +35,30 @@ test("authenticated dashboard regression", async ({ page }) => {
   await page.getByRole("menuitem", { name: "My dashboard" }).click();
   await expect(page.getByRole("heading", { name: "Finish your setup" }).or(page.getByRole("heading", { name: "Build evidence. Earn your rank." }))).toBeVisible();
 });
+
+/**
+ * Kickoffs render in UTC on the server, because the server cannot know where
+ * anybody is, and are rewritten in the reader's own clock once the page mounts.
+ * Proving that needs a browser in a timezone that is not UTC — which is also
+ * why it could never be checked from the served HTML alone.
+ */
+test.describe("kickoff times", () => {
+  test.use({ timezoneId: "Europe/Istanbul" });
+
+  test("are rewritten into the reader's own clock", async ({ page }) => {
+    await page.goto("/fixtures");
+
+    const kickoff = page.locator("time[datetime]").first();
+    await expect(kickoff).toBeVisible();
+
+    // Istanbul is GMT+3, so a localised reading cannot still be labelled UTC.
+    await expect(kickoff).not.toHaveText(/UTC/);
+
+    const drift = await kickoff.evaluate((node) => {
+      const iso = node.getAttribute("datetime")!;
+      const utc = new Intl.DateTimeFormat("en", { hour: "numeric", minute: "2-digit", timeZone: "UTC" }).format(new Date(iso));
+      return { shown: node.textContent?.trim() ?? "", utc };
+    });
+    expect(drift.shown).not.toBe(drift.utc);
+  });
+});

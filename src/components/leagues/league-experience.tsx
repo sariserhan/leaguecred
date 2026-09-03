@@ -302,7 +302,7 @@ export function LeagueExperience({
               <Badge variant="outline" className="border-inverted-foreground/40 text-inverted-foreground">{data.matchweek.displayName}</Badge>
               <span className="flex items-center gap-2 text-sm">
                 <LockKeyholeIcon aria-hidden="true" className="size-4" />
-                {lockAt ? `Next lock closes ${lockAt}` : "Every match this week has started"}
+                {lockAt ? `Next lock closes ${nextDeadline ? <LocalTime value={nextDeadline} mode="time" fallback={lockAt ?? ""} /> : lockAt}` : "Every match this week has started"}
               </span>
               {nextDeadline ? <div className="bg-background text-foreground"><LockCountdown lockAt={nextDeadline} compact /></div> : null}
             </div>
