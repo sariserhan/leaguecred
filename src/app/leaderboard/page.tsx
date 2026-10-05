@@ -7,6 +7,7 @@ import { getLeaderboards } from "@/data/leaderboard";
 import { JsonLd } from "@/lib/json-ld";
 import { LEAGUE_LEADERBOARD_FLAG, isFeatureEnabled } from "@/lib/site-settings";
 import { getFeatureFlags } from "@/services/site-settings";
+import { SITE_URL } from "@/lib/site-url";
 
 // TODO: Cache Components adoption. Refactor this route so this opt-out can be removed.
 // See: https://nextjs.org/docs/app/guides/migrating-to-cache-components
@@ -58,7 +59,7 @@ export default async function LeaderboardPage() {
             itemListElement: data.global.slice(0, 10).map((row, index) => ({
               "@type": "ListItem",
               position: index + 1,
-              url: `https://leaguecred.com/specialists/${row.handle ?? row.userId}`,
+              url: `${SITE_URL}/specialists/${row.handle ?? row.userId}`,
               name: row.name,
             })),
           }}

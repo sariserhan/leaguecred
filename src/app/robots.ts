@@ -1,5 +1,7 @@
 import type { MetadataRoute } from "next";
 
+import { SITE_URL } from "@/lib/site-url";
+
 /**
  * Two kinds of path are kept out of the index.
  *
@@ -33,6 +35,6 @@ export default function robots(): MetadataRoute.Robots {
         "/r/",
       ],
     },
-    sitemap: "https://leaguecred.com/sitemap.xml",
+    sitemap: `${SITE_URL}/sitemap.xml`,
   };
 }

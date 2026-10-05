@@ -16,6 +16,7 @@ import { getFeatureFlags } from "@/services/site-settings";
 import { Toaster } from "@/components/ui/toast";
 import { ThemeProvider } from "@/components/theme-provider";
 import { JsonLd } from "@/lib/json-ld";
+import { SITE_URL } from "@/lib/site-url";
 import { ServiceWorkerManager } from "@/components/service-worker";
 
 import "./globals.css";
@@ -39,7 +40,7 @@ const description =
   "Build a verified record in the football league you know and follow proven specialists everywhere else.";
 
 export const metadata: Metadata = {
-  metadataBase: new URL("https://leaguecred.com"),
+  metadataBase: new URL(SITE_URL),
   title: {
     default: "LeagueCred — Know one league",
     template: "%s · LeagueCred",
@@ -117,7 +118,7 @@ export default async function RootLayout({ children }: LayoutProps<"/">) {
               "@context": "https://schema.org",
               "@type": "WebSite",
               name: "LeagueCred",
-              url: "https://leaguecred.com",
+              url: SITE_URL,
               description,
             }}
           />

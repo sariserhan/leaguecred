@@ -7,6 +7,7 @@ import { getSession } from "@/lib/auth-session";
 import { getPersonalizedRecommendations } from "@/data/recommendations";
 import { getLeaguePreferences } from "@/data/league-preferences";
 import { JsonLd } from "@/lib/json-ld";
+import { SITE_URL } from "@/lib/site-url";
 
 // TODO: Cache Components adoption. Refactor this route so this opt-out can be removed.
 // See: https://nextjs.org/docs/app/guides/migrating-to-cache-components
@@ -43,7 +44,7 @@ export default async function SpecialistPage(props: SpecialistPageProps) {
           mainEntity: {
             "@type": "Person",
             name: data.specialist.name,
-            url: `https://leaguecred.com/specialists/${data.specialist.handle ?? data.specialist.id}`,
+            url: `${SITE_URL}/specialists/${data.specialist.handle ?? data.specialist.id}`,
           },
         }}
       />
