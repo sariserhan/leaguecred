@@ -1,6 +1,6 @@
-import { describe, expect, it } from "vitest";
+import { afterEach, describe, expect, it, vi } from "vitest";
 
-import { ESPN_FIXTURE_COMPETITIONS, espnSportPath, mapEspnEvent, normalizeEspnStatus } from "@/providers/espn-fixtures";
+import { ESPN_EVENT_LIMIT, ESPN_FIXTURE_COMPETITIONS, EspnFixtureProvider, espnMonths, espnSportPath, mapEspnEvent, normalizeEspnStatus } from "@/providers/espn-fixtures";
 
 const scheduledFixture = {
   date: "2026-09-06T16:00:00Z",
@@ -88,5 +88,51 @@ describe("ESPN fixture provider", () => {
     expect(normalizeEspnStatus({ name: "STATUS_POSTPONED", state: "pre" })).toBe("postponed");
     expect(normalizeEspnStatus({ name: "STATUS_CANCELED", state: "post" })).toBe("cancelled");
     expect(normalizeEspnStatus({ name: "STATUS_IN_PROGRESS", state: "in" })).toBe("live");
+  });
+});
+
+describe("reading a window from ESPN", () => {
+  afterEach(() => vi.unstubAllGlobals());
+
+  const event = (id: string, date: string) => ({
+    id, date,
+    competitions: [{
+      status: { type: { name: "STATUS_SCHEDULED", state: "pre" as const, completed: false } },
+      competitors: [
+        { homeAway: "home" as const, team: { id: "1", displayName: "Arsenal" } },
+        { homeAway: "away" as const, team: { id: "2", displayName: "Chelsea" } },
+      ],
+    }],
+  });
+
+  it("lists every month a window touches", () => {
+    expect(espnMonths("2026-08-15", "2026-11-08")).toEqual(["202608", "202609", "202610", "202611"]);
+    expect(espnMonths("2026-12-30", "2027-01-02")).toEqual(["202612", "202701"]);
+    expect(espnMonths("2026-11-08", "2026-11-08")).toEqual(["202611"]);
+  });
+
+  // ESPN answers a date range with a 400 since September 2026; a month still works.
+  it("asks a month at a time, never a range, and keeps only the window's dates", async () => {
+    const asked: string[] = [];
+    vi.stubGlobal("fetch", vi.fn(async (url: URL) => {
+      const month = url.searchParams.get("dates")!;
+      asked.push(month);
+      const events = month === "202610"
+        ? [event("a", "2026-10-01T19:00Z"), event("b", "2026-10-30T19:00Z")]
+        : [event("c", "2026-11-05T19:00Z"), event("d", "2026-11-20T19:00Z"), event("b", "2026-10-30T19:00Z")];
+      return Response.json({ events });
+    }));
+    const batch = await new EspnFixtureProvider().fetchFixtures({ leagueExternalId: "eng.1", season: "2026", from: "2026-10-15", to: "2026-11-10" });
+    expect(asked).toEqual(["202610", "202611"]);
+    expect(batch.fixtures.map((fixture) => fixture.externalId).sort()).toEqual(["b", "c"]);
+    expect(batch.requestCount).toBe(2);
+  });
+
+  it("fails loudly when ESPN cuts a month short", async () => {
+    vi.stubGlobal("fetch", vi.fn(async () => Response.json({
+      events: Array.from({ length: ESPN_EVENT_LIMIT }, (_, index) => event(String(index), "2026-09-10T19:00Z")),
+    })));
+    await expect(new EspnFixtureProvider().fetchFixtures({ leagueExternalId: "mlb", season: "2026", from: "2026-09-01", to: "2026-09-30" }))
+      .rejects.toThrow(/cut short/);
   });
 });

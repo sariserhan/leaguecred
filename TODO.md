@@ -6,15 +6,15 @@ None.
 
 ## Next
 
-- [ ] Turn on the Sports Intel Run now button: create a fine-grained GitHub
-      token for sariserhan/sports-intel with Actions read and write only, and
-      set it as `SPORTS_INTEL_GITHUB_TOKEN` on Vercel. Each press is in the
-      admin audit log, and a second within ten minutes is refused.
-- [ ] Turn on /admin/sports-intel. The route is built: it shows admins the
-      newest page from the separate Sports Intel project and 404s for everyone
-      else. It needs `SPORTS_INTEL_DASHBOARD_URL` on Vercel, a login to that
-      project's Neon database as `leaguecred_viewer`, which can read only
-      `dashboard_snapshots`. Its password is set by hand on the Sports Intel side.
+- [ ] After pushing the ESPN month fix: run the nightly sync once (or wait for
+      04:00 UTC) and confirm every league has fixtures past mid-September again,
+      the Premier League's next round shows, and overdue matches settle. ESPN
+      answers date ranges with a 400 since about 15 Sep 2026, so no fixture or
+      result was imported after that; picks on those matches may need settling.
+- [ ] Add an alert when a sync step fails every night: this one failed silently
+      for eight weeks.
+- [ ] Sports Intel Run now button: `SPORTS_INTEL_GITHUB_TOKEN` is set (the
+      owner's gh login, by choice); it works once cd893e3 is deployed.
 - [ ] Fix local `pnpm build`: the postgres container rejects the
       `leaguecred:leaguecred` login, so prerendering fails before any route is
       checked. Vercel builds are unaffected.

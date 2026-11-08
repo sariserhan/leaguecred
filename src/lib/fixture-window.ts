@@ -1,17 +1,16 @@
 /**
  * Where a fixture sync should start reading.
  *
- * ESPN answers a scoreboard request with at most 200 events, and the window has
+ * ESPN is read a month at a time, at most a thousand events each, and the window has
  * always begun at the season start — which is right for football, where a
  * league plays a few hundred matches spread over nine months, and where
  * re-reading the season each night is what repairs a row somebody edited or a
  * result that arrived late.
  *
  * It is wrong for a league that plays every day. Baseball runs about fifteen
- * games a night, so two weeks of a season fills the whole response: the sync
- * would fetch the same opening fortnight of April every night and never reach
- * today's game. Those leagues read a rolling window instead, anchored near now,
- * and give up the nightly re-read of the whole season to do it.
+ * games a night, so a whole season is thousands of games and a request per
+ * month every hour. Those leagues read a rolling window instead, anchored near
+ * now, and give up the nightly re-read of the whole season to do it.
  */
 export const DEFAULT_LOOKBACK_DAYS = 7;
 

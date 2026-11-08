@@ -88,8 +88,21 @@ export const ESPN_FIXTURE_COMPETITIONS = [
   { leagueSlug: "nhl", externalId: "nhl", sportPath: "hockey" },
 ] as const;
 
-function compactDate(isoDate: string) {
-  return isoDate.replaceAll("-", "");
+// ESPN stopped answering date ranges (`dates=20260901-20260930`) in mid-September
+// 2026 with a 400, for every sport. A single day or a whole month (`dates=202609`)
+// still works, so a window is read a month at a time and trimmed back to its dates.
+export const ESPN_EVENT_LIMIT = 1000;
+
+/** Every calendar month a window touches, as ESPN's `YYYYMM`. */
+export function espnMonths(from: string, to: string): string[] {
+  const months: string[] = [];
+  const cursor = new Date(`${from.slice(0, 7)}-01T00:00:00Z`);
+  const last = to.slice(0, 7);
+  while (cursor.toISOString().slice(0, 7) <= last) {
+    months.push(cursor.toISOString().slice(0, 7).replace("-", ""));
+    cursor.setUTCMonth(cursor.getUTCMonth() + 1);
+  }
+  return months;
 }
 
 function weekStart(iso: string) {
@@ -162,22 +175,32 @@ export class EspnFixtureProvider implements FixtureProvider {
     from: string;
     to: string;
   }): Promise<FixtureBatch> {
-    const url = new URL(
-      `https://site.api.espn.com/apis/site/v2/sports/${espnSportPath(input.leagueExternalId)}/${input.leagueExternalId}/scoreboard`,
-    );
-    url.searchParams.set("dates", `${compactDate(input.from)}-${compactDate(input.to)}`);
-    url.searchParams.set("limit", "200");
-    const response = await fetch(url, { cache: "no-store" });
-    if (!response.ok) throw new Error(`ESPN scoreboard request failed with ${response.status}`);
-    const payload = (await response.json()) as EspnScoreboardResponse;
-    const events = payload.events ?? [];
-    const fixtures = events.flatMap((event) => {
-      const fixture = mapEspnEvent(event, input.leagueExternalId);
-      return fixture ? [fixture] : [];
-    });
-    // mapEspnEvent skips what it cannot read, so a renamed field would show up
-    // as an empty, successful sync rather than as a fault.
-    assertUnderstood(`ESPN scoreboard for ${input.leagueExternalId}`, events.length, fixtures.length);
-    return { fixtures, requestCount: 1 };
+    const months = espnMonths(input.from, input.to);
+    const fixtures = new Map<string, ProviderFixture>();
+    for (const month of months) {
+      const url = new URL(
+        `https://site.api.espn.com/apis/site/v2/sports/${espnSportPath(input.leagueExternalId)}/${input.leagueExternalId}/scoreboard`,
+      );
+      url.searchParams.set("dates", month);
+      url.searchParams.set("limit", String(ESPN_EVENT_LIMIT));
+      const response = await fetch(url, { cache: "no-store" });
+      if (!response.ok) throw new Error(`ESPN scoreboard request for ${month} failed with ${response.status}`);
+      const payload = (await response.json()) as EspnScoreboardResponse;
+      const events = payload.events ?? [];
+      // A full page means ESPN cut the month short, and the missing games would look like none.
+      if (events.length >= ESPN_EVENT_LIMIT) throw new Error(`ESPN returned ${events.length} events for ${month}, its limit; the month was cut short.`);
+      const mapped = events.flatMap((event) => {
+        const fixture = mapEspnEvent(event, input.leagueExternalId);
+        return fixture ? [fixture] : [];
+      });
+      // mapEspnEvent skips what it cannot read, so a renamed field would show up
+      // as an empty, successful sync rather than as a fault.
+      assertUnderstood(`ESPN scoreboard for ${input.leagueExternalId}`, events.length, mapped.length);
+      for (const fixture of mapped) {
+        const day = fixture.kickoffAt.slice(0, 10);
+        if (day >= input.from && day <= input.to) fixtures.set(fixture.externalId, fixture);
+      }
+    }
+    return { fixtures: [...fixtures.values()], requestCount: months.length };
   }
 }
