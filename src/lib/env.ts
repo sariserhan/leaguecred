@@ -27,6 +27,8 @@ export const serverEnv = {
   resendApiKey: optionalEnv(process.env.RESEND_API_KEY),
   // Optional override for every sender, used while a domain is still unverified.
   resendFromEmail: optionalEnv(process.env.RESEND_FROM_EMAIL),
+  // A login to the separate Sports Intel database that can read its dashboard and nothing else.
+  sportsIntelDashboardUrl: optionalEnv(process.env.SPORTS_INTEL_DASHBOARD_URL),
 };
 
 /** Host and database only; never the credentials. */

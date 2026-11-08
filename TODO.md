@@ -6,6 +6,14 @@ None.
 
 ## Next
 
+- [ ] Turn on /admin/sports-intel. The route is built: it shows admins the
+      newest page from the separate Sports Intel project and 404s for everyone
+      else. It needs `SPORTS_INTEL_DASHBOARD_URL` on Vercel, a login to that
+      project's Neon database as `leaguecred_viewer`, which can read only
+      `dashboard_snapshots`. Its password is set by hand on the Sports Intel side.
+- [ ] Fix local `pnpm build`: the postgres container rejects the
+      `leaguecred:leaguecred` login, so prerendering fails before any route is
+      checked. Vercel builds are unaffected.
 - [ ] Send one real reminder and confirm it arrives. `RESEND_FROM_EMAIL` is set
       and now live, but only a delivered message proves the sender domain is
       actually verified — an unverified one fails at Resend, not here.

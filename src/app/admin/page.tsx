@@ -103,9 +103,15 @@ export default async function AdminPage() {
             saved.
           </p>
         </div>
-        <Link href="/" className={buttonVariants({ variant: "outline", size: "lg" })}>
-          View the site
-        </Link>
+        <div className="flex flex-wrap gap-3">
+          {/* A plain link: the dashboard is a whole page from a route handler, not an app route to prefetch. */}
+          <a href="/admin/sports-intel" className={buttonVariants({ variant: "outline", size: "lg" })}>
+            Sports Intel
+          </a>
+          <Link href="/" className={buttonVariants({ variant: "outline", size: "lg" })}>
+            View the site
+          </Link>
+        </div>
       </header>
 
       <AdminTabs
