@@ -28,9 +28,10 @@ async function asReader<T>(query: (sql: typeof sqlClient) => Promise<T>) {
 describe("the Sports Intel read contract", () => {
   it("lets the reader see fixtures and identities through the contract", async () => {
     const [meta] = await asReader((sql) => sql<Array<{ contract_version: string }>>`select contract_version from intel_contract_v1.meta`);
-    expect(meta?.contract_version).toBe("1.0.0");
+    expect(meta?.contract_version).toBe("1.1.0");
     await expect(asReader((sql) => sql`select id, home_score, away_score, upstream_provider from intel_contract_v1.fixtures limit 1`)).resolves.toBeDefined();
-    await expect(asReader((sql) => sql`select id, name from intel_contract_v1.teams limit 1`)).resolves.toBeDefined();
+    await expect(asReader((sql) => sql`select id, name, logo_url from intel_contract_v1.teams limit 1`)).resolves.toBeDefined();
+    await expect(asReader((sql) => sql`select slug, logo_url from intel_contract_v1.leagues limit 1`)).resolves.toBeDefined();
   });
 
   it.each(["user", "session", "account", "picks", "fixtures"])("keeps the reader out of public.%s", async (table) => {

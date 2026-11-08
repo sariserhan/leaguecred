@@ -253,6 +253,13 @@
       "when": 1794101157797,
       "tag": "0035_intel_read_contract",
       "breakpoints": true
+    },
+    {
+      "idx": 36,
+      "version": "7",
+      "when": 1794104833151,
+      "tag": "0036_intel_contract_logos",
+      "breakpoints": true
     }
   ]
 }
