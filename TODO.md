@@ -6,6 +6,10 @@ None.
 
 ## Next
 
+- [ ] Turn on the Sports Intel Run now button: create a fine-grained GitHub
+      token for sariserhan/sports-intel with Actions read and write only, and
+      set it as `SPORTS_INTEL_GITHUB_TOKEN` on Vercel. Each press is in the
+      admin audit log, and a second within ten minutes is refused.
 - [ ] Turn on /admin/sports-intel. The route is built: it shows admins the
       newest page from the separate Sports Intel project and 404s for everyone
       else. It needs `SPORTS_INTEL_DASHBOARD_URL` on Vercel, a login to that

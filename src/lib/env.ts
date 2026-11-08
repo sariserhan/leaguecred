@@ -29,6 +29,8 @@ export const serverEnv = {
   resendFromEmail: optionalEnv(process.env.RESEND_FROM_EMAIL),
   // A login to the separate Sports Intel database that can read its dashboard and nothing else.
   sportsIntelDashboardUrl: optionalEnv(process.env.SPORTS_INTEL_DASHBOARD_URL),
+  // A fine-grained GitHub token that may start Sports Intel's daily workflow and nothing else.
+  sportsIntelGithubToken: optionalEnv(process.env.SPORTS_INTEL_GITHUB_TOKEN),
 };
 
 /** Host and database only; never the credentials. */

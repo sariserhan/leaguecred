@@ -16,6 +16,7 @@ const auditActionLabel: Record<AdminAuditEntry["action"], string> = {
   feature_flag_toggled: "Feature flag toggled",
   member_created: "Member created",
   lock_assigned: "Lock assigned",
+  sports_intel_run_started: "Sports Intel run started",
 };
 
 const dateTimeFormatter = new Intl.DateTimeFormat("en", {
