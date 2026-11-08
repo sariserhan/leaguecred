@@ -12,6 +12,7 @@ describe("the Sports Intel dashboard", () => {
     expect(response.headers.get("x-robots-tag")).toContain("noindex");
     expect(response.headers.get("content-security-policy")).toContain("default-src 'none'");
     expect(response.headers.get("content-security-policy")).toContain("frame-ancestors 'none'");
+    expect(response.headers.get("content-security-policy")).toContain("img-src https://r2.thesportsdb.com");
   });
 
   it("says why there is nothing to show", async () => {

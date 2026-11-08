@@ -34,7 +34,10 @@ const HEADERS = {
   "Cache-Control": "private, no-store",
   "X-Robots-Tag": "noindex, nofollow",
   "Content-Security-Policy":
-    "default-src 'none'; style-src 'unsafe-inline'; script-src 'unsafe-inline'; form-action 'none'; base-uri 'none'; frame-ancestors 'none'",
+    "default-src 'none'; style-src 'unsafe-inline'; script-src 'unsafe-inline'; " +
+    // Logos, from the same hosts the site's own images use (next.config.ts).
+    "img-src https://r2.thesportsdb.com https://www.thesportsdb.com https://media.api-sports.io https://crests.football-data.org https://upload.wikimedia.org https://a.espncdn.com; " +
+    "form-action 'none'; base-uri 'none'; frame-ancestors 'none'",
 };
 
 const NOTICES: Record<Exclude<SportsIntelSnapshot["state"], "ready">, string> = {
